@@ -3,6 +3,8 @@ import '../../core/theme/app_colors.dart';
 import 'data/student_mock.dart';
 import 'widgets/graduation_card.dart';
 import 'widgets/belt_journey_card.dart';
+import '../mascot/data/mascot_mock.dart';
+import '../mascot/widgets/mascot_card.dart';
 
 class StudentScreen extends StatelessWidget {
   const StudentScreen({super.key});
@@ -10,6 +12,7 @@ class StudentScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final student = mockStudent;
+    final mascot = mascots.first;
     final monthlyProgress = student.monthlyTrainings / student.monthlyGoal;
 
     return Scaffold(
@@ -38,6 +41,9 @@ class StudentScreen extends StatelessWidget {
               'Cada treino aproxima você da sua próxima evolução.',
               style: TextStyle(fontSize: 18, color: AppColors.grey),
             ),
+            const SizedBox(height: 24),
+
+            MascotCard(mascot: mascot),
             const SizedBox(height: 24),
 
             const BeltJourneyCard(),
