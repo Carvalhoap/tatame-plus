@@ -12,6 +12,8 @@ class Attendance {
   final String classroomId;
   final String teacherId;
 
+  final String? checkInSessionId;
+
   final DateTime dateTime;
 
   final AttendanceSource source;
@@ -24,6 +26,7 @@ class Attendance {
     required this.studentId,
     required this.classroomId,
     required this.teacherId,
+    this.checkInSessionId,
     required this.dateTime,
     required this.source,
     this.isValid = true,
