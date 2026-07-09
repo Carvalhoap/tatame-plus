@@ -1,5 +1,5 @@
-import '../../models/student.dart';
-import '../../repository/student_repository.dart';
+import 'package:tatame_plus/features/student/models/student.dart';
+import 'package:tatame_plus/features/student/repository/student_repository.dart';
 
 class StudentMockRepository implements StudentRepository {
   final List<Student> _students = [

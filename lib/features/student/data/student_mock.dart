@@ -1,7 +1,16 @@
 import '../models/student.dart';
 
-const mockStudent = Student(
+final mockStudent = Student(
+  id: '1',
+  academyId: 'academy_1',
   name: 'Alexandre',
+  birthDate: DateTime(1990, 1, 1),
+  phone: '21999999999',
+  email: 'alexandre@email.com',
+  classroomIds: const ['class_1'],
+  teacherIds: const ['teacher_1'],
+  planId: 'plan_1',
+  agreementId: 'agreement_1',
   monthlyTrainings: 8,
   monthlyGoal: 12,
   streak: 5,
