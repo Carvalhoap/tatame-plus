@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../attendance/models/attendance.dart';
 import '../../attendance/repository/attendance_repository.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 class TeacherCheckInScreen extends StatefulWidget {
   const TeacherCheckInScreen({super.key});
@@ -127,8 +128,12 @@ class _TeacherCheckInScreenState extends State<TeacherCheckInScreen> {
               _Card(
                 child: Column(
                   children: [
-                    const Icon(Icons.qr_code_2,
-                        size: 120, color: AppColors.brandPrimary),
+                    QrImageView(
+  data: sessionId ?? '',
+  version: QrVersions.auto,
+  size: 220,
+  backgroundColor: Colors.white,
+),
                     const SizedBox(height: 10),
                     Text(selectedClassroom, style: _bigTitleStyle),
                     const SizedBox(height: 6),
