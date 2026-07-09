@@ -1,35 +1,36 @@
 class Student {
+  final String id;
+  final String academyId;
+
   final String name;
-  final int monthlyTrainings;
-  final int monthlyGoal;
-  final int streak;
-  final String nextAchievement;
-  final double achievementProgress;
-  final String nextTraining;
-  final String teacherName;
-  final String quote;
-  final String currentBelt;
-  final String nextBelt;
-  final int graduationClassesDone;
-  final int graduationClassesRequired;
-  final String minimumTime;
-  final String estimatedGraduation;
+  final DateTime birthDate;
+  final String phone;
+  final String email;
+  final String? photoUrl;
+
+  final List<String> classroomIds;
+  final List<String> teacherIds;
+
+  final String planId;
+  final String agreementId;
+
+  final List<String> guardianIds;
+
+  final bool active;
 
   const Student({
+    required this.id,
+    required this.academyId,
     required this.name,
-    required this.monthlyTrainings,
-    required this.monthlyGoal,
-    required this.streak,
-    required this.nextAchievement,
-    required this.achievementProgress,
-    required this.nextTraining,
-    required this.teacherName,
-    required this.quote,
-    required this.currentBelt,
-    required this.nextBelt,
-    required this.graduationClassesDone,
-    required this.graduationClassesRequired,
-    required this.minimumTime,
-    required this.estimatedGraduation,
+    required this.birthDate,
+    required this.phone,
+    required this.email,
+    this.photoUrl,
+    required this.classroomIds,
+    required this.teacherIds,
+    required this.planId,
+    required this.agreementId,
+    this.guardianIds = const [],
+    this.active = true,
   });
 }

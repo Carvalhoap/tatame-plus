@@ -234,3 +234,15 @@ Os mascotes representam a evolução do aluno durante sua jornada.
 O Tatame+ não é um sistema de controle de presença.
 
 O Tatame+ é uma plataforma de evolução para academias de artes marciais.
+
+---
+
+# BR-011 - Check-in por QR Code
+
+O professor pode gerar um QR Code temporário para uma turma.
+
+O aluno realiza a leitura pelo aplicativo e a presença é registrada automaticamente.
+
+O QR Code deve ter tempo limitado de validade para evitar uso indevido.
+
+O professor poderá marcar presença manualmente quando necessário.
