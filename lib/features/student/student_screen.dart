@@ -5,6 +5,9 @@ import 'widgets/graduation_card.dart';
 import 'widgets/belt_journey_card.dart';
 import '../mascot/data/mascot_mock.dart';
 import '../mascot/widgets/mascot_card.dart';
+import '../../core/widgets/graduation_belt_widget.dart';
+import '../graduation/data/mock/student_graduation_progress_mock.dart';
+import '../graduation/models/belt_color.dart';
 
 class StudentScreen extends StatelessWidget {
   const StudentScreen({super.key});
@@ -49,6 +52,24 @@ class StudentScreen extends StatelessWidget {
             const BeltJourneyCard(),
 
             const SizedBox(height: 18),
+
+            const Text(
+  'Minha graduação',
+  style: TextStyle(
+    fontSize: 22,
+    fontWeight: FontWeight.bold,
+    color: AppColors.brandPrimary,
+  ),
+),
+
+const SizedBox(height: 12),
+
+GraduationBeltWidget(
+  beltColor: BeltColor.white,
+  stripes: studentGraduationProgressMock.stripes,
+),
+
+const SizedBox(height: 18),
 
             GraduationCard(student: student),
 

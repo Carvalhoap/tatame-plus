@@ -246,3 +246,30 @@ O aluno realiza a leitura pelo aplicativo e a presença é registrada automatica
 O QR Code deve ter tempo limitado de validade para evitar uso indevido.
 
 O professor poderá marcar presença manualmente quando necessário.
+
+---
+
+# BR-012 - Elegibilidade para graduação
+
+O Tatame+ deve calcular automaticamente a elegibilidade do aluno para receber graus e trocar de faixa.
+
+O cálculo poderá considerar:
+
+- Presenças válidas
+- Tempo mínimo na faixa
+- Tempo mínimo no grau
+- Critérios configurados pela academia
+- Categoria do aluno
+- Programa de graduação aplicável
+
+O sistema deve apresentar:
+
+- Alunos aptos
+- Alunos quase aptos
+- Quantidade de aulas restantes
+- Tempo restante
+- Previsão estimada de graduação
+
+A aprovação final da graduação será sempre realizada por um professor autorizado ou pela gestão.
+
+O sistema não poderá graduar um aluno automaticamente.
