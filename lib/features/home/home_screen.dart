@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+
 import '../../core/theme/app_colors.dart';
-import 'widgets/botao_perfil.dart';
 import '../student/student_screen.dart';
 import '../teacher/teacher_screen.dart';
+import 'widgets/botao_perfil.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -16,7 +17,7 @@ class HomeScreen extends StatelessWidget {
           padding: const EdgeInsets.all(28),
           child: Column(
             children: [
-              const SizedBox(height: 80),
+              const SizedBox(height: 60),
 
               const Icon(
                 Icons.sports_martial_arts,
@@ -27,7 +28,7 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 25),
 
               const Text(
-                "Tatame+",
+                'Tatame+',
                 style: TextStyle(
                   fontSize: 42,
                   fontWeight: FontWeight.bold,
@@ -38,7 +39,7 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 12),
 
               const Text(
-                "Evolução começa aqui",
+                'Evolução começa aqui',
                 style: TextStyle(
                   fontSize: 18,
                   color: AppColors.grey,
@@ -54,8 +55,10 @@ class HomeScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const TeacherScreen()),
-                    );
+                    MaterialPageRoute(
+                      builder: (_) => const TeacherScreen(),
+                    ),
+                  );
                 },
               ),
 
@@ -68,10 +71,33 @@ class HomeScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const StudentScreen()),
-                );
-              },
+                    MaterialPageRoute(
+                      builder: (_) => const StudentScreen(),
+                    ),
+                  );
+                },
               ),
+
+              const Spacer(),
+
+              TextButton.icon(
+                onPressed: () {
+                  Navigator.pushNamed(context, '/about');
+                },
+                icon: const Icon(
+                  Icons.info_outline,
+                  color: AppColors.grey,
+                ),
+                label: const Text(
+                  'Sobre o Tatame+',
+                  style: TextStyle(
+                    color: AppColors.grey,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 8),
             ],
           ),
         ),

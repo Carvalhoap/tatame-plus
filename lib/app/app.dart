@@ -7,6 +7,7 @@ import '../features/attendance/repository/attendance_repository.dart';
 import '../features/home/home_screen.dart';
 import '../features/student/data/mock/student_mock_repository.dart';
 import '../features/student/repository/student_repository.dart';
+import '../features/about/screens/about_screen.dart';
 
 class TatameApp extends StatelessWidget {
   const TatameApp({super.key});
@@ -26,6 +27,9 @@ class TatameApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: 'Tatame+',
         theme: AppTheme.light,
+        routes: {
+          '/about': (_) => const AboutScreen(),
+        },
         home: const HomeScreen(),
       ),
     );
