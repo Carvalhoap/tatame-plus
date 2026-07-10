@@ -1,3 +1,5 @@
+import 'stripe_progress.dart';
+
 class StudentGraduationProgress {
   final String id;
   final String academyId;
@@ -9,6 +11,8 @@ class StudentGraduationProgress {
   final DateTime stageStartedAt;
 
   final int validAttendances;
+
+  final List<StripeProgress> stripes;
 
   final DateTime? estimatedCompletionDate;
 
@@ -22,6 +26,7 @@ class StudentGraduationProgress {
     required this.currentStageId,
     required this.stageStartedAt,
     this.validAttendances = 0,
+    this.stripes = const [],
     this.estimatedCompletionDate,
     this.approvedByTeacher = false,
   });
