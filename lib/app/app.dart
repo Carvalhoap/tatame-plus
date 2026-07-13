@@ -8,6 +8,10 @@ import '../features/home/home_screen.dart';
 import '../features/student/data/mock/student_mock_repository.dart';
 import '../features/student/repository/student_repository.dart';
 import '../features/about/screens/about_screen.dart';
+import '../features/auth/data/mock/auth_mock_repository.dart';
+import '../features/auth/repository/auth_repository.dart';
+import '../features/auth/services/session_service.dart';
+import '../features/auth/screens/session_router.dart';
 
 class TatameApp extends StatelessWidget {
   const TatameApp({super.key});
@@ -22,6 +26,13 @@ class TatameApp extends StatelessWidget {
         Provider<AttendanceRepository>(
           create: (_) => AttendanceMockRepository(),
         ),
+        Provider<AuthRepository>(
+          create: (_) => AuthMockRepository(),
+        ),
+
+        ChangeNotifierProvider<SessionService>(
+          create: (_) => SessionService(),
+        ),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -30,7 +41,7 @@ class TatameApp extends StatelessWidget {
         routes: {
           '/about': (_) => const AboutScreen(),
         },
-        home: const HomeScreen(),
+        home: const SessionRouter(),
       ),
     );
   }

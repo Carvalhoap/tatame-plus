@@ -1,0 +1,23 @@
+import '../../academy/models/user_role.dart';
+
+class AppUser {
+  final String id;
+  final String academyId;
+  final String name;
+  final String email;
+  final List<UserRole> roles;
+  final bool isActive;
+
+  const AppUser({
+    required this.id,
+    required this.academyId,
+    required this.name,
+    required this.email,
+    required this.roles,
+    this.isActive = true,
+  });
+
+  bool hasRole(UserRole role) {
+    return roles.contains(role);
+  }
+}

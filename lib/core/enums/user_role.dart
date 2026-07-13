@@ -1,7 +1,7 @@
 enum UserRole {
   admin,
   partner,
-  professor,
+  teacher,
   student,
   guardian,
 }
