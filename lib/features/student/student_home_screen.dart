@@ -8,6 +8,7 @@ import '../mascot/widgets/mascot_card.dart';
 import '../../core/widgets/graduation_belt_widget.dart';
 import '../graduation/data/mock/student_graduation_progress_mock.dart';
 import '../graduation/models/belt_color.dart';
+import '../../core/widgets/app_drawer.dart';
 
 class StudentHomeScreen extends StatelessWidget {
   const StudentHomeScreen({super.key});
@@ -20,6 +21,7 @@ class StudentHomeScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      drawer: const AppDrawer(),
       appBar: AppBar(
         title: const Text('Minha Jornada'),
         backgroundColor: AppColors.background,

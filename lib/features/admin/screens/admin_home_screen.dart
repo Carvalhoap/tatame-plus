@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/app_drawer.dart';
 import '../../auth/services/session_service.dart';
 
 class AdminHomeScreen extends StatelessWidget {
@@ -14,22 +15,12 @@ class AdminHomeScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      drawer: const AppDrawer(),
       appBar: AppBar(
         title: const Text('Gestão'),
         backgroundColor: AppColors.background,
         foregroundColor: AppColors.brandPrimary,
-        actions: [
-          IconButton(
-            tooltip: 'Trocar perfil',
-            onPressed: session.clearActiveRole,
-            icon: const Icon(Icons.swap_horiz),
-          ),
-          IconButton(
-            tooltip: 'Sair',
-            onPressed: session.endSession,
-            icon: const Icon(Icons.logout),
-          ),
-        ],
+        elevation: 0,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
