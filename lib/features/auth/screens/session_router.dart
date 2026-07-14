@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/enums/user_role.dart';
-import '../../student/student_screen.dart';
-import '../../teacher/teacher_screen.dart';
+import '../../student/student_home_screen.dart';
+import '../../teacher/teacher_home_screen.dart';
 import '../services/session_service.dart';
 import 'login_screen.dart';
 import 'role_selection_screen.dart';
@@ -27,15 +27,17 @@ class SessionRouter extends StatelessWidget {
           case UserRole.admin:
           case UserRole.partner:
           case UserRole.teacher:
-            return const TeacherScreen();
+            return const TeacherHomeScreen();
 
           case UserRole.student:
-            return const StudentScreen();
+            return const StudentHomeScreen();
 
           case UserRole.guardian:
             return const Scaffold(
               body: Center(
-                child: Text('Área do responsável em desenvolvimento'),
+                child: Text(
+                  'Área do responsável em desenvolvimento',
+                ),
               ),
             );
 

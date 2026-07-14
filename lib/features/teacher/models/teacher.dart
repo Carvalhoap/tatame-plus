@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import 'screens/teacher_check_in_screen.dart';
 
-class TeacherScreen extends StatelessWidget {
-  const TeacherScreen({super.key});
+class TeacherHomeScreen extends StatelessWidget {
+  const TeacherHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

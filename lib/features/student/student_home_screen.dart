@@ -9,8 +9,8 @@ import '../../core/widgets/graduation_belt_widget.dart';
 import '../graduation/data/mock/student_graduation_progress_mock.dart';
 import '../graduation/models/belt_color.dart';
 
-class StudentScreen extends StatelessWidget {
-  const StudentScreen({super.key});
+class StudentHomeScreen extends StatelessWidget {
+  const StudentHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

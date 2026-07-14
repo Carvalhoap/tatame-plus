@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import 'screens/teacher_check_in_screen.dart';
 
-class TeacherScreen extends StatelessWidget {
-  const TeacherScreen({super.key});
+class TeacherHomeScreen extends StatelessWidget {
+  const TeacherHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -31,8 +31,11 @@ class TeacherScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             const Text(
-              'Aqui você acompanhará presenças, metas e evolução dos alunos.',
-              style: TextStyle(fontSize: 18),
+              'Acompanhe suas turmas, chamadas e a evolução dos alunos.',
+              style: TextStyle(
+                fontSize: 18,
+                height: 1.4,
+              ),
             ),
             const SizedBox(height: 24),
             SizedBox(
@@ -48,7 +51,13 @@ class TeacherScreen extends StatelessWidget {
                   );
                 },
                 icon: const Icon(Icons.qr_code_2),
-                label: const Text('Abrir Check-in'),
+                label: const Text(
+                  'Abrir Check-in',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
           ],

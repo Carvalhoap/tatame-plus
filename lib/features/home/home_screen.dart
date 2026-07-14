@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
-import '../student/student_screen.dart';
-import '../teacher/teacher_screen.dart';
+import '../student/student_home_screen.dart';
+import '../teacher/teacher_home_screen.dart';
 import 'widgets/botao_perfil.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -56,7 +56,7 @@ class HomeScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const TeacherScreen(),
+                      builder: (_) => const TeacherHomeScreen(),
                     ),
                   );
                 },
@@ -72,7 +72,7 @@ class HomeScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const StudentScreen(),
+                      builder: (_) => const StudentHomeScreen(),
                     ),
                   );
                 },

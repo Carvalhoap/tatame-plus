@@ -85,7 +85,7 @@ Classes usam `PascalCase`.
 
 Exemplos:
 
-- `StudentScreen`
+- `StudentHomeScreen`
 - `GraduationCard`
 - `Academy`
 
