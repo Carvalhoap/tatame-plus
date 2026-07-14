@@ -9,6 +9,7 @@ import '../../core/widgets/graduation_belt_widget.dart';
 import '../graduation/data/mock/student_graduation_progress_mock.dart';
 import '../graduation/models/belt_color.dart';
 import '../../core/widgets/app_drawer.dart';
+import 'screens/student_qr_scanner_screen.dart';
 
 class StudentHomeScreen extends StatelessWidget {
   const StudentHomeScreen({super.key});
@@ -46,6 +47,50 @@ class StudentHomeScreen extends StatelessWidget {
               'Cada treino aproxima você da sua próxima evolução.',
               style: TextStyle(fontSize: 18, color: AppColors.grey),
             ),
+
+            const SizedBox(height: 22),
+
+SizedBox(
+  width: double.infinity,
+  height: 58,
+  child: ElevatedButton.icon(
+    onPressed: () async {
+      final checkInConfirmed = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const StudentQrScannerScreen(),
+        ),
+      );
+
+      if (checkInConfirmed == true && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Presença registrada com sucesso! +1 treino.',
+            ),
+          ),
+        );
+      }
+    },
+    icon: const Icon(Icons.qr_code_scanner),
+    label: const Text(
+      'Registrar presença',
+      style: TextStyle(
+        fontSize: 17,
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+    style: ElevatedButton.styleFrom(
+      backgroundColor: AppColors.gracieRed,
+      foregroundColor: AppColors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+    ),
+  ),
+),
+
+const SizedBox(height: 22),
             const SizedBox(height: 24),
 
             MascotCard(mascot: mascot),
