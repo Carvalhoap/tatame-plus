@@ -7,6 +7,7 @@ import '../../teacher/teacher_home_screen.dart';
 import '../services/session_service.dart';
 import 'login_screen.dart';
 import 'role_selection_screen.dart';
+import '../../admin/screens/admin_home_screen.dart';
 
 class SessionRouter extends StatelessWidget {
   const SessionRouter({super.key});
@@ -26,6 +27,8 @@ class SessionRouter extends StatelessWidget {
         switch (session.activeRole) {
           case UserRole.admin:
           case UserRole.partner:
+            return const AdminHomeScreen();
+
           case UserRole.teacher:
             return const TeacherHomeScreen();
 
