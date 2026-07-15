@@ -14,10 +14,12 @@ class StudentQrScannerScreen extends StatefulWidget {
 }
 
 class _StudentQrScannerScreenState extends State<StudentQrScannerScreen> {
-  final MobileScannerController scannerController =
-      MobileScannerController(
-    formats: const [BarcodeFormat.qrCode],
-  );
+ final MobileScannerController scannerController =
+    MobileScannerController(
+  formats: const [BarcodeFormat.qrCode],
+  facing: CameraFacing.back,
+  detectionSpeed: DetectionSpeed.noDuplicates,
+);
 
   bool isProcessing = false;
   bool torchEnabled = false;
@@ -209,7 +211,7 @@ class _StudentQrScannerScreenState extends State<StudentQrScannerScreen> {
             child: Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.72),
+                color: Colors.black.withValues(alpha: 0.72),
                 borderRadius: BorderRadius.circular(18),
               ),
               child: const Column(
