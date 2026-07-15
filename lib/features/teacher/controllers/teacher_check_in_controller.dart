@@ -9,7 +9,9 @@ class TeacherCheckInController extends ChangeNotifier {
 
   TeacherCheckInController({
     required this.repository,
-  });
+  }) {
+    repository.addListener(_onRepositoryChanged);
+  }
 
   CheckInSession? _currentSession;
 
@@ -58,6 +60,7 @@ class TeacherCheckInController extends ChangeNotifier {
     }
 
     _currentSession = repository.findSessionById(session.id);
+
     notifyListeners();
 
     return true;
@@ -66,5 +69,21 @@ class TeacherCheckInController extends ChangeNotifier {
   void clearSession() {
     _currentSession = null;
     notifyListeners();
+  }
+
+  void _onRepositoryChanged() {
+    final session = _currentSession;
+
+    if (session != null) {
+      _currentSession = repository.findSessionById(session.id);
+    }
+
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    repository.removeListener(_onRepositoryChanged);
+    super.dispose();
   }
 }
