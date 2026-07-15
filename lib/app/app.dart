@@ -13,6 +13,7 @@ import '../features/auth/services/session_service.dart';
 import '../features/auth/screens/session_router.dart';
 import '../features/attendance/data/mock/check_in_session_mock_repository.dart';
 import '../features/attendance/repository/check_in_session_repository.dart';
+import '../features/teacher/controllers/teacher_check_in_controller.dart';
 
 class TatameApp extends StatelessWidget {
   const TatameApp({super.key});
@@ -36,6 +37,20 @@ class TatameApp extends StatelessWidget {
         ChangeNotifierProvider<SessionService>(
           create: (_) => SessionService(),
         ),
+        ChangeNotifierProxyProvider<
+          CheckInSessionRepository,
+          TeacherCheckInController>(
+        create: (context) => TeacherCheckInController(
+          repository: context.read<CheckInSessionRepository>(),
+        ),
+        update: (_, repository, controller) {
+          return controller ??
+            TeacherCheckInController(
+          repository: repository,
+          );
+  },
+),
+
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
