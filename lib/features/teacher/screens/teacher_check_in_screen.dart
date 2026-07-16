@@ -1,13 +1,9 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../attendance/models/attendance.dart';
-import '../../attendance/models/check_in_session.dart';
-import '../../attendance/repository/attendance_repository.dart';
+import '../controllers/teacher_check_in_controller.dart';
 
 class TeacherCheckInScreen extends StatefulWidget {
   const TeacherCheckInScreen({super.key});
@@ -19,44 +15,24 @@ class TeacherCheckInScreen extends StatefulWidget {
 
 class _TeacherCheckInScreenState extends State<TeacherCheckInScreen> {
   String selectedClassroom = 'Adulto Noite';
-  CheckInSession? currentSession;
 
-  final List<String> classrooms = [
+  final List<String> classrooms = const [
     'Kids',
     'Adulto Noite',
     'No-Gi',
     'Turma da Manhã',
   ];
 
-  void generateQrCode() {
-    final now = DateTime.now();
-
-    setState(() {
-      currentSession = CheckInSession(
-        id: 'session_${now.millisecondsSinceEpoch}',
-        academyId: 'academy_1',
-        classroomId: selectedClassroom,
-        teacherId: 'teacher_1',
-        createdAt: now,
-        expiresAt: now.add(const Duration(minutes: 5)),
-      );
-    });
+  void generateSession() {
+    context.read<TeacherCheckInController>().createSession(
+          academyId: 'academy_1',
+          classroomId: selectedClassroom,
+          teacherId: 'teacher_1',
+        );
   }
 
   void closeSession() {
-    setState(() {
-      currentSession = null;
-    });
-  }
-
-  String buildQrData(CheckInSession session) {
-    return jsonEncode({
-      'sessionId': session.id,
-      'academyId': session.academyId,
-      'classroomId': session.classroomId,
-      'teacherId': session.teacherId,
-      'expiresAt': session.expiresAt.toIso8601String(),
-    });
+    context.read<TeacherCheckInController>().closeCurrentSession();
   }
 
   String formatTime(DateTime dateTime) {
@@ -68,15 +44,9 @@ class _TeacherCheckInScreenState extends State<TeacherCheckInScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final repository = context.read<AttendanceRepository>();
-    final session = currentSession;
-
-    final List<Attendance> attendances = session == null
-        ? []
-        : repository.getAttendanceBySession(session.id);
-
-    final presentNames = ['Alexandre', 'João', 'Rafael'];
-    final waitingNames = ['Pedro', 'Carlos', 'Bruno'];
+    final controller = context.watch<TeacherCheckInController>();
+    final session = controller.currentSession;
+    final attendances = controller.attendances;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -113,7 +83,10 @@ class _TeacherCheckInScreenState extends State<TeacherCheckInScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Turma', style: _titleStyle),
+                  const Text(
+                    'Turma',
+                    style: _titleStyle,
+                  ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     initialValue: selectedClassroom,
@@ -133,12 +106,15 @@ class _TeacherCheckInScreenState extends State<TeacherCheckInScreen> {
                         )
                         .toList(),
                     onChanged: (value) {
-                      if (value == null) return;
+                      if (value == null) {
+                        return;
+                      }
 
                       setState(() {
                         selectedClassroom = value;
-                        currentSession = null;
                       });
+
+                      controller.clearSession();
                     },
                   ),
                   const SizedBox(height: 20),
@@ -146,12 +122,21 @@ class _TeacherCheckInScreenState extends State<TeacherCheckInScreen> {
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton.icon(
-                      onPressed: generateQrCode,
+                      onPressed: generateSession,
                       icon: const Icon(Icons.qr_code_2),
-                      label: const Text('Gerar QR Code'),
+                      label: const Text(
+                        'Gerar QR Code',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.brandPrimary,
                         foregroundColor: AppColors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                       ),
                     ),
                   ),
@@ -166,21 +151,23 @@ class _TeacherCheckInScreenState extends State<TeacherCheckInScreen> {
                 child: Column(
                   children: [
                     QrImageView(
-                      data: buildQrData(session),
+                      data: session.id,
                       version: QrVersions.auto,
                       size: 220,
                       backgroundColor: AppColors.white,
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      selectedClassroom,
+                      session.classroomId,
                       style: _bigTitleStyle,
                     ),
                     const SizedBox(height: 6),
                     Text(
                       session.isActive
                           ? '🟢 QR Code ativo'
-                          : '🔴 QR Code expirado',
+                          : session.isClosed
+                              ? '🔴 Chamada encerrada'
+                              : '🔴 QR Code expirado',
                       style: TextStyle(
                         color: session.isActive
                             ? AppColors.success
@@ -211,33 +198,37 @@ class _TeacherCheckInScreenState extends State<TeacherCheckInScreen> {
                       style: _titleStyle,
                     ),
                     const SizedBox(height: 12),
-                    ...presentNames.map(
-                      (name) => _StudentRow(
-                        name: name,
-                        present: true,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
 
-              const SizedBox(height: 18),
-
-              _Card(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Aguardando',
-                      style: _titleStyle,
-                    ),
-                    const SizedBox(height: 12),
-                    ...waitingNames.map(
-                      (name) => _StudentRow(
-                        name: name,
-                        present: false,
+                    if (attendances.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 18),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.hourglass_empty,
+                                size: 42,
+                                color: AppColors.grey,
+                              ),
+                              SizedBox(height: 10),
+                              Text(
+                                'Nenhum aluno realizou o check-in ainda.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: AppColors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      ...attendances.map(
+                        (attendance) => _StudentRow(
+                          studentId: attendance.studentId,
+                          dateTime: attendance.dateTime,
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -248,12 +239,22 @@ class _TeacherCheckInScreenState extends State<TeacherCheckInScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton.icon(
-                  onPressed: closeSession,
+                  onPressed: session.isActive ? closeSession : null,
                   icon: const Icon(Icons.check_circle),
-                  label: const Text('Encerrar Chamada'),
+                  label: const Text(
+                    'Encerrar Chamada',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.gracieRed,
                     foregroundColor: AppColors.white,
+                    disabledBackgroundColor: AppColors.grey,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                 ),
               ),
@@ -294,29 +295,33 @@ class _Card extends StatelessWidget {
 }
 
 class _StudentRow extends StatelessWidget {
-  final String name;
-  final bool present;
+  final String studentId;
+  final DateTime dateTime;
 
   const _StudentRow({
-    required this.name,
-    required this.present,
+    required this.studentId,
+    required this.dateTime,
   });
 
   @override
   Widget build(BuildContext context) {
+    final hour = dateTime.hour.toString().padLeft(2, '0');
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: Icon(
-        present
-            ? Icons.check_circle
-            : Icons.radio_button_unchecked,
-        color: present
-            ? AppColors.success
-            : AppColors.grey,
+      leading: const Icon(
+        Icons.check_circle,
+        color: AppColors.success,
       ),
-      title: Text(name),
-      trailing: Text(
-        present ? 'Presente' : 'Aguardando',
+      title: Text(studentId),
+      subtitle: Text('Check-in às $hour:$minute'),
+      trailing: const Text(
+        'Presente',
+        style: TextStyle(
+          color: AppColors.success,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }

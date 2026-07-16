@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
@@ -45,64 +43,33 @@ class _StudentQrScannerScreenState extends State<StudentQrScannerScreen> {
     await scannerController.stop();
 
     try {
-      final decodedData = jsonDecode(rawValue);
+  final sessionId = rawValue.trim();
 
-      if (decodedData is! Map<String, dynamic>) {
-        throw const FormatException('Formato inválido.');
-      }
+  if (sessionId.isEmpty || !sessionId.startsWith('session_')) {
+    throw const FormatException('Sessão inválida.');
+  }
 
-      final sessionId = decodedData['sessionId'] as String?;
-      final academyId = decodedData['academyId'] as String?;
-      final classroomId = decodedData['classroomId'] as String?;
-      final teacherId = decodedData['teacherId'] as String?;
-      final expiresAtText = decodedData['expiresAt'] as String?;
-
-      if (sessionId == null ||
-          academyId == null ||
-          classroomId == null ||
-          teacherId == null ||
-          expiresAtText == null) {
-        throw const FormatException('Dados incompletos.');
-      }
-
-      final expiresAt = DateTime.tryParse(expiresAtText);
-
-      if (expiresAt == null) {
-        throw const FormatException('Validade inválida.');
-      }
-
-      if (DateTime.now().isAfter(expiresAt)) {
-        await showResultDialog(
-          success: false,
-          title: 'Sessão expirada',
-          message:
-              'Este QR Code não está mais válido. Peça ao professor para gerar outro.',
-        );
-
-        return;
-      }
-
-      await showResultDialog(
-        success: true,
-        title: 'Presença confirmada!',
-        message:
-            'Check-in realizado na turma $classroomId.\n\nCada treino conta.',
-      );
-    } on FormatException {
-      await showResultDialog(
-        success: false,
-        title: 'QR Code inválido',
-        message:
-            'Este código não pertence a uma sessão válida do Tatame+.',
-      );
-    } catch (_) {
-      await showResultDialog(
-        success: false,
-        title: 'Não foi possível registrar',
-        message:
-            'Ocorreu um problema ao interpretar o QR Code. Tente novamente.',
-      );
-    }
+  await showResultDialog(
+    success: true,
+    title: 'QR Code reconhecido!',
+    message:
+        'Sessão identificada com sucesso.\n\nAgora vamos registrar sua presença.',
+  );
+} on FormatException {
+  await showResultDialog(
+    success: false,
+    title: 'QR Code inválido',
+    message:
+        'Este código não pertence a uma sessão válida do Tatame+.',
+  );
+} catch (_) {
+  await showResultDialog(
+    success: false,
+    title: 'Não foi possível registrar',
+    message:
+        'Ocorreu um problema ao interpretar o QR Code. Tente novamente.',
+  );
+}
   }
 
   Future<void> showResultDialog({
