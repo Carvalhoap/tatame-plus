@@ -1,10 +1,10 @@
 import '../models/tatame_user.dart';
 
 abstract class AuthRepository {
-  TatameUser? login({
+  Future<TatameUser?> login({
     required String email,
     required String password,
   });
 
-  void logout();
+  Future<void> logout();
 }

@@ -40,10 +40,10 @@ class AuthMockRepository implements AuthRepository {
   TatameUser? _currentUser;
 
   @override
-  TatameUser? login({
+  Future<TatameUser?> login({
     required String email,
     required String password,
-  }) {
+  }) async {
     if (password != '123456') {
       return null;
     }
@@ -60,7 +60,7 @@ class AuthMockRepository implements AuthRepository {
   }
 
   @override
-  void logout() {
+  Future<void> logout() async {
     _currentUser = null;
   }
 }

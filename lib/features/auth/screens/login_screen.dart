@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -33,27 +34,68 @@ class _LoginScreenState extends State<LoginScreen> {
     final authRepository = context.read<AuthRepository>();
     final sessionService = context.read<SessionService>();
 
-    final user = authRepository.login(
-      email: emailController.text.trim(),
-      password: passwordController.text,
-    );
+    try {
+      final user = await authRepository.login(
+        email: emailController.text.trim(),
+        password: passwordController.text,
+      );
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    if (user == null) {
+      if (user == null) {
+        setState(() {
+          isLoading = false;
+          errorMessage = 'E-mail ou senha inválidos.';
+        });
+        return;
+      }
+
+      sessionService.startSession(user);
+
       setState(() {
         isLoading = false;
-        errorMessage = 'E-mail ou senha inválidos.';
       });
+    } on FirebaseAuthException catch (error) {
+      if (!mounted) return;
 
-      return;
+      setState(() {
+        isLoading = false;
+
+        switch (error.code) {
+          case 'invalid-credential':
+          case 'wrong-password':
+          case 'user-not-found':
+            errorMessage = 'E-mail ou senha inválidos.';
+            break;
+
+          case 'user-disabled':
+            errorMessage = 'Este usuário foi desativado.';
+            break;
+
+          case 'too-many-requests':
+            errorMessage =
+                'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
+            break;
+
+          default:
+            errorMessage = 'Não foi possível entrar. Tente novamente.';
+        }
+      });
+    } on StateError catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        isLoading = false;
+        errorMessage = error.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        isLoading = false;
+        errorMessage = 'Não foi possível entrar. Tente novamente.';
+      });
     }
-
-    sessionService.startSession(user);
-
-    setState(() {
-      isLoading = false;
-    });
   }
 
   @override
@@ -80,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 16,
                     offset: const Offset(0, 8),
                   ),
@@ -114,7 +156,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 32),
-
                   TextField(
                     controller: emailController,
                     keyboardType: TextInputType.emailAddress,
@@ -126,9 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 18),
-
                   TextField(
                     controller: passwordController,
                     obscureText: true,
@@ -141,7 +180,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     onSubmitted: (_) => login(),
                   ),
-
                   if (errorMessage != null) ...[
                     const SizedBox(height: 14),
                     Text(
@@ -153,9 +191,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ],
-
                   const SizedBox(height: 24),
-
                   SizedBox(
                     height: 56,
                     child: ElevatedButton(
@@ -180,9 +216,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                     ),
                   ),
-
                   const SizedBox(height: 18),
-
                   const Text(
                     'Modo demonstração',
                     textAlign: TextAlign.center,
