@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../core/theme/app_theme.dart';
 
-import '../features/auth/data/mock/auth_mock_repository.dart';
+import '../features/auth/data/firebase/firebase_auth_repository.dart';
 import '../features/auth/repository/auth_repository.dart';
 import '../features/auth/services/session_service.dart';
 import '../features/auth/screens/session_router.dart';
@@ -32,7 +32,7 @@ class TatamePlusApp extends StatelessWidget {
         /// -------------------------
 
         Provider<AuthRepository>(
-          create: (_) => AuthMockRepository(),
+          create: (_) => FirebaseAuthRepository(),
         ),
 
         ChangeNotifierProvider(
