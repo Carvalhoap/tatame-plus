@@ -36,18 +36,16 @@ class _SessionRouterState extends State<SessionRouter> {
     try {
       final user = await authRepository.restoreSession();
 
-      if (!mounted) return;
-
-      if (user != null) {
+      if (mounted && user != null) {
         sessionService.startSession(user);
       }
     } catch (error, stackTrace) {
       debugPrint('Não foi possível restaurar a sessão.');
       debugPrint('Erro: $error');
       debugPrintStack(stackTrace: stackTrace);
-    } finally {
-      if (!mounted) return;
+    }
 
+    if (mounted) {
       setState(() {
         isRestoringSession = false;
       });

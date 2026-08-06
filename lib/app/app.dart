@@ -5,8 +5,8 @@ import '../core/theme/app_theme.dart';
 
 import '../features/auth/data/firebase/firebase_auth_repository.dart';
 import '../features/auth/repository/auth_repository.dart';
-import '../features/auth/services/session_service.dart';
 import '../features/auth/screens/session_router.dart';
+import '../features/auth/services/session_service.dart';
 
 import '../features/student/data/mock/student_mock_repository.dart';
 import '../features/student/repository/student_repository.dart';
@@ -19,6 +19,9 @@ import '../features/attendance/repository/check_in_session_repository.dart';
 
 import '../features/teacher/controllers/teacher_check_in_controller.dart';
 
+import '../features/users/data/firebase/firestore_user_repository.dart';
+import '../features/users/repository/user_repository.dart';
+
 class TatamePlusApp extends StatelessWidget {
   const TatamePlusApp({super.key});
 
@@ -26,21 +29,14 @@ class TatamePlusApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        /// -------------------------
-        /// AUTH
-        /// -------------------------
         Provider<AuthRepository>(create: (_) => FirebaseAuthRepository()),
 
         ChangeNotifierProvider(create: (_) => SessionService()),
 
-        /// -------------------------
-        /// STUDENTS
-        /// -------------------------
+        Provider<UserRepository>(create: (_) => FirestoreUserRepository()),
+
         Provider<StudentRepository>(create: (_) => StudentMockRepository()),
 
-        /// -------------------------
-        /// ATTENDANCE
-        /// -------------------------
         Provider<AttendanceRepository>(
           create: (_) => AttendanceMockRepository(),
         ),
@@ -49,9 +45,6 @@ class TatamePlusApp extends StatelessWidget {
           create: (_) => CheckInSessionMockRepository(),
         ),
 
-        /// -------------------------
-        /// TEACHER
-        /// -------------------------
         ChangeNotifierProxyProvider<
           CheckInSessionRepository,
           TeacherCheckInController
@@ -65,7 +58,6 @@ class TatamePlusApp extends StatelessWidget {
           },
         ),
       ],
-
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Tatame+',

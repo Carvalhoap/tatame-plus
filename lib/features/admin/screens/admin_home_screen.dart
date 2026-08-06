@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_drawer.dart';
 import '../../auth/services/session_service.dart';
+import '../../users/screens/users_screen.dart';
 
 class AdminHomeScreen extends StatelessWidget {
   const AdminHomeScreen({super.key});
@@ -48,33 +49,44 @@ class AdminHomeScreen extends StatelessWidget {
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
               childAspectRatio: 1.1,
-              children: const [
+              children: [
                 _AdminCard(
+                  title: 'Usuários',
+                  subtitle: 'Cadastros e permissões',
+                  icon: Icons.manage_accounts,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const UsersScreen()),
+                    );
+                  },
+                ),
+                const _AdminCard(
                   title: 'Alunos',
-                  subtitle: 'Cadastros e vínculos',
+                  subtitle: 'Dados e vínculos esportivos',
                   icon: Icons.groups,
                 ),
-                _AdminCard(
+                const _AdminCard(
                   title: 'Professores',
                   subtitle: 'Equipe e permissões',
                   icon: Icons.school,
                 ),
-                _AdminCard(
+                const _AdminCard(
                   title: 'Turmas',
                   subtitle: 'Horários e organização',
                   icon: Icons.calendar_month,
                 ),
-                _AdminCard(
+                const _AdminCard(
                   title: 'Financeiro',
                   subtitle: 'Planos e pagamentos',
                   icon: Icons.payments_outlined,
                 ),
-                _AdminCard(
+                const _AdminCard(
                   title: 'Graduações',
                   subtitle: 'Aptos e progressão',
                   icon: Icons.sports_martial_arts,
                 ),
-                _AdminCard(
+                const _AdminCard(
                   title: 'Relatórios',
                   subtitle: 'Presenças e indicadores',
                   icon: Icons.bar_chart,
@@ -92,11 +104,13 @@ class _AdminCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
+  final VoidCallback? onTap;
 
   const _AdminCard({
     required this.title,
     required this.subtitle,
     required this.icon,
+    this.onTap,
   });
 
   @override
@@ -106,7 +120,7 @@ class _AdminCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(20),
       elevation: 2,
       child: InkWell(
-        onTap: () {},
+        onTap: onTap,
         borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.all(18),
