@@ -1,1 +1,40 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"tatame-plus","appId":"1:14520324998:android:eccfb97a205b84ddf55207","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"tatame-plus","configurations":{"android":"1:14520324998:android:eccfb97a205b84ddf55207","web":"1:14520324998:web:a383a31f85149dd1f55207"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "tatame-plus",
+          "appId": "1:14520324998:android:eccfb97a205b84ddf55207",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "tatame-plus",
+          "configurations": {
+            "android": "1:14520324998:android:eccfb97a205b84ddf55207",
+            "web": "1:14520324998:web:a383a31f85149dd1f55207"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "disallowLegacyRuntimeConfig": true,
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint",
+        "npm --prefix \"$RESOURCE_DIR\" run build"
+      ]
+    }
+  ]
+}
