@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../../../core/enums/user_role.dart';
 import '../../models/tatame_user.dart';
@@ -31,15 +32,30 @@ class FirebaseAuthRepository implements AuthRepository {
       return null;
     }
 
+    debugPrint('==========================');
+    debugPrint('LOGIN FIREBASE REALIZADO');
+    debugPrint('UID: ${firebaseUser.uid}');
+    debugPrint('E-MAIL: ${firebaseUser.email}');
+    debugPrint('==========================');
+
     return _loadTatameUser(firebaseUser.uid);
   }
 
   Future<TatameUser?> _loadTatameUser(String uid) async {
-    final userSnapshot =
-        await firestore.collection('users').doc(uid).get();
+    final userSnapshot = await firestore
+        .collection('users')
+        .doc(uid)
+        .get();
+
+    debugPrint('==========================');
+    debugPrint('BUSCA DO USUÁRIO NO FIRESTORE');
+    debugPrint('CAMINHO: users/$uid');
+    debugPrint('EXISTE: ${userSnapshot.exists}');
+    debugPrint('==========================');
 
     if (!userSnapshot.exists) {
       await firebaseAuth.signOut();
+
       throw StateError(
         'O usuário está autenticado, mas não possui cadastro no Tatame+.',
       );
@@ -49,6 +65,7 @@ class FirebaseAuthRepository implements AuthRepository {
 
     if (userData == null || userData['isActive'] != true) {
       await firebaseAuth.signOut();
+
       throw StateError(
         'Este usuário não está ativo no Tatame+.',
       );
@@ -58,6 +75,7 @@ class FirebaseAuthRepository implements AuthRepository {
 
     if (academyId == null) {
       await firebaseAuth.signOut();
+
       throw StateError(
         'Este usuário não está vinculado a nenhuma academia.',
       );
@@ -70,12 +88,19 @@ class FirebaseAuthRepository implements AuthRepository {
         .doc(uid)
         .get();
 
+    debugPrint('==========================');
+    debugPrint('BUSCA DO MEMBRO NO FIRESTORE');
+    debugPrint('CAMINHO: academies/$academyId/members/$uid');
+    debugPrint('EXISTE: ${memberSnapshot.exists}');
+    debugPrint('==========================');
+
     final memberData = memberSnapshot.data();
 
     if (!memberSnapshot.exists ||
         memberData == null ||
         memberData['status'] != 'active') {
       await firebaseAuth.signOut();
+
       throw StateError(
         'O vínculo deste usuário com a academia não está ativo.',
       );
@@ -85,6 +110,7 @@ class FirebaseAuthRepository implements AuthRepository {
 
     if (roles.isEmpty) {
       await firebaseAuth.signOut();
+
       throw StateError(
         'Este usuário não possui perfil de acesso autorizado.',
       );
@@ -106,6 +132,9 @@ class FirebaseAuthRepository implements AuthRepository {
     ];
 
     for (final academyId in knownAcademies) {
+      debugPrint('----------------------------');
+      debugPrint('Procurando academia: $academyId');
+
       final memberSnapshot = await firestore
           .collection('academies')
           .doc(academyId)
@@ -113,11 +142,20 @@ class FirebaseAuthRepository implements AuthRepository {
           .doc(uid)
           .get();
 
+      debugPrint(
+        'Caminho consultado: academies/$academyId/members/$uid',
+      );
+      debugPrint(
+        'Documento encontrado: ${memberSnapshot.exists}',
+      );
+
       if (memberSnapshot.exists) {
+        debugPrint('ACADEMIA ENCONTRADA!');
         return academyId;
       }
     }
 
+    debugPrint('NENHUMA ACADEMIA ENCONTRADA');
     return null;
   }
 

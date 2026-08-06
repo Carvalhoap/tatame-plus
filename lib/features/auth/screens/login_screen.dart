@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -14,18 +15,15 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final emailController = TextEditingController(
-    text: 'alexandre@tatameplus.app',
-  );
-
-  final passwordController = TextEditingController(
-    text: '123456',
-  );
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
 
   bool isLoading = false;
   String? errorMessage;
 
   Future<void> login() async {
+    if (isLoading) return;
+
     setState(() {
       isLoading = true;
       errorMessage = null;
@@ -45,7 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (user == null) {
         setState(() {
           isLoading = false;
-          errorMessage = 'E-mail ou senha inválidos.';
+          errorMessage = 'O usuário não pôde ser carregado.';
         });
         return;
       }
@@ -56,44 +54,42 @@ class _LoginScreenState extends State<LoginScreen> {
         isLoading = false;
       });
     } on FirebaseAuthException catch (error) {
+      debugPrint('==========================');
+      debugPrint('FirebaseAuthException');
+      debugPrint('Code: ${error.code}');
+      debugPrint('Message: ${error.message}');
+      debugPrint('==========================');
+
       if (!mounted) return;
 
       setState(() {
         isLoading = false;
-
-        switch (error.code) {
-          case 'invalid-credential':
-          case 'wrong-password':
-          case 'user-not-found':
-            errorMessage = 'E-mail ou senha inválidos.';
-            break;
-
-          case 'user-disabled':
-            errorMessage = 'Este usuário foi desativado.';
-            break;
-
-          case 'too-many-requests':
-            errorMessage =
-                'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
-            break;
-
-          default:
-            errorMessage = 'Não foi possível entrar. Tente novamente.';
-        }
+        errorMessage = '${error.code}\n${error.message ?? ''}';
       });
     } on StateError catch (error) {
+      debugPrint('==========================');
+      debugPrint('StateError');
+      debugPrint('Message: ${error.message}');
+      debugPrint('==========================');
+
       if (!mounted) return;
 
       setState(() {
         isLoading = false;
         errorMessage = error.message;
       });
-    } catch (_) {
+    } catch (error, stackTrace) {
+      debugPrint('==========================');
+      debugPrint('Erro inesperado no login');
+      debugPrint('Error: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      debugPrint('==========================');
+
       if (!mounted) return;
 
       setState(() {
         isLoading = false;
-        errorMessage = 'Não foi possível entrar. Tente novamente.';
+        errorMessage = 'Erro inesperado: $error';
       });
     }
   }
@@ -159,6 +155,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextField(
                     controller: emailController,
                     keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    autocorrect: false,
                     decoration: InputDecoration(
                       labelText: 'E-mail',
                       prefixIcon: const Icon(Icons.email_outlined),
@@ -171,6 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextField(
                     controller: passwordController,
                     obscureText: true,
+                    textInputAction: TextInputAction.done,
                     decoration: InputDecoration(
                       labelText: 'Senha',
                       prefixIcon: const Icon(Icons.lock_outline),
@@ -214,15 +213,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  const Text(
-                    'Modo demonstração',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppColors.grey,
-                      fontSize: 13,
                     ),
                   ),
                 ],

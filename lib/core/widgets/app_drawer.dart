@@ -66,7 +66,7 @@ class AppDrawer extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
+                      color: Colors.white.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -101,7 +101,7 @@ class AppDrawer extends StatelessWidget {
                     (role) => ListTile(
                       selected: activeRole == role,
                       selectedTileColor:
-                          AppColors.brandPrimary.withOpacity(0.08),
+                          AppColors.brandPrimary.withValues(alpha: 0.08),
                       leading: Icon(
                         _roleIcon(role),
                         color: activeRole == role
