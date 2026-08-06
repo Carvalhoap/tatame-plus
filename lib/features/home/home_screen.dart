@@ -40,10 +40,7 @@ class HomeScreen extends StatelessWidget {
 
               const Text(
                 'Evolução começa aqui',
-                style: TextStyle(
-                  fontSize: 18,
-                  color: AppColors.grey,
-                ),
+                style: TextStyle(fontSize: 18, color: AppColors.grey),
               ),
 
               const SizedBox(height: 40),
@@ -84,10 +81,7 @@ class HomeScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.pushNamed(context, '/about');
                 },
-                icon: const Icon(
-                  Icons.info_outline,
-                  color: AppColors.grey,
-                ),
+                icon: const Icon(Icons.info_outline, color: AppColors.grey),
                 label: const Text(
                   'Sobre o Tatame+',
                   style: TextStyle(

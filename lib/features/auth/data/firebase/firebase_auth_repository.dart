@@ -13,8 +13,8 @@ class FirebaseAuthRepository implements AuthRepository {
   FirebaseAuthRepository({
     FirebaseAuth? firebaseAuth,
     FirebaseFirestore? firestore,
-  })  : firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
-        firestore = firestore ?? FirebaseFirestore.instance;
+  }) : firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
+       firestore = firestore ?? FirebaseFirestore.instance;
 
   @override
   Future<TatameUser?> login({
@@ -41,17 +41,29 @@ class FirebaseAuthRepository implements AuthRepository {
     return _loadTatameUser(firebaseUser.uid);
   }
 
-  Future<TatameUser?> _loadTatameUser(String uid) async {
-    final userSnapshot = await firestore
-        .collection('users')
-        .doc(uid)
-        .get();
+  @override
+  Future<TatameUser?> restoreSession() async {
+    final firebaseUser = firebaseAuth.currentUser;
+
+    if (firebaseUser == null) {
+      return null;
+    }
 
     debugPrint('==========================');
-    debugPrint('BUSCA DO USUÁRIO NO FIRESTORE');
-    debugPrint('CAMINHO: users/$uid');
-    debugPrint('EXISTE: ${userSnapshot.exists}');
+    debugPrint('RESTAURANDO SESSÃO');
+    debugPrint('UID: ${firebaseUser.uid}');
     debugPrint('==========================');
+
+    try {
+      return await _loadTatameUser(firebaseUser.uid);
+    } catch (_) {
+      await firebaseAuth.signOut();
+      return null;
+    }
+  }
+
+  Future<TatameUser?> _loadTatameUser(String uid) async {
+    final userSnapshot = await firestore.collection('users').doc(uid).get();
 
     if (!userSnapshot.exists) {
       await firebaseAuth.signOut();
@@ -66,9 +78,7 @@ class FirebaseAuthRepository implements AuthRepository {
     if (userData == null || userData['isActive'] != true) {
       await firebaseAuth.signOut();
 
-      throw StateError(
-        'Este usuário não está ativo no Tatame+.',
-      );
+      throw StateError('Este usuário não está ativo no Tatame+.');
     }
 
     final academyId = await _findUserAcademy(uid);
@@ -76,9 +86,7 @@ class FirebaseAuthRepository implements AuthRepository {
     if (academyId == null) {
       await firebaseAuth.signOut();
 
-      throw StateError(
-        'Este usuário não está vinculado a nenhuma academia.',
-      );
+      throw StateError('Este usuário não está vinculado a nenhuma academia.');
     }
 
     final memberSnapshot = await firestore
@@ -87,12 +95,6 @@ class FirebaseAuthRepository implements AuthRepository {
         .collection('members')
         .doc(uid)
         .get();
-
-    debugPrint('==========================');
-    debugPrint('BUSCA DO MEMBRO NO FIRESTORE');
-    debugPrint('CAMINHO: academies/$academyId/members/$uid');
-    debugPrint('EXISTE: ${memberSnapshot.exists}');
-    debugPrint('==========================');
 
     final memberData = memberSnapshot.data();
 
@@ -111,9 +113,7 @@ class FirebaseAuthRepository implements AuthRepository {
     if (roles.isEmpty) {
       await firebaseAuth.signOut();
 
-      throw StateError(
-        'Este usuário não possui perfil de acesso autorizado.',
-      );
+      throw StateError('Este usuário não possui perfil de acesso autorizado.');
     }
 
     return TatameUser(
@@ -127,14 +127,9 @@ class FirebaseAuthRepository implements AuthRepository {
   }
 
   Future<String?> _findUserAcademy(String uid) async {
-    const knownAcademies = [
-      'gracie-barra-neves',
-    ];
+    const knownAcademies = ['gracie-barra-neves'];
 
     for (final academyId in knownAcademies) {
-      debugPrint('----------------------------');
-      debugPrint('Procurando academia: $academyId');
-
       final memberSnapshot = await firestore
           .collection('academies')
           .doc(academyId)
@@ -142,20 +137,11 @@ class FirebaseAuthRepository implements AuthRepository {
           .doc(uid)
           .get();
 
-      debugPrint(
-        'Caminho consultado: academies/$academyId/members/$uid',
-      );
-      debugPrint(
-        'Documento encontrado: ${memberSnapshot.exists}',
-      );
-
       if (memberSnapshot.exists) {
-        debugPrint('ACADEMIA ENCONTRADA!');
         return academyId;
       }
     }
 
-    debugPrint('NENHUMA ACADEMIA ENCONTRADA');
     return null;
   }
 
@@ -166,31 +152,17 @@ class FirebaseAuthRepository implements AuthRepository {
 
     final roles = <UserRole>[];
 
-    if (rawRoles['admin'] == true) {
-      roles.add(UserRole.admin);
-    }
-
-    if (rawRoles['partner'] == true) {
-      roles.add(UserRole.partner);
-    }
-
-    if (rawRoles['teacher'] == true) {
-      roles.add(UserRole.teacher);
-    }
-
-    if (rawRoles['student'] == true) {
-      roles.add(UserRole.student);
-    }
-
-    if (rawRoles['guardian'] == true) {
-      roles.add(UserRole.guardian);
-    }
+    if (rawRoles['admin'] == true) roles.add(UserRole.admin);
+    if (rawRoles['partner'] == true) roles.add(UserRole.partner);
+    if (rawRoles['teacher'] == true) roles.add(UserRole.teacher);
+    if (rawRoles['student'] == true) roles.add(UserRole.student);
+    if (rawRoles['guardian'] == true) roles.add(UserRole.guardian);
 
     return roles;
   }
 
   @override
-  Future<void> logout() {
-    return firebaseAuth.signOut();
+  Future<void> logout() async {
+    await firebaseAuth.signOut();
   }
 }

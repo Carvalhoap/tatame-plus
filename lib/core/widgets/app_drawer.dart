@@ -55,10 +55,7 @@ class AppDrawer extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     user.email,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                    ),
+                    style: const TextStyle(color: Colors.white70, fontSize: 13),
                   ),
                   const SizedBox(height: 12),
                   Container(
@@ -101,8 +98,9 @@ class AppDrawer extends StatelessWidget {
                   ...user.roles.map(
                     (role) => ListTile(
                       selected: activeRole == role,
-                      selectedTileColor:
-                          AppColors.brandPrimary.withValues(alpha: 0.08),
+                      selectedTileColor: AppColors.brandPrimary.withValues(
+                        alpha: 0.08,
+                      ),
                       leading: Icon(
                         _roleIcon(role),
                         color: activeRole == role
@@ -156,10 +154,7 @@ class AppDrawer extends StatelessWidget {
             const Divider(height: 1),
 
             ListTile(
-              leading: const Icon(
-                Icons.logout,
-                color: AppColors.gracieRed,
-              ),
+              leading: const Icon(Icons.logout, color: AppColors.gracieRed),
               title: const Text(
                 'Sair',
                 style: TextStyle(

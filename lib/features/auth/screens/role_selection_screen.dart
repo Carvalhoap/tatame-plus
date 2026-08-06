@@ -28,12 +28,12 @@ class RoleSelectionScreen extends StatelessWidget {
           IconButton(
             tooltip: 'Sair',
             onPressed: () async {
-  await context.read<AuthRepository>().logout();
+              await context.read<AuthRepository>().logout();
 
-  if (!context.mounted) return;
+              if (!context.mounted) return;
 
-  session.endSession();
-},
+              session.endSession();
+            },
             icon: const Icon(Icons.logout),
           ),
         ],
@@ -58,10 +58,7 @@ class RoleSelectionScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 const Text(
                   'Como você deseja acessar o Tatame+ agora?',
-                  style: TextStyle(
-                    fontSize: 17,
-                    color: AppColors.grey,
-                  ),
+                  style: TextStyle(fontSize: 17, color: AppColors.grey),
                 ),
                 const SizedBox(height: 28),
                 ...user.roles.map(
@@ -88,10 +85,7 @@ class _RoleCard extends StatelessWidget {
   final UserRole role;
   final VoidCallback onTap;
 
-  const _RoleCard({
-    required this.role,
-    required this.onTap,
-  });
+  const _RoleCard({required this.role, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -109,11 +103,7 @@ class _RoleCard extends StatelessWidget {
               CircleAvatar(
                 radius: 28,
                 backgroundColor: AppColors.brandPrimary,
-                child: Icon(
-                  _roleIcon(role),
-                  color: AppColors.white,
-                  size: 28,
-                ),
+                child: Icon(_roleIcon(role), color: AppColors.white, size: 28),
               ),
               const SizedBox(width: 18),
               Expanded(
@@ -139,10 +129,7 @@ class _RoleCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(
-                Icons.chevron_right,
-                color: AppColors.grey,
-              ),
+              const Icon(Icons.chevron_right, color: AppColors.grey),
             ],
           ),
         ),

@@ -2,10 +2,8 @@ import '../../models/attendance.dart';
 import '../../repository/attendance_repository.dart';
 
 class AttendanceMockRepository implements AttendanceRepository {
-
   @override
   List<Attendance> getAttendanceBySession(String checkInSessionId) {
-
     return [
       Attendance(
         id: '1',

@@ -32,9 +32,7 @@ class CheckInSession {
     return expiresAt.difference(DateTime.now());
   }
 
-  CheckInSession copyWith({
-    DateTime? closedAt,
-  }) {
+  CheckInSession copyWith({DateTime? closedAt}) {
     return CheckInSession(
       id: id,
       academyId: academyId,

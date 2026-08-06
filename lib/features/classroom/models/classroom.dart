@@ -3,7 +3,7 @@ class Classroom {
   final String academyId;
   final String name;
   final List<String> teacherIds;
-
+  final List<String> studentIds;
   final String description;
   final bool isActive;
 
@@ -11,9 +11,9 @@ class Classroom {
     required this.id,
     required this.academyId,
     required this.name,
-    required this.teacherIds,
-    required this.studentIds,
-    required this.description,
+    this.teacherIds = const [],
+    this.studentIds = const [],
+    this.description = '',
     this.isActive = true,
   });
 }

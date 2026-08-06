@@ -1,6 +1,1 @@
-enum ProgressionCriterion {
-  attendance,
-  time,
-  attendanceAndTime,
-  manual,
-}
+enum ProgressionCriterion { attendance, time, attendanceAndTime, manual }

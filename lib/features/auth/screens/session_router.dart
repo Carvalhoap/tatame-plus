@@ -38,9 +38,7 @@ class SessionRouter extends StatelessWidget {
           case UserRole.guardian:
             return const Scaffold(
               body: Center(
-                child: Text(
-                  'Área do responsável em desenvolvimento',
-                ),
+                child: Text('Área do responsável em desenvolvimento'),
               ),
             );
 

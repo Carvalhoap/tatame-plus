@@ -60,10 +60,7 @@ class AboutScreen extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 28),
-                _InformationRow(
-                  label: 'Versão',
-                  value: AppInfo.version,
-                ),
+                _InformationRow(label: 'Versão', value: AppInfo.version),
                 _InformationRow(
                   label: 'Data da versão',
                   value: AppInfo.releaseDate,
@@ -114,10 +111,7 @@ class _InformationRow extends StatelessWidget {
   final String label;
   final String value;
 
-  const _InformationRow({
-    required this.label,
-    required this.value,
-  });
+  const _InformationRow({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -126,15 +120,9 @@ class _InformationRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(color: AppColors.grey),
-            ),
+            child: Text(label, style: const TextStyle(color: AppColors.grey)),
           ),
-          Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
         ],
       ),
     );

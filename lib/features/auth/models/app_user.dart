@@ -1,4 +1,4 @@
-import '../../academy/models/user_role.dart';
+import '../../../core/enums/user_role.dart';
 
 class AppUser {
   final String id;

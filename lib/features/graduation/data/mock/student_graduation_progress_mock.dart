@@ -10,11 +10,7 @@ final studentGraduationProgressMock = StudentGraduationProgress(
   stageStartedAt: DateTime(2026, 4, 1),
   validAttendances: 12,
   stripes: const [
-    StripeProgress(
-      color: StripeColor.white,
-      earned: 2,
-      total: 4,
-    ),
+    StripeProgress(color: StripeColor.white, earned: 2, total: 4),
   ],
   estimatedCompletionDate: DateTime(2026, 8, 1),
 );

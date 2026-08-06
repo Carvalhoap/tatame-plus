@@ -9,8 +9,7 @@ class TeacherCheckInScreen extends StatefulWidget {
   const TeacherCheckInScreen({super.key});
 
   @override
-  State<TeacherCheckInScreen> createState() =>
-      _TeacherCheckInScreenState();
+  State<TeacherCheckInScreen> createState() => _TeacherCheckInScreenState();
 }
 
 class _TeacherCheckInScreenState extends State<TeacherCheckInScreen> {
@@ -25,10 +24,10 @@ class _TeacherCheckInScreenState extends State<TeacherCheckInScreen> {
 
   void generateSession() {
     context.read<TeacherCheckInController>().createSession(
-          academyId: 'academy_1',
-          classroomId: selectedClassroom,
-          teacherId: 'teacher_1',
-        );
+      academyId: 'academy_1',
+      classroomId: selectedClassroom,
+      teacherId: 'teacher_1',
+    );
   }
 
   void closeSession() {
@@ -72,10 +71,7 @@ class _TeacherCheckInScreenState extends State<TeacherCheckInScreen> {
             const SizedBox(height: 8),
             const Text(
               'Gere o QR Code e acompanhe os alunos entrando na aula.',
-              style: TextStyle(
-                fontSize: 17,
-                color: AppColors.grey,
-              ),
+              style: TextStyle(fontSize: 17, color: AppColors.grey),
             ),
             const SizedBox(height: 24),
 
@@ -83,10 +79,7 @@ class _TeacherCheckInScreenState extends State<TeacherCheckInScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Turma',
-                    style: _titleStyle,
-                  ),
+                  const Text('Turma', style: _titleStyle),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     initialValue: selectedClassroom,
@@ -157,17 +150,14 @@ class _TeacherCheckInScreenState extends State<TeacherCheckInScreen> {
                       backgroundColor: AppColors.white,
                     ),
                     const SizedBox(height: 10),
-                    Text(
-                      session.classroomId,
-                      style: _bigTitleStyle,
-                    ),
+                    Text(session.classroomId, style: _bigTitleStyle),
                     const SizedBox(height: 6),
                     Text(
                       session.isActive
                           ? '🟢 QR Code ativo'
                           : session.isClosed
-                              ? '🔴 Chamada encerrada'
-                              : '🔴 QR Code expirado',
+                          ? '🔴 Chamada encerrada'
+                          : '🔴 QR Code expirado',
                       style: TextStyle(
                         color: session.isActive
                             ? AppColors.success
@@ -214,9 +204,7 @@ class _TeacherCheckInScreenState extends State<TeacherCheckInScreen> {
                               Text(
                                 'Nenhum aluno realizou o check-in ainda.',
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: AppColors.grey,
-                                ),
+                                style: TextStyle(color: AppColors.grey),
                               ),
                             ],
                           ),
@@ -243,10 +231,7 @@ class _TeacherCheckInScreenState extends State<TeacherCheckInScreen> {
                   icon: const Icon(Icons.check_circle),
                   label: const Text(
                     'Encerrar Chamada',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.gracieRed,
@@ -269,9 +254,7 @@ class _TeacherCheckInScreenState extends State<TeacherCheckInScreen> {
 class _Card extends StatelessWidget {
   final Widget child;
 
-  const _Card({
-    required this.child,
-  });
+  const _Card({required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -298,10 +281,7 @@ class _StudentRow extends StatelessWidget {
   final String studentId;
   final DateTime dateTime;
 
-  const _StudentRow({
-    required this.studentId,
-    required this.dateTime,
-  });
+  const _StudentRow({required this.studentId, required this.dateTime});
 
   @override
   Widget build(BuildContext context) {
@@ -310,18 +290,12 @@ class _StudentRow extends StatelessWidget {
 
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: const Icon(
-        Icons.check_circle,
-        color: AppColors.success,
-      ),
+      leading: const Icon(Icons.check_circle, color: AppColors.success),
       title: Text(studentId),
       subtitle: Text('Check-in às $hour:$minute'),
       trailing: const Text(
         'Presente',
-        style: TextStyle(
-          color: AppColors.success,
-          fontWeight: FontWeight.bold,
-        ),
+        style: TextStyle(color: AppColors.success, fontWeight: FontWeight.bold),
       ),
     );
   }

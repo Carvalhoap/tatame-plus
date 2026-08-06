@@ -1,10 +1,6 @@
 import 'graduation_stage.dart';
 
-enum GraduationAudience {
-  kids,
-  adult,
-  custom,
-}
+enum GraduationAudience { kids, adult, custom }
 
 class GraduationProgram {
   final String id;

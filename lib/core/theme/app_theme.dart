@@ -8,8 +8,6 @@ class AppTheme {
 
     scaffoldBackgroundColor: AppColors.background,
 
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: AppColors.brandPrimary,
-    ),
+    colorScheme: ColorScheme.fromSeed(seedColor: AppColors.brandPrimary),
   );
 }

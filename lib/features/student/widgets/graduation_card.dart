@@ -5,10 +5,7 @@ import '../models/student.dart';
 class GraduationCard extends StatelessWidget {
   final Student student;
 
-  const GraduationCard({
-    super.key,
-    required this.student,
-  });
+  const GraduationCard({super.key, required this.student});
 
   @override
   Widget build(BuildContext context) {

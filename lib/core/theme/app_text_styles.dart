@@ -26,10 +26,7 @@ class AppTextStyles {
     color: AppColors.grey,
   );
 
-  static const TextStyle body = TextStyle(
-    fontSize: 16,
-    color: AppColors.black,
-  );
+  static const TextStyle body = TextStyle(fontSize: 16, color: AppColors.black);
 
   static const TextStyle button = TextStyle(
     fontSize: 18,

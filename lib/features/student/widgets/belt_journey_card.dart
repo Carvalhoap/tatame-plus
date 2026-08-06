@@ -62,8 +62,9 @@ class BeltJourneyCard extends StatelessWidget {
                       belt.name,
                       style: TextStyle(
                         fontSize: 12,
-                        fontWeight:
-                            belt.isCurrent ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: belt.isCurrent
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                     ),
                     Text(
@@ -81,11 +82,7 @@ class BeltJourneyCard extends StatelessWidget {
           const SizedBox(height: 14),
           const Text(
             'Você está no início da jornada. Cada treino aproxima você da próxima versão.',
-            style: TextStyle(
-              fontSize: 15,
-              color: AppColors.grey,
-              height: 1.4,
-            ),
+            style: TextStyle(fontSize: 15, color: AppColors.grey, height: 1.4),
           ),
         ],
       ),

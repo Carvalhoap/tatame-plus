@@ -25,10 +25,7 @@ class BotaoPerfil extends StatelessWidget {
         icon: Icon(icone, size: 28),
         label: Text(
           texto,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: cor,

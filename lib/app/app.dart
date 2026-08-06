@@ -26,31 +26,21 @@ class TatamePlusApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-
         /// -------------------------
         /// AUTH
         /// -------------------------
+        Provider<AuthRepository>(create: (_) => FirebaseAuthRepository()),
 
-        Provider<AuthRepository>(
-          create: (_) => FirebaseAuthRepository(),
-        ),
-
-        ChangeNotifierProvider(
-          create: (_) => SessionService(),
-        ),
+        ChangeNotifierProvider(create: (_) => SessionService()),
 
         /// -------------------------
         /// STUDENTS
         /// -------------------------
-
-        Provider<StudentRepository>(
-          create: (_) => StudentMockRepository(),
-        ),
+        Provider<StudentRepository>(create: (_) => StudentMockRepository()),
 
         /// -------------------------
         /// ATTENDANCE
         /// -------------------------
-
         Provider<AttendanceRepository>(
           create: (_) => AttendanceMockRepository(),
         ),
@@ -62,18 +52,16 @@ class TatamePlusApp extends StatelessWidget {
         /// -------------------------
         /// TEACHER
         /// -------------------------
-
         ChangeNotifierProxyProvider<
-            CheckInSessionRepository,
-            TeacherCheckInController>(
+          CheckInSessionRepository,
+          TeacherCheckInController
+        >(
           create: (context) => TeacherCheckInController(
             repository: context.read<CheckInSessionRepository>(),
           ),
           update: (_, repository, controller) {
             return controller ??
-                TeacherCheckInController(
-                  repository: repository,
-                );
+                TeacherCheckInController(repository: repository);
           },
         ),
       ],

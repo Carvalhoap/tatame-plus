@@ -7,9 +7,7 @@ import '../../attendance/repository/check_in_session_repository.dart';
 class TeacherCheckInController extends ChangeNotifier {
   final CheckInSessionRepository repository;
 
-  TeacherCheckInController({
-    required this.repository,
-  }) {
+  TeacherCheckInController({required this.repository}) {
     repository.addListener(_onRepositoryChanged);
   }
 

@@ -1,5 +1,4 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -43,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (user == null) {
         setState(() {
           isLoading = false;
-          errorMessage = 'O usuário não pôde ser carregado.';
+          errorMessage = 'O usuÃ¡rio nÃ£o pÃ´de ser carregado.';
         });
         return;
       }
@@ -146,10 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const Text(
                     'Cada treino conta.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 17,
-                      color: AppColors.grey,
-                    ),
+                    style: TextStyle(fontSize: 17, color: AppColors.grey),
                   ),
                   const SizedBox(height: 32),
                   TextField(

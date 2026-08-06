@@ -13,13 +13,13 @@ class SessionService extends ChangeNotifier {
   bool get isAuthenticated => _currentUser != null;
 
   void startSession(TatameUser user) {
-   _currentUser = user;
+    _currentUser = user;
 
-  // Usuários com apenas um perfil entram diretamente.
-  // Usuários com vários perfis escolhem o contexto.
-  _activeRole = user.roles.length == 1 ? user.roles.first : null;
+    // Usuários com apenas um perfil entram diretamente.
+    // Usuários com vários perfis escolhem o contexto.
+    _activeRole = user.roles.length == 1 ? user.roles.first : null;
 
-   notifyListeners();
+    notifyListeners();
   }
 
   void changeActiveRole(UserRole role) {

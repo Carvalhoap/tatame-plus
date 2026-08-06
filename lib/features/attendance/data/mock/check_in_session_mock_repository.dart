@@ -2,8 +2,7 @@ import '../../models/attendance.dart';
 import '../../models/check_in_session.dart';
 import '../../repository/check_in_session_repository.dart';
 
-class CheckInSessionMockRepository
-    extends CheckInSessionRepository {
+class CheckInSessionMockRepository extends CheckInSessionRepository {
   final Map<String, CheckInSession> _sessions = {};
   final Map<String, List<Attendance>> _attendancesBySession = {};
 
@@ -47,9 +46,7 @@ class CheckInSessionMockRepository
       return false;
     }
 
-    _sessions[sessionId] = session.copyWith(
-      closedAt: DateTime.now(),
-    );
+    _sessions[sessionId] = session.copyWith(closedAt: DateTime.now());
 
     notifyListeners();
 
@@ -58,9 +55,7 @@ class CheckInSessionMockRepository
 
   @override
   List<Attendance> getAttendances(String sessionId) {
-    return List.unmodifiable(
-      _attendancesBySession[sessionId] ?? const [],
-    );
+    return List.unmodifiable(_attendancesBySession[sessionId] ?? const []);
   }
 
   @override
@@ -69,9 +64,7 @@ class CheckInSessionMockRepository
     required String studentId,
   }) {
     return getAttendances(sessionId).any(
-      (attendance) =>
-          attendance.studentId == studentId &&
-          attendance.isValid,
+      (attendance) => attendance.studentId == studentId && attendance.isValid,
     );
   }
 
@@ -86,10 +79,7 @@ class CheckInSessionMockRepository
       return null;
     }
 
-    if (isStudentCheckedIn(
-      sessionId: sessionId,
-      studentId: studentId,
-    )) {
+    if (isStudentCheckedIn(sessionId: sessionId, studentId: studentId)) {
       return null;
     }
 

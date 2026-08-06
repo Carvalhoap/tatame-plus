@@ -1,8 +1,4 @@
-enum StripeColor {
-  white,
-  red,
-  black,
-}
+enum StripeColor { white, red, black }
 
 class StripeProgress {
   final StripeColor color;

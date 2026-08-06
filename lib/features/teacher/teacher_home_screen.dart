@@ -34,10 +34,7 @@ class TeacherHomeScreen extends StatelessWidget {
             const SizedBox(height: 20),
             const Text(
               'Acompanhe suas turmas, chamadas e a evolução dos alunos.',
-              style: TextStyle(
-                fontSize: 18,
-                height: 1.4,
-              ),
+              style: TextStyle(fontSize: 18, height: 1.4),
             ),
             const SizedBox(height: 24),
             SizedBox(
@@ -55,10 +52,7 @@ class TeacherHomeScreen extends StatelessWidget {
                 icon: const Icon(Icons.qr_code_2),
                 label: const Text(
                   'Abrir Check-in',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                 ),
               ),
             ),

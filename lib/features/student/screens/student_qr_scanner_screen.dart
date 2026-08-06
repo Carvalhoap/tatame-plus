@@ -7,17 +7,15 @@ class StudentQrScannerScreen extends StatefulWidget {
   const StudentQrScannerScreen({super.key});
 
   @override
-  State<StudentQrScannerScreen> createState() =>
-      _StudentQrScannerScreenState();
+  State<StudentQrScannerScreen> createState() => _StudentQrScannerScreenState();
 }
 
 class _StudentQrScannerScreenState extends State<StudentQrScannerScreen> {
- final MobileScannerController scannerController =
-    MobileScannerController(
-  formats: const [BarcodeFormat.qrCode],
-  facing: CameraFacing.back,
-  detectionSpeed: DetectionSpeed.noDuplicates,
-);
+  final MobileScannerController scannerController = MobileScannerController(
+    formats: const [BarcodeFormat.qrCode],
+    facing: CameraFacing.back,
+    detectionSpeed: DetectionSpeed.noDuplicates,
+  );
 
   bool isProcessing = false;
   bool torchEnabled = false;
@@ -43,33 +41,32 @@ class _StudentQrScannerScreenState extends State<StudentQrScannerScreen> {
     await scannerController.stop();
 
     try {
-  final sessionId = rawValue.trim();
+      final sessionId = rawValue.trim();
 
-  if (sessionId.isEmpty || !sessionId.startsWith('session_')) {
-    throw const FormatException('Sessão inválida.');
-  }
+      if (sessionId.isEmpty || !sessionId.startsWith('session_')) {
+        throw const FormatException('Sessão inválida.');
+      }
 
-  await showResultDialog(
-    success: true,
-    title: 'QR Code reconhecido!',
-    message:
-        'Sessão identificada com sucesso.\n\nAgora vamos registrar sua presença.',
-  );
-} on FormatException {
-  await showResultDialog(
-    success: false,
-    title: 'QR Code inválido',
-    message:
-        'Este código não pertence a uma sessão válida do Tatame+.',
-  );
-} catch (_) {
-  await showResultDialog(
-    success: false,
-    title: 'Não foi possível registrar',
-    message:
-        'Ocorreu um problema ao interpretar o QR Code. Tente novamente.',
-  );
-}
+      await showResultDialog(
+        success: true,
+        title: 'QR Code reconhecido!',
+        message:
+            'Sessão identificada com sucesso.\n\nAgora vamos registrar sua presença.',
+      );
+    } on FormatException {
+      await showResultDialog(
+        success: false,
+        title: 'QR Code inválido',
+        message: 'Este código não pertence a uma sessão válida do Tatame+.',
+      );
+    } catch (_) {
+      await showResultDialog(
+        success: false,
+        title: 'Não foi possível registrar',
+        message:
+            'Ocorreu um problema ao interpretar o QR Code. Tente novamente.',
+      );
+    }
   }
 
   Future<void> showResultDialog({
@@ -87,18 +84,10 @@ class _StudentQrScannerScreenState extends State<StudentQrScannerScreen> {
           icon: Icon(
             success ? Icons.check_circle : Icons.error_outline,
             size: 64,
-            color: success
-                ? AppColors.success
-                : AppColors.gracieRed,
+            color: success ? AppColors.success : AppColors.gracieRed,
           ),
-          title: Text(
-            title,
-            textAlign: TextAlign.center,
-          ),
-          content: Text(
-            message,
-            textAlign: TextAlign.center,
-          ),
+          title: Text(title, textAlign: TextAlign.center),
+          content: Text(message, textAlign: TextAlign.center),
           actionsAlignment: MainAxisAlignment.center,
           actions: [
             ElevatedButton(
@@ -146,11 +135,7 @@ class _StudentQrScannerScreenState extends State<StudentQrScannerScreen> {
           IconButton(
             tooltip: 'Lanterna',
             onPressed: toggleTorch,
-            icon: Icon(
-              torchEnabled
-                  ? Icons.flash_on
-                  : Icons.flash_off,
-            ),
+            icon: Icon(torchEnabled ? Icons.flash_on : Icons.flash_off),
           ),
         ],
       ),
@@ -184,11 +169,7 @@ class _StudentQrScannerScreenState extends State<StudentQrScannerScreen> {
               child: const Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.qr_code_scanner,
-                    color: AppColors.white,
-                    size: 34,
-                  ),
+                  Icon(Icons.qr_code_scanner, color: AppColors.white, size: 34),
                   SizedBox(height: 10),
                   Text(
                     'Posicione o QR Code da turma dentro da área destacada.',
@@ -220,10 +201,7 @@ class _ScannerOverlay extends StatelessWidget {
           width: 270,
           height: 270,
           decoration: BoxDecoration(
-            border: Border.all(
-              color: AppColors.white,
-              width: 3,
-            ),
+            border: Border.all(color: AppColors.white, width: 3),
             borderRadius: BorderRadius.circular(24),
           ),
         ),
@@ -236,10 +214,7 @@ class _ScannerError extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
 
-  const _ScannerError({
-    required this.message,
-    required this.onRetry,
-  });
+  const _ScannerError({required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {

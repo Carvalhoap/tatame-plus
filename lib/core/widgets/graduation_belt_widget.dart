@@ -50,10 +50,7 @@ class GraduationBeltWidget extends StatelessWidget {
               child: _BeltStitching(),
             ),
           ),
-          _RankBar(
-            stripes: stripes,
-            beltColor: beltColor,
-          ),
+          _RankBar(stripes: stripes, beltColor: beltColor),
           const SizedBox(width: 14),
         ],
       ),
@@ -63,124 +60,64 @@ class GraduationBeltWidget extends StatelessWidget {
   List<Color> _getBeltColors(BeltColor belt) {
     switch (belt) {
       case BeltColor.white:
-        return const [
-          Color(0xFFF9F9F9),
-          Color(0xFFE2E2E2),
-        ];
+        return const [Color(0xFFF9F9F9), Color(0xFFE2E2E2)];
 
       case BeltColor.greyWhite:
-        return const [
-          Color(0xFFF4F4F4),
-          Color(0xFF9E9E9E),
-        ];
+        return const [Color(0xFFF4F4F4), Color(0xFF9E9E9E)];
 
       case BeltColor.grey:
-        return const [
-          Color(0xFFBDBDBD),
-          Color(0xFF757575),
-        ];
+        return const [Color(0xFFBDBDBD), Color(0xFF757575)];
 
       case BeltColor.greyBlack:
-        return const [
-          Color(0xFF9E9E9E),
-          Color(0xFF212121),
-        ];
+        return const [Color(0xFF9E9E9E), Color(0xFF212121)];
 
       case BeltColor.yellowWhite:
-        return const [
-          Color(0xFFFFF8E1),
-          Color(0xFFFDD835),
-        ];
+        return const [Color(0xFFFFF8E1), Color(0xFFFDD835)];
 
       case BeltColor.yellow:
-        return const [
-          Color(0xFFFFEB3B),
-          Color(0xFFF9A825),
-        ];
+        return const [Color(0xFFFFEB3B), Color(0xFFF9A825)];
 
       case BeltColor.yellowBlack:
-        return const [
-          Color(0xFFFDD835),
-          Color(0xFF212121),
-        ];
+        return const [Color(0xFFFDD835), Color(0xFF212121)];
 
       case BeltColor.orangeWhite:
-        return const [
-          Color(0xFFFFF3E0),
-          Color(0xFFFB8C00),
-        ];
+        return const [Color(0xFFFFF3E0), Color(0xFFFB8C00)];
 
       case BeltColor.orange:
-        return const [
-          Color(0xFFFFA726),
-          Color(0xFFEF6C00),
-        ];
+        return const [Color(0xFFFFA726), Color(0xFFEF6C00)];
 
       case BeltColor.orangeBlack:
-        return const [
-          Color(0xFFFB8C00),
-          Color(0xFF212121),
-        ];
+        return const [Color(0xFFFB8C00), Color(0xFF212121)];
 
       case BeltColor.greenWhite:
-        return const [
-          Color(0xFFE8F5E9),
-          Color(0xFF43A047),
-        ];
+        return const [Color(0xFFE8F5E9), Color(0xFF43A047)];
 
       case BeltColor.green:
-        return const [
-          Color(0xFF43A047),
-          Color(0xFF1B5E20),
-        ];
+        return const [Color(0xFF43A047), Color(0xFF1B5E20)];
 
       case BeltColor.greenBlack:
-        return const [
-          Color(0xFF2E7D32),
-          Color(0xFF212121),
-        ];
+        return const [Color(0xFF2E7D32), Color(0xFF212121)];
 
       case BeltColor.blue:
-        return const [
-          Color(0xFF1976D2),
-          Color(0xFF0D47A1),
-        ];
+        return const [Color(0xFF1976D2), Color(0xFF0D47A1)];
 
       case BeltColor.purple:
-        return const [
-          Color(0xFF8E24AA),
-          Color(0xFF4A148C),
-        ];
+        return const [Color(0xFF8E24AA), Color(0xFF4A148C)];
 
       case BeltColor.brown:
-        return const [
-          Color(0xFF795548),
-          Color(0xFF3E2723),
-        ];
+        return const [Color(0xFF795548), Color(0xFF3E2723)];
 
       case BeltColor.black:
-        return const [
-          Color(0xFF303030),
-          Color(0xFF050505),
-        ];
+        return const [Color(0xFF303030), Color(0xFF050505)];
 
       case BeltColor.redBlack:
-        return const [
-          Color(0xFFC62828),
-          Color(0xFF111111),
-        ];
+        return const [Color(0xFFC62828), Color(0xFF111111)];
 
       case BeltColor.redWhite:
-        return const [
-          Color(0xFFC62828),
-          Color(0xFFF5F5F5),
-        ];
+        return const [Color(0xFFC62828), Color(0xFFF5F5F5)];
 
       case BeltColor.red:
-        return const [
-          Color(0xFFD32F2F),
-          Color(0xFF8E0000),
-        ];
+        return const [Color(0xFFD32F2F), Color(0xFF8E0000)];
     }
   }
 }
@@ -189,10 +126,7 @@ class _RankBar extends StatelessWidget {
   final List<StripeProgress> stripes;
   final BeltColor beltColor;
 
-  const _RankBar({
-    required this.stripes,
-    required this.beltColor,
-  });
+  const _RankBar({required this.stripes, required this.beltColor});
 
   @override
   Widget build(BuildContext context) {
@@ -224,10 +158,7 @@ class _RankBar extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: _stripeColor(stripeColor),
                   borderRadius: BorderRadius.circular(1),
-                  border: Border.all(
-                    color: Colors.black26,
-                    width: 0.5,
-                  ),
+                  border: Border.all(color: Colors.black26, width: 0.5),
                 ),
               ),
             )
@@ -271,14 +202,8 @@ class _BeltStitching extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        Container(
-          height: 1,
-          color: Colors.black26,
-        ),
-        Container(
-          height: 1,
-          color: Colors.black26,
-        ),
+        Container(height: 1, color: Colors.black26),
+        Container(height: 1, color: Colors.black26),
       ],
     );
   }

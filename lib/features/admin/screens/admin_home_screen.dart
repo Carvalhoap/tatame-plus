@@ -38,10 +38,7 @@ class AdminHomeScreen extends StatelessWidget {
             const SizedBox(height: 8),
             const Text(
               'Acompanhe e organize a operação da academia.',
-              style: TextStyle(
-                fontSize: 17,
-                color: AppColors.grey,
-              ),
+              style: TextStyle(fontSize: 17, color: AppColors.grey),
             ),
             const SizedBox(height: 28),
             GridView.count(
@@ -116,11 +113,7 @@ class _AdminCard extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                size: 38,
-                color: AppColors.brandPrimary,
-              ),
+              Icon(icon, size: 38, color: AppColors.brandPrimary),
               const SizedBox(height: 12),
               Text(
                 title,
@@ -135,10 +128,7 @@ class _AdminCard extends StatelessWidget {
               Text(
                 subtitle,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.grey,
-                ),
+                style: const TextStyle(fontSize: 13, color: AppColors.grey),
               ),
             ],
           ),

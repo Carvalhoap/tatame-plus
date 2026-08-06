@@ -50,47 +50,44 @@ class StudentHomeScreen extends StatelessWidget {
 
             const SizedBox(height: 22),
 
-SizedBox(
-  width: double.infinity,
-  height: 58,
-  child: ElevatedButton.icon(
-    onPressed: () async {
-      final checkInConfirmed = await Navigator.push<bool>(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const StudentQrScannerScreen(),
-        ),
-      );
+            SizedBox(
+              width: double.infinity,
+              height: 58,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  final checkInConfirmed = await Navigator.push<bool>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const StudentQrScannerScreen(),
+                    ),
+                  );
 
-      if (checkInConfirmed == true && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Presença registrada com sucesso! +1 treino.',
+                  if (checkInConfirmed == true && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Presença registrada com sucesso! +1 treino.',
+                        ),
+                      ),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.qr_code_scanner),
+                label: const Text(
+                  'Registrar presença',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.gracieRed,
+                  foregroundColor: AppColors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
             ),
-          ),
-        );
-      }
-    },
-    icon: const Icon(Icons.qr_code_scanner),
-    label: const Text(
-      'Registrar presença',
-      style: TextStyle(
-        fontSize: 17,
-        fontWeight: FontWeight.bold,
-      ),
-    ),
-    style: ElevatedButton.styleFrom(
-      backgroundColor: AppColors.gracieRed,
-      foregroundColor: AppColors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-    ),
-  ),
-),
 
-const SizedBox(height: 22),
+            const SizedBox(height: 22),
             const SizedBox(height: 24),
 
             MascotCard(mascot: mascot),
@@ -101,22 +98,22 @@ const SizedBox(height: 22),
             const SizedBox(height: 18),
 
             const Text(
-  'Minha graduação',
-  style: TextStyle(
-    fontSize: 22,
-    fontWeight: FontWeight.bold,
-    color: AppColors.brandPrimary,
-  ),
-),
+              'Minha graduação',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: AppColors.brandPrimary,
+              ),
+            ),
 
-const SizedBox(height: 12),
+            const SizedBox(height: 12),
 
-GraduationBeltWidget(
-  beltColor: BeltColor.white,
-  stripes: studentGraduationProgressMock.stripes,
-),
+            GraduationBeltWidget(
+              beltColor: BeltColor.white,
+              stripes: studentGraduationProgressMock.stripes,
+            ),
 
-const SizedBox(height: 18),
+            const SizedBox(height: 18),
 
             GraduationCard(student: student),
 
@@ -154,10 +151,7 @@ const SizedBox(height: 18),
 
             const SizedBox(height: 18),
 
-            _SimpleCard(
-              title: '💬 Frase do dia',
-              text: student.quote,
-            ),
+            _SimpleCard(title: '💬 Frase do dia', text: student.quote),
           ],
         ),
       ),
@@ -207,10 +201,7 @@ class _SimpleCard extends StatelessWidget {
   final String title;
   final String text;
 
-  const _SimpleCard({
-    required this.title,
-    required this.text,
-  });
+  const _SimpleCard({required this.title, required this.text});
 
   @override
   Widget build(BuildContext context) {
@@ -223,10 +214,7 @@ class _SimpleCard extends StatelessWidget {
         children: [
           Text(title, style: _cardTitleStyle()),
           const SizedBox(height: 10),
-          Text(
-            text,
-            style: const TextStyle(fontSize: 17, height: 1.4),
-          ),
+          Text(text, style: const TextStyle(fontSize: 17, height: 1.4)),
         ],
       ),
     );

@@ -3,40 +3,6 @@ import '../../models/tatame_user.dart';
 import '../../repository/auth_repository.dart';
 
 class AuthMockRepository implements AuthRepository {
-  final List<TatameUser> _users = const [
-    TatameUser(
-      id: 'user_1',
-      academyId: 'academy_1',
-      name: 'Alexandre Carvalho',
-      email: 'alexandre@tatameplus.app',
-      roles: [
-        UserRole.admin,
-        UserRole.teacher,
-        UserRole.student,
-      ],
-    ),
-    TatameUser(
-      id: 'user_2',
-      academyId: 'academy_1',
-      name: 'Sócio Tatame+',
-      email: 'socio@tatameplus.app',
-      roles: [
-        UserRole.partner,
-        UserRole.teacher,
-        UserRole.student,
-      ],
-    ),
-    TatameUser(
-      id: 'user_3',
-      academyId: 'academy_1',
-      name: 'Aluno Demonstração',
-      email: 'aluno@tatameplus.app',
-      roles: [
-        UserRole.student,
-      ],
-    ),
-  ];
-
   TatameUser? _currentUser;
 
   @override
@@ -44,19 +10,27 @@ class AuthMockRepository implements AuthRepository {
     required String email,
     required String password,
   }) async {
-    if (password != '123456') {
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    if (email.isEmpty || password.isEmpty) {
       return null;
     }
 
-    try {
-      _currentUser = _users.firstWhere(
-        (user) => user.email.toLowerCase() == email.toLowerCase(),
-      );
+    _currentUser = TatameUser(
+      id: 'mock-admin',
+      academyId: 'gracie-barra-neves',
+      name: 'Administrador',
+      email: email,
+      isActive: true,
+      roles: const [UserRole.admin, UserRole.teacher, UserRole.student],
+    );
 
-      return _currentUser;
-    } catch (_) {
-      return null;
-    }
+    return _currentUser;
+  }
+
+  @override
+  Future<TatameUser?> restoreSession() async {
+    return _currentUser;
   }
 
   @override

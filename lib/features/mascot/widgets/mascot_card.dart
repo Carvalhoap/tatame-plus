@@ -5,10 +5,7 @@ import '../models/mascot.dart';
 class MascotCard extends StatelessWidget {
   final Mascot mascot;
 
-  const MascotCard({
-    super.key,
-    required this.mascot,
-  });
+  const MascotCard({super.key, required this.mascot});
 
   @override
   Widget build(BuildContext context) {
@@ -31,10 +28,7 @@ class MascotCard extends StatelessWidget {
           CircleAvatar(
             radius: 34,
             backgroundColor: AppColors.brandPrimary,
-            child: Text(
-              mascot.emoji,
-              style: const TextStyle(fontSize: 32),
-            ),
+            child: Text(mascot.emoji, style: const TextStyle(fontSize: 32)),
           ),
           const SizedBox(width: 18),
           Expanded(
@@ -60,10 +54,7 @@ class MascotCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   mascot.description,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    height: 1.35,
-                  ),
+                  style: const TextStyle(fontSize: 15, height: 1.35),
                 ),
               ],
             ),

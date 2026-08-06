@@ -1,8 +1,4 @@
-enum AttendanceSource {
-  qrCode,
-  manual,
-  import,
-}
+enum AttendanceSource { qrCode, manual, import }
 
 class Attendance {
   final String id;
