@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../features/auth/services/session_service.dart';
 import '../enums/user_role.dart';
 import '../theme/app_colors.dart';
+import '../../features/auth/repository/auth_repository.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -166,8 +167,13 @@ class AppDrawer extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context);
+
+                await context.read<AuthRepository>().logout();
+
+                if (!context.mounted) return;
+
                 session.endSession();
               },
             ),

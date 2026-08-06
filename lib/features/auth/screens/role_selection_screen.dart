@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/enums/user_role.dart';
 import '../../../core/theme/app_colors.dart';
 import '../services/session_service.dart';
+import '../repository/auth_repository.dart';
 
 class RoleSelectionScreen extends StatelessWidget {
   const RoleSelectionScreen({super.key});
@@ -26,7 +27,13 @@ class RoleSelectionScreen extends StatelessWidget {
         actions: [
           IconButton(
             tooltip: 'Sair',
-            onPressed: session.endSession,
+            onPressed: () async {
+  await context.read<AuthRepository>().logout();
+
+  if (!context.mounted) return;
+
+  session.endSession();
+},
             icon: const Icon(Icons.logout),
           ),
         ],
