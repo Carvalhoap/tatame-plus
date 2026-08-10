@@ -26,6 +26,24 @@ interface CreateAcademyUserData {
   password?: unknown;
   phone?: unknown;
   roles?: unknown;
+  isActive?: unknown;
+}
+
+function validateRequestData(
+  value: unknown,
+): CreateAcademyUserData {
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    Array.isArray(value)
+  ) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Os dados enviados são inválidos.",
+    );
+  }
+
+  return value as CreateAcademyUserData;
 }
 
 function requiredString(
@@ -45,8 +63,13 @@ function requiredString(
   return value.trim();
 }
 
-function optionalString(value: unknown): string | null {
-  if (value === null || value === undefined) {
+function optionalString(
+  value: unknown,
+): string | null {
+  if (
+    value === null ||
+    value === undefined
+  ) {
     return null;
   }
 
@@ -64,7 +87,23 @@ function optionalString(value: unknown): string | null {
     normalizedValue;
 }
 
-function validateEmail(value: unknown): string {
+function validateBoolean(
+  value: unknown,
+  fieldName: string,
+): boolean {
+  if (typeof value !== "boolean") {
+    throw new HttpsError(
+      "invalid-argument",
+      `O campo ${fieldName} é inválido.`,
+    );
+  }
+
+  return value;
+}
+
+function validateEmail(
+  value: unknown,
+): string {
   const email = requiredString(
     value,
     "email",
@@ -83,7 +122,9 @@ function validateEmail(value: unknown): string {
   return email;
 }
 
-function validatePassword(value: unknown): string {
+function validatePassword(
+  value: unknown,
+): string {
   const password = requiredString(
     value,
     "password",
@@ -102,7 +143,10 @@ function validatePassword(value: unknown): string {
 function validateRoles(
   value: unknown,
 ): Record<AllowedRole, boolean> {
-  if (!Array.isArray(value) || value.length === 0) {
+  if (
+    !Array.isArray(value) ||
+    value.length === 0
+  ) {
     throw new HttpsError(
       "invalid-argument",
       "Informe pelo menos um perfil de acesso.",
@@ -122,7 +166,9 @@ function validateRoles(
 
   const unknownRole = requestedRoles.find(
     (role) =>
-      !allowedRoles.includes(role as AllowedRole),
+      !allowedRoles.includes(
+        role as AllowedRole,
+      ),
   );
 
   if (unknownRole !== undefined) {
@@ -132,7 +178,8 @@ function validateRoles(
     );
   }
 
-  const uniqueRoles = new Set(requestedRoles);
+  const uniqueRoles =
+    new Set(requestedRoles);
 
   return {
     admin: uniqueRoles.has("admin"),
@@ -154,7 +201,8 @@ async function assertAdministrator(
     .doc(requesterUid)
     .get();
 
-  const memberData = memberSnapshot.data();
+  const memberData =
+    memberSnapshot.data();
 
   if (
     !memberSnapshot.exists ||
@@ -178,7 +226,9 @@ function convertAuthError(
   ) {
     const code = String(error.code);
 
-    if (code === "auth/email-already-exists") {
+    if (
+      code === "auth/email-already-exists"
+    ) {
       return new HttpsError(
         "already-exists",
         "Já existe uma conta cadastrada com este e-mail.",
@@ -192,7 +242,9 @@ function convertAuthError(
       );
     }
 
-    if (code === "auth/invalid-password") {
+    if (
+      code === "auth/invalid-password"
+    ) {
       return new HttpsError(
         "invalid-argument",
         "A senha provisória é inválida.",
@@ -220,8 +272,9 @@ export const createAcademyUser = onCall(
       );
     }
 
-    const data =
-      request.data as CreateAcademyUserData;
+    const data = validateRequestData(
+      request.data,
+    );
 
     const academyId = requiredString(
       data.academyId,
@@ -233,14 +286,33 @@ export const createAcademyUser = onCall(
       "displayName",
     );
 
-    const email = validateEmail(data.email);
+    const email = validateEmail(
+      data.email,
+    );
+
     const password = validatePassword(
       data.password,
     );
-    const phone = optionalString(data.phone);
-    const roles = validateRoles(data.roles);
 
-    const requesterUid = request.auth.uid;
+    const phone = optionalString(
+      data.phone,
+    );
+
+    const roles = validateRoles(
+      data.roles,
+    );
+
+    const isActive = validateBoolean(
+      data.isActive,
+      "isActive",
+    );
+
+    const status = isActive ?
+      "active" :
+      "inactive";
+
+    const requesterUid =
+      request.auth.uid;
 
     await assertAdministrator(
       academyId,
@@ -253,13 +325,14 @@ export const createAcademyUser = onCall(
     let createdUid: string | null = null;
 
     try {
-      const userRecord = await auth.createUser({
-        displayName,
-        email,
-        password,
-        disabled: false,
-        emailVerified: false,
-      });
+      const userRecord =
+        await auth.createUser({
+          displayName,
+          email,
+          password,
+          disabled: !isActive,
+          emailVerified: false,
+        });
 
       createdUid = userRecord.uid;
 
@@ -288,7 +361,7 @@ export const createAcademyUser = onCall(
           email,
           phone,
           photoUrl: null,
-          isActive: true,
+          isActive,
           createdAt:
             FieldValue.serverTimestamp(),
           updatedAt:
@@ -301,7 +374,7 @@ export const createAcademyUser = onCall(
         {
           userId: createdUid,
           roles,
-          status: "active",
+          status,
           joinedAt:
             FieldValue.serverTimestamp(),
           updatedAt:
@@ -315,7 +388,8 @@ export const createAcademyUser = onCall(
       batch.create(
         auditReference,
         {
-          action: "academyUserCreated",
+          action:
+            "academyUserCreated",
           entityType: "user",
           entityId: createdUid,
           performedBy: requesterUid,
@@ -327,7 +401,8 @@ export const createAcademyUser = onCall(
             email,
             phone,
             roles,
-            status: "active",
+            isActive,
+            status,
           },
           metadata: {
             academyId,
@@ -343,6 +418,7 @@ export const createAcademyUser = onCall(
           academyId,
           createdUid,
           requesterUid,
+          isActive,
         },
       );
 
@@ -363,7 +439,9 @@ export const createAcademyUser = onCall(
 
       if (createdUid !== null) {
         try {
-          await auth.deleteUser(createdUid);
+          await auth.deleteUser(
+            createdUid,
+          );
         } catch (rollbackError) {
           logger.error(
             "Falha ao remover usuário durante rollback.",

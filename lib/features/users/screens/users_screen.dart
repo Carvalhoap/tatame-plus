@@ -169,7 +169,8 @@ class _UsersScreenState extends State<UsersScreen> {
                     },
                     child: ListView.separated(
                       itemCount: filteredMembers.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 12),
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         return _MemberCard(member: filteredMembers[index]);
                       },

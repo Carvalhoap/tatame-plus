@@ -2,4 +2,14 @@ import '../models/academy_member.dart';
 
 abstract class UserRepository {
   Future<List<AcademyMember>> getAcademyMembers({required String academyId});
+
+  Future<String> createAcademyUser({
+    required String academyId,
+    required String displayName,
+    required String email,
+    required String password,
+    String? phone,
+    required List<String> roles,
+    required bool isActive,
+  });
 }
