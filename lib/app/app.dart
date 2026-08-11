@@ -22,6 +22,12 @@ import '../features/teacher/controllers/teacher_check_in_controller.dart';
 import '../features/users/data/firebase/firestore_user_repository.dart';
 import '../features/users/repository/user_repository.dart';
 
+import '../features/classroom/data/firebase/firestore_classroom_repository.dart';
+import '../features/classroom/repository/classroom_repository.dart';
+
+import '../features/graduation/data/firebase/firestore_graduation_program_repository.dart';
+import '../features/graduation/repository/graduation_program_repository.dart';
+
 class TatamePlusApp extends StatelessWidget {
   const TatamePlusApp({super.key});
 
@@ -34,6 +40,14 @@ class TatamePlusApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SessionService()),
 
         Provider<UserRepository>(create: (_) => FirestoreUserRepository()),
+
+        Provider<ClassroomRepository>(
+          create: (_) => FirestoreClassroomRepository(),
+        ),
+
+        Provider<GraduationProgramRepository>(
+          create: (_) => FirestoreGraduationProgramRepository(),
+        ),
 
         Provider<StudentRepository>(create: (_) => StudentMockRepository()),
 

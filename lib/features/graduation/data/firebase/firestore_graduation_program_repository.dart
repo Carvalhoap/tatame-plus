@@ -1,0 +1,94 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../../models/graduation_program.dart';
+import '../../models/graduation_stage.dart';
+import '../../models/progression_criterion.dart';
+import '../../repository/graduation_program_repository.dart';
+
+class FirestoreGraduationProgramRepository
+    implements GraduationProgramRepository {
+  final FirebaseFirestore firestore;
+
+  FirestoreGraduationProgramRepository({FirebaseFirestore? firestore})
+    : firestore = firestore ?? FirebaseFirestore.instance;
+
+  @override
+  Future<List<GraduationProgram>> getActivePrograms({
+    required String academyId,
+  }) async {
+    final snapshot = await firestore
+        .collection('academies')
+        .doc(academyId)
+        .collection('graduationPrograms')
+        .where('isActive', isEqualTo: true)
+        .get();
+
+    final programs = snapshot.docs.map((document) {
+      final data = document.data();
+
+      return GraduationProgram(
+        id: document.id,
+        academyId: academyId,
+        name: data['name'] as String? ?? 'Programa sem nome',
+        audience: _parseAudience(data['audience']),
+        stages: _parseStages(data['stages']),
+        isActive: data['isActive'] == true,
+      );
+    }).toList();
+
+    programs.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
+
+    return programs;
+  }
+
+  GraduationAudience _parseAudience(dynamic value) {
+    switch (value) {
+      case 'kids':
+        return GraduationAudience.kids;
+      case 'adult':
+        return GraduationAudience.adult;
+      default:
+        return GraduationAudience.custom;
+    }
+  }
+
+  List<GraduationStage> _parseStages(dynamic value) {
+    if (value is! List) {
+      return const [];
+    }
+
+    return value
+        .whereType<Map>()
+        .map(
+          (stage) => GraduationStage(
+            id: stage['id'] as String? ?? '',
+            name: stage['name'] as String? ?? '',
+            beltName: stage['beltName'] as String? ?? '',
+            degreeName: stage['degreeName'] as String?,
+            stripeColor: stage['stripeColor'] as String?,
+            order: stage['order'] as int? ?? 0,
+            criterion: _parseCriterion(stage['criterion']),
+            requiredAttendances: stage['requiredAttendances'] as int?,
+            minimumDurationMonths: stage['minimumDurationMonths'] as int?,
+            nextStageId: stage['nextStageId'] as String?,
+          ),
+        )
+        .where((stage) => stage.id.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  ProgressionCriterion _parseCriterion(dynamic value) {
+    switch (value) {
+      case 'attendance':
+        return ProgressionCriterion.attendance;
+      case 'time':
+        return ProgressionCriterion.time;
+      case 'attendanceAndTime':
+        return ProgressionCriterion.attendanceAndTime;
+      default:
+        return ProgressionCriterion.manual;
+    }
+  }
+}

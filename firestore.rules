@@ -8,7 +8,8 @@ service cloud.firestore {
     }
 
     function isOwner(uid) {
-      return isSignedIn() && request.auth.uid == uid;
+      return isSignedIn() &&
+        request.auth.uid == uid;
     }
 
     function memberPath(academyId, uid) {
@@ -17,25 +18,53 @@ service cloud.firestore {
 
     function isAcademyMember(academyId) {
       return isSignedIn()
-        && exists(memberPath(academyId, request.auth.uid))
-        && get(memberPath(academyId, request.auth.uid)).data.status == 'active';
+        && exists(
+          memberPath(
+            academyId,
+            request.auth.uid
+          )
+        )
+        && get(
+          memberPath(
+            academyId,
+            request.auth.uid
+          )
+        ).data.status == 'active';
     }
 
     function isAdmin(academyId) {
       return isAcademyMember(academyId)
-        && get(memberPath(academyId, request.auth.uid)).data.roles.admin == true;
+        && get(
+          memberPath(
+            academyId,
+            request.auth.uid
+          )
+        ).data.roles.admin == true;
     }
 
-    function userBelongsToAcademy(academyId, uid) {
-      return exists(memberPath(academyId, uid));
+    function userBelongsToAcademy(
+      academyId,
+      uid
+    ) {
+      return exists(
+        memberPath(
+          academyId,
+          uid
+        )
+      );
     }
 
     match /users/{uid} {
       allow get: if isOwner(uid)
         || (
           isSignedIn()
-          && isAdmin('gracie-barra-neves')
-          && userBelongsToAcademy('gracie-barra-neves', uid)
+          && isAdmin(
+            'gracie-barra-neves'
+          )
+          && userBelongsToAcademy(
+            'gracie-barra-neves',
+            uid
+          )
         );
 
       allow list: if false;
@@ -43,14 +72,38 @@ service cloud.firestore {
     }
 
     match /academies/{academyId} {
-      allow get: if isAcademyMember(academyId);
+      allow get:
+        if isAcademyMember(academyId);
+
       allow list: if false;
       allow create, update, delete: if false;
 
       match /members/{uid} {
-        allow get: if isOwner(uid) || isAdmin(academyId);
-        allow list: if isAdmin(academyId);
-        allow create, update, delete: if false;
+        allow get:
+          if isOwner(uid)
+          || isAdmin(academyId);
+
+        allow list:
+          if isAdmin(academyId);
+
+        allow create, update, delete:
+          if false;
+      }
+
+      match /classrooms/{classroomId} {
+        allow get, list:
+          if isAcademyMember(academyId);
+
+        allow create, update, delete:
+          if false;
+      }
+
+      match /graduationPrograms/{programId} {
+        allow get, list:
+          if isAcademyMember(academyId);
+
+        allow create, update, delete:
+          if false;
       }
 
       match /auditLogs/{documentId} {
