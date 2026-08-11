@@ -28,18 +28,7 @@ class FirestoreUserRepository implements UserRepository {
       snapshot = await _getMembersSnapshot(academyId: academyId);
     }
 
-    final members = snapshot.docs.map((document) {
-      final data = document.data();
-
-      return AcademyMember(
-        userId: data['userId'] as String? ?? document.id,
-        displayName: data['displayName'] as String? ?? 'Usuário sem nome',
-        email: data['email'] as String? ?? '',
-        status: data['status'] as String? ?? 'inactive',
-        roles: _parseRoles(data['roles']),
-        isActive: data['isActive'] == true,
-      );
-    }).toList();
+    final members = snapshot.docs.map(_memberFromDocument).toList();
 
     members.sort(
       (first, second) => first.displayName.toLowerCase().compareTo(
@@ -50,6 +39,22 @@ class FirestoreUserRepository implements UserRepository {
     return members;
   }
 
+  @override
+  Future<List<AcademyMember>> getActiveTeachers({
+    required String academyId,
+  }) async {
+    final members = await getAcademyMembers(academyId: academyId);
+
+    return members
+        .where(
+          (member) =>
+              member.status == 'active' &&
+              member.isActive &&
+              member.hasRole('teacher'),
+        )
+        .toList(growable: false);
+  }
+
   Future<QuerySnapshot<Map<String, dynamic>>> _getMembersSnapshot({
     required String academyId,
   }) {
@@ -58,6 +63,21 @@ class FirestoreUserRepository implements UserRepository {
         .doc(academyId)
         .collection('members')
         .get();
+  }
+
+  AcademyMember _memberFromDocument(
+    QueryDocumentSnapshot<Map<String, dynamic>> document,
+  ) {
+    final data = document.data();
+
+    return AcademyMember(
+      userId: data['userId'] as String? ?? document.id,
+      displayName: data['displayName'] as String? ?? 'Usuário sem nome',
+      email: data['email'] as String? ?? '',
+      status: data['status'] as String? ?? 'inactive',
+      roles: _parseRoles(data['roles']),
+      isActive: data['isActive'] == true,
+    );
   }
 
   bool _containsLegacyMember(QuerySnapshot<Map<String, dynamic>> snapshot) {
