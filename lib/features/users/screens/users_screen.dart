@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../auth/services/session_service.dart';
 import '../models/academy_member.dart';
 import '../repository/user_repository.dart';
+import 'create_user_screen.dart';
 
 class UsersScreen extends StatefulWidget {
   const UsersScreen({super.key});
@@ -47,6 +48,21 @@ class _UsersScreenState extends State<UsersScreen> {
     });
   }
 
+  Future<void> openCreateUser() async {
+    final created = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const CreateUserScreen()),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (created == true) {
+      reload();
+    }
+  }
+
   @override
   void dispose() {
     searchController.dispose();
@@ -71,15 +87,7 @@ class _UsersScreenState extends State<UsersScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'O cadastro de usuários será implementado na próxima etapa.',
-              ),
-            ),
-          );
-        },
+        onPressed: openCreateUser,
         backgroundColor: AppColors.brandPrimary,
         foregroundColor: AppColors.white,
         icon: const Icon(Icons.person_add_alt_1),
@@ -195,6 +203,8 @@ class _MemberCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final roles = member.activeRoles.map(_roleLabel).join(' • ');
 
+    final isUserActive = member.isActive && member.status == 'active';
+
     return Card(
       color: AppColors.white,
       elevation: 1,
@@ -230,13 +240,12 @@ class _MemberCard extends StatelessWidget {
             Text(roles.isEmpty ? 'Sem perfil autorizado' : roles),
           ],
         ),
-        trailing: Icon(
-          member.isActive && member.status == 'active'
-              ? Icons.check_circle
-              : Icons.cancel,
-          color: member.isActive && member.status == 'active'
-              ? AppColors.success
-              : AppColors.gracieRed,
+        trailing: Tooltip(
+          message: isUserActive ? 'Usuário ativo' : 'Usuário inativo',
+          child: Icon(
+            isUserActive ? Icons.check_circle : Icons.cancel,
+            color: isUserActive ? AppColors.success : AppColors.gracieRed,
+          ),
         ),
       ),
     );
@@ -329,7 +338,7 @@ class _ErrorState extends StatelessWidget {
 
     if (error is FirebaseException &&
         (error as FirebaseException).code == 'permission-denied') {
-      message = 'O Firestore ainda não autorizou a listagem dos usuários.';
+      message = 'Você não possui permissão para visualizar os usuários.';
     }
 
     return Center(

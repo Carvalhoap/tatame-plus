@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+
 import '../../core/theme/app_colors.dart';
-import 'data/student_mock.dart';
-import 'widgets/graduation_card.dart';
-import 'widgets/belt_journey_card.dart';
-import '../mascot/data/mascot_mock.dart';
-import '../mascot/widgets/mascot_card.dart';
+import '../../core/widgets/app_drawer.dart';
 import '../../core/widgets/graduation_belt_widget.dart';
+import '../graduation/data/mock/adult_graduation_program_mock.dart';
 import '../graduation/data/mock/student_graduation_progress_mock.dart';
 import '../graduation/models/belt_color.dart';
-import '../../core/widgets/app_drawer.dart';
+import '../mascot/data/mascot_mock.dart';
+import '../mascot/widgets/mascot_card.dart';
+import 'data/student_mock.dart';
 import 'screens/student_qr_scanner_screen.dart';
+import 'widgets/belt_journey_card.dart';
+import 'widgets/graduation_card.dart';
 
 class StudentHomeScreen extends StatelessWidget {
   const StudentHomeScreen({super.key});
@@ -17,8 +19,9 @@ class StudentHomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final student = mockStudent;
+    const dashboard = mockStudentDashboardData;
+
     final mascot = mascots.first;
-    final monthlyProgress = student.monthlyTrainings / student.monthlyGoal;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -35,7 +38,7 @@ class StudentHomeScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Bom dia, ${student.name} 👋',
+              'Bom dia, ${student.fullName} ðŸ‘‹',
               style: const TextStyle(
                 fontSize: 30,
                 fontWeight: FontWeight.bold,
@@ -44,12 +47,10 @@ class StudentHomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Cada treino aproxima você da sua próxima evolução.',
+              'Cada treino aproxima vocÃª da sua prÃ³xima evoluÃ§Ã£o.',
               style: TextStyle(fontSize: 18, color: AppColors.grey),
             ),
-
             const SizedBox(height: 22),
-
             SizedBox(
               width: double.infinity,
               height: 58,
@@ -66,7 +67,7 @@ class StudentHomeScreen extends StatelessWidget {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text(
-                          'Presença registrada com sucesso! +1 treino.',
+                          'PresenÃ§a registrada com sucesso! +1 treino.',
                         ),
                       ),
                     );
@@ -74,7 +75,7 @@ class StudentHomeScreen extends StatelessWidget {
                 },
                 icon: const Icon(Icons.qr_code_scanner),
                 label: const Text(
-                  'Registrar presença',
+                  'Registrar presenÃ§a',
                   style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
@@ -86,72 +87,59 @@ class StudentHomeScreen extends StatelessWidget {
                 ),
               ),
             ),
-
-            const SizedBox(height: 22),
             const SizedBox(height: 24),
-
             MascotCard(mascot: mascot),
             const SizedBox(height: 24),
-
             const BeltJourneyCard(),
-
             const SizedBox(height: 18),
-
             const Text(
-              'Minha graduação',
+              'Minha graduaÃ§Ã£o',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: AppColors.brandPrimary,
               ),
             ),
-
             const SizedBox(height: 12),
-
             GraduationBeltWidget(
               beltColor: BeltColor.white,
               stripes: studentGraduationProgressMock.stripes,
             ),
-
             const SizedBox(height: 18),
-
-            GraduationCard(student: student),
-
+            GraduationCard(
+              progress: studentGraduationProgressMock,
+              program: adultGraduationProgramMock,
+            ),
             const SizedBox(height: 18),
-
             _InfoCard(
-              title: '🔥 Meta do mês',
+              title: 'ðŸ”¥ Meta do mÃªs',
               subtitle:
-                  '${student.monthlyTrainings} / ${student.monthlyGoal} treinos',
-              progress: monthlyProgress,
+                  '${dashboard.monthlyTrainings} / '
+                  '${dashboard.monthlyGoal} treinos',
+              progress: dashboard.monthlyProgress,
               color: AppColors.brandPrimary,
             ),
-
             const SizedBox(height: 18),
-
             _SimpleCard(
-              title: '🏆 Próxima conquista',
+              title: 'ðŸ† PrÃ³xima conquista',
               text:
-                  '${student.nextAchievement} • ${(student.achievementProgress * 100).round()}%',
+                  '${dashboard.nextAchievement} â€¢ '
+                  '${(dashboard.achievementProgress * 100).round()}%',
             ),
-
             const SizedBox(height: 18),
-
             _SimpleCard(
-              title: '🔥 Sequência atual',
-              text: '${student.streak} treinos consecutivos',
+              title: 'ðŸ”¥ SequÃªncia atual',
+              text: '${dashboard.streak} treinos consecutivos',
             ),
-
             const SizedBox(height: 18),
-
             _SimpleCard(
-              title: '📅 Próximo treino',
-              text: '${student.nextTraining}\n${student.teacherName}',
+              title: 'ðŸ“… PrÃ³ximo treino',
+              text:
+                  '${dashboard.nextTraining}\n'
+                  '${dashboard.teacherName}',
             ),
-
             const SizedBox(height: 18),
-
-            _SimpleCard(title: '💬 Frase do dia', text: student.quote),
+            _SimpleCard(title: 'ðŸ’¬ Frase do dia', text: dashboard.quote),
           ],
         ),
       ),

@@ -1,0 +1,69 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function memberPath(academyId, uid) {
+      return /databases/$(database)/documents/academies/$(academyId)/members/$(uid);
+    }
+
+    function isAcademyMember(academyId) {
+      return isSignedIn()
+        && exists(memberPath(academyId, request.auth.uid))
+        && get(memberPath(academyId, request.auth.uid)).data.status == 'active';
+    }
+
+    function isAdmin(academyId) {
+      return isAcademyMember(academyId)
+        && get(memberPath(academyId, request.auth.uid)).data.roles.admin == true;
+    }
+
+    function userBelongsToAcademy(academyId, uid) {
+      return exists(memberPath(academyId, uid));
+    }
+
+    match /users/{uid} {
+      allow get: if isOwner(uid)
+        || (
+          isSignedIn()
+          && isAdmin('gracie-barra-neves')
+          && userBelongsToAcademy('gracie-barra-neves', uid)
+        );
+
+      allow list: if false;
+      allow create, update, delete: if false;
+    }
+
+    match /academies/{academyId} {
+      allow get: if isAcademyMember(academyId);
+      allow list: if false;
+      allow create, update, delete: if false;
+
+      match /members/{uid} {
+        allow get: if isOwner(uid) || isAdmin(academyId);
+        allow list: if isAdmin(academyId);
+        allow create, update, delete: if false;
+      }
+
+      match /auditLogs/{documentId} {
+        allow read, write: if false;
+      }
+
+      match /{document=**} {
+        allow read, write: if false;
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
