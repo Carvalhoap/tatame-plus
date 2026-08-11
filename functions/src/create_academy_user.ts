@@ -29,6 +29,10 @@ interface CreateAcademyUserData {
   isActive?: unknown;
 }
 
+interface SyncMemberProfilesData {
+  academyId?: unknown;
+}
+
 function validateRequestData(
   value: unknown,
 ): CreateAcademyUserData {
@@ -211,7 +215,7 @@ async function assertAdministrator(
   ) {
     throw new HttpsError(
       "permission-denied",
-      "Somente administradores ativos podem cadastrar usuários.",
+      "Somente administradores ativos podem executar esta operação.",
     );
   }
 }
@@ -373,8 +377,16 @@ export const createAcademyUser = onCall(
         memberReference,
         {
           userId: createdUid,
+
+          displayName,
+          email,
+          phone,
+          photoUrl: null,
+
           roles,
           status,
+          isActive,
+
           joinedAt:
             FieldValue.serverTimestamp(),
           updatedAt:
@@ -459,5 +471,125 @@ export const createAcademyUser = onCall(
 
       throw convertAuthError(error);
     }
+  },
+);
+
+export const syncAcademyMemberProfiles = onCall(
+  {
+    region: "southamerica-east1",
+    enforceAppCheck: false,
+    maxInstances: 2,
+  },
+  async (request) => {
+    if (request.auth === undefined) {
+      throw new HttpsError(
+        "unauthenticated",
+        "É necessário estar autenticado.",
+      );
+    }
+
+    if (
+      typeof request.data !== "object" ||
+      request.data === null ||
+      Array.isArray(request.data)
+    ) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Os dados enviados são inválidos.",
+      );
+    }
+
+    const data =
+      request.data as SyncMemberProfilesData;
+
+    const academyId = requiredString(
+      data.academyId,
+      "academyId",
+    );
+
+    const requesterUid =
+      request.auth.uid;
+
+    await assertAdministrator(
+      academyId,
+      requesterUid,
+    );
+
+    const firestore = getFirestore();
+
+    const membersSnapshot =
+      await firestore
+        .collection("academies")
+        .doc(academyId)
+        .collection("members")
+        .get();
+
+    let updated = 0;
+    let skipped = 0;
+
+    for (
+      const memberDocument
+      of membersSnapshot.docs
+    ) {
+      const uid = memberDocument.id;
+
+      const userSnapshot = await firestore
+        .collection("users")
+        .doc(uid)
+        .get();
+
+      if (!userSnapshot.exists) {
+        skipped += 1;
+        continue;
+      }
+
+      const userData =
+        userSnapshot.data();
+
+      if (userData === undefined) {
+        skipped += 1;
+        continue;
+      }
+
+      await memberDocument.ref.set(
+        {
+          userId: uid,
+          displayName:
+            userData.displayName ??
+            "Usuário sem nome",
+          email:
+            userData.email ?? "",
+          phone:
+            userData.phone ?? null,
+          photoUrl:
+            userData.photoUrl ?? null,
+          isActive:
+            userData.isActive === true,
+          updatedAt:
+            FieldValue.serverTimestamp(),
+        },
+        {
+          merge: true,
+        },
+      );
+
+      updated += 1;
+    }
+
+    logger.info(
+      "Perfis dos membros sincronizados.",
+      {
+        academyId,
+        requesterUid,
+        updated,
+        skipped,
+      },
+    );
+
+    return {
+      success: true,
+      updated,
+      skipped,
+    };
   },
 );

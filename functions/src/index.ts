@@ -10,4 +10,5 @@ setGlobalOptions({
 
 export {
   createAcademyUser,
+  syncAcademyMemberProfiles,
 } from "./create_academy_user";

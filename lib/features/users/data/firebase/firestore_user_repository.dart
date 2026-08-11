@@ -20,36 +20,26 @@ class FirestoreUserRepository implements UserRepository {
   Future<List<AcademyMember>> getAcademyMembers({
     required String academyId,
   }) async {
-    final membersSnapshot = await firestore
-        .collection('academies')
-        .doc(academyId)
-        .collection('members')
-        .get();
+    var snapshot = await _getMembersSnapshot(academyId: academyId);
 
-    final members = await Future.wait(
-      membersSnapshot.docs.map((memberDocument) async {
-        final memberData = memberDocument.data();
+    if (_containsLegacyMember(snapshot)) {
+      await _syncMemberProfiles(academyId: academyId);
 
-        final userId = memberData['userId'] as String? ?? memberDocument.id;
+      snapshot = await _getMembersSnapshot(academyId: academyId);
+    }
 
-        final userSnapshot = await firestore
-            .collection('users')
-            .doc(userId)
-            .get();
+    final members = snapshot.docs.map((document) {
+      final data = document.data();
 
-        final userData = userSnapshot.data();
-
-        return AcademyMember(
-          userId: userId,
-          displayName:
-              userData?['displayName'] as String? ?? 'Usuário sem nome',
-          email: userData?['email'] as String? ?? '',
-          status: memberData['status'] as String? ?? 'inactive',
-          roles: _parseRoles(memberData['roles']),
-          isActive: userData?['isActive'] == true,
-        );
-      }),
-    );
+      return AcademyMember(
+        userId: data['userId'] as String? ?? document.id,
+        displayName: data['displayName'] as String? ?? 'Usuário sem nome',
+        email: data['email'] as String? ?? '',
+        status: data['status'] as String? ?? 'inactive',
+        roles: _parseRoles(data['roles']),
+        isActive: data['isActive'] == true,
+      );
+    }).toList();
 
     members.sort(
       (first, second) => first.displayName.toLowerCase().compareTo(
@@ -58,6 +48,49 @@ class FirestoreUserRepository implements UserRepository {
     );
 
     return members;
+  }
+
+  Future<QuerySnapshot<Map<String, dynamic>>> _getMembersSnapshot({
+    required String academyId,
+  }) {
+    return firestore
+        .collection('academies')
+        .doc(academyId)
+        .collection('members')
+        .get();
+  }
+
+  bool _containsLegacyMember(QuerySnapshot<Map<String, dynamic>> snapshot) {
+    for (final document in snapshot.docs) {
+      final data = document.data();
+
+      final hasDisplayName =
+          data['displayName'] is String &&
+          (data['displayName'] as String).trim().isNotEmpty;
+
+      final hasEmail = data['email'] is String;
+
+      final hasIsActive = data['isActive'] is bool;
+
+      if (!hasDisplayName || !hasEmail || !hasIsActive) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  Future<void> _syncMemberProfiles({required String academyId}) async {
+    final callable = functions.httpsCallable('syncAcademyMemberProfiles');
+
+    try {
+      await callable.call<Map<String, dynamic>>({'academyId': academyId});
+    } on FirebaseFunctionsException catch (error) {
+      throw MemberSynchronizationException(
+        code: error.code,
+        message: _functionErrorMessage(error),
+      );
+    }
   }
 
   @override
@@ -120,7 +153,7 @@ class FirestoreUserRepository implements UserRepository {
         return error.message ?? 'Os dados informados são inválidos.';
 
       case 'permission-denied':
-        return 'Você não possui permissão para cadastrar usuários.';
+        return 'Você não possui permissão para executar esta operação.';
 
       case 'unauthenticated':
         return 'Sua sessão expirou. Entre novamente no Tatame+.';
@@ -132,7 +165,7 @@ class FirestoreUserRepository implements UserRepository {
         return 'A operação demorou mais do que o esperado. Tente novamente.';
 
       default:
-        return error.message ?? 'Não foi possível cadastrar o usuário.';
+        return error.message ?? 'Não foi possível concluir a operação.';
     }
   }
 }
@@ -142,6 +175,19 @@ class UserCreationException implements Exception {
   final String message;
 
   const UserCreationException({required this.code, required this.message});
+
+  @override
+  String toString() => message;
+}
+
+class MemberSynchronizationException implements Exception {
+  final String code;
+  final String message;
+
+  const MemberSynchronizationException({
+    required this.code,
+    required this.message,
+  });
 
   @override
   String toString() => message;

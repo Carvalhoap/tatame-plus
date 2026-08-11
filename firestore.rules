@@ -8,8 +8,8 @@ service cloud.firestore {
     }
 
     function isOwner(uid) {
-      return isSignedIn() &&
-        request.auth.uid == uid;
+      return isSignedIn()
+        && request.auth.uid == uid;
     }
 
     function memberPath(academyId, uid) {
@@ -42,52 +42,28 @@ service cloud.firestore {
         ).data.roles.admin == true;
     }
 
-    function userBelongsToAcademy(
-      academyId,
-      uid
-    ) {
-      return exists(
-        memberPath(
-          academyId,
-          uid
-        )
-      );
-    }
-
     match /users/{uid} {
-      allow get: if isOwner(uid)
-        || (
-          isSignedIn()
-          && isAdmin(
-            'gracie-barra-neves'
-          )
-          && userBelongsToAcademy(
-            'gracie-barra-neves',
-            uid
-          )
-        );
+      allow get: if isOwner(uid);
 
       allow list: if false;
+
       allow create, update, delete: if false;
     }
 
     match /academies/{academyId} {
-      allow get:
-        if isAcademyMember(academyId);
+      allow get: if isAcademyMember(academyId);
 
       allow list: if false;
+
       allow create, update, delete: if false;
 
       match /members/{uid} {
-        allow get:
-          if isOwner(uid)
+        allow get: if isOwner(uid)
           || isAdmin(academyId);
 
-        allow list:
-          if isAdmin(academyId);
+        allow list: if isAdmin(academyId);
 
-        allow create, update, delete:
-          if false;
+        allow create, update, delete: if false;
       }
 
       match /classrooms/{classroomId} {
@@ -95,7 +71,7 @@ service cloud.firestore {
           if isAcademyMember(academyId);
 
         allow create, update, delete:
-          if false;
+          if isAdmin(academyId);
       }
 
       match /graduationPrograms/{programId} {
@@ -103,7 +79,7 @@ service cloud.firestore {
           if isAcademyMember(academyId);
 
         allow create, update, delete:
-          if false;
+          if isAdmin(academyId);
       }
 
       match /auditLogs/{documentId} {
