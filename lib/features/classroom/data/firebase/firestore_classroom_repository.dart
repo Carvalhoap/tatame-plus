@@ -211,7 +211,7 @@ class FirestoreClassroomRepository implements ClassroomRepository {
           dayOfWeek: dayOfWeek,
           startTime: startTime,
           endTime: item['endTime'] as String?,
-          trainingTypeId: item['trainingTypeId'] as String?,
+          trainingTypeIds: _parseTrainingTypeIds(item),
           teacherId: item['teacherId'] as String?,
           isActive: item['isActive'] != false,
         ),
@@ -231,6 +231,25 @@ class FirestoreClassroomRepository implements ClassroomRepository {
     return schedules;
   }
 
+  List<String> _parseTrainingTypeIds(Map<dynamic, dynamic> item) {
+    final newFormat = item['trainingTypeIds'];
+
+    if (newFormat is List) {
+      return newFormat
+          .whereType<String>()
+          .where((id) => id.trim().isNotEmpty)
+          .toList(growable: false);
+    }
+
+    final legacyId = item['trainingTypeId'];
+
+    if (legacyId is String && legacyId.trim().isNotEmpty) {
+      return [legacyId.trim()];
+    }
+
+    return const [];
+  }
+
   Map<String, dynamic> _scheduleToMap(ClassSchedule schedule) {
     return {
       'id': schedule.id,
@@ -238,7 +257,7 @@ class FirestoreClassroomRepository implements ClassroomRepository {
       'dayOfWeek': schedule.dayOfWeek,
       'startTime': schedule.startTime,
       'endTime': _normalizeOptionalId(schedule.endTime),
-      'trainingTypeId': _normalizeOptionalId(schedule.trainingTypeId),
+      'trainingTypeIds': schedule.trainingTypeIds,
       'teacherId': _normalizeOptionalId(schedule.teacherId),
       'isActive': schedule.isActive,
     };

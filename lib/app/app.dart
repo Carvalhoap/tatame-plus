@@ -28,6 +28,9 @@ import '../features/classroom/repository/classroom_repository.dart';
 import '../features/graduation/data/firebase/firestore_graduation_program_repository.dart';
 import '../features/graduation/repository/graduation_program_repository.dart';
 
+import '../features/training_type/data/firebase/firestore_training_type_repository.dart';
+import '../features/training_type/repository/training_type_repository.dart';
+
 class TatamePlusApp extends StatelessWidget {
   const TatamePlusApp({super.key});
 
@@ -47,6 +50,10 @@ class TatamePlusApp extends StatelessWidget {
 
         Provider<GraduationProgramRepository>(
           create: (_) => FirestoreGraduationProgramRepository(),
+        ),
+
+        Provider<TrainingTypeRepository>(
+          create: (_) => FirestoreTrainingTypeRepository(),
         ),
 
         Provider<StudentRepository>(create: (_) => StudentMockRepository()),

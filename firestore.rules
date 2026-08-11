@@ -44,17 +44,13 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow get: if isOwner(uid);
-
       allow list: if false;
-
       allow create, update, delete: if false;
     }
 
     match /academies/{academyId} {
       allow get: if isAcademyMember(academyId);
-
       allow list: if false;
-
       allow create, update, delete: if false;
 
       match /members/{uid} {
@@ -63,10 +59,19 @@ service cloud.firestore {
 
         allow list: if isAdmin(academyId);
 
-        allow create, update, delete: if false;
+        allow create, update, delete:
+          if false;
       }
 
       match /classrooms/{classroomId} {
+        allow get, list:
+          if isAcademyMember(academyId);
+
+        allow create, update, delete:
+          if isAdmin(academyId);
+      }
+
+      match /trainingTypes/{trainingTypeId} {
         allow get, list:
           if isAcademyMember(academyId);
 

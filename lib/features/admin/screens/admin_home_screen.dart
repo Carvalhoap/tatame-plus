@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_drawer.dart';
 import '../../auth/services/session_service.dart';
 import '../../classroom/screens/classrooms_screen.dart';
+import '../../training_type/screens/training_types_screen.dart';
 import '../../users/screens/users_screen.dart';
 
 class AdminHomeScreen extends StatelessWidget {
@@ -81,6 +82,19 @@ class AdminHomeScreen extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (_) => const ClassroomsScreen(),
+                      ),
+                    );
+                  },
+                ),
+                _AdminCard(
+                  title: 'Tipos de Treino',
+                  subtitle: 'Gi, No-Gi e modalidades',
+                  icon: Icons.category_outlined,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const TrainingTypesScreen(),
                       ),
                     );
                   },

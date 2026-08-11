@@ -1,10 +1,398 @@
+﻿========== CLASSROOM SCREENS ==========
+C:\Users\XANCAR\tatame_plus\lib\features\classroom\screens\classrooms_screen.dart
+C:\Users\XANCAR\tatame_plus\lib\features\classroom\screens\classroom_form_screen.dart
+
+========== CONTEUDO DAS TELAS ==========
+
+------------------------------------------
+C:\Users\XANCAR\tatame_plus\lib\features\classroom\screens\classrooms_screen.dart
+------------------------------------------
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../auth/services/session_service.dart';
-import '../../training_type/models/training_type.dart';
-import '../../training_type/repository/training_type_repository.dart';
+import '../../users/models/academy_member.dart';
+import '../../users/repository/user_repository.dart';
+import '../models/classroom.dart';
+import '../repository/classroom_repository.dart';
+import 'classroom_form_screen.dart';
+
+class ClassroomsScreen extends StatefulWidget {
+  const ClassroomsScreen({super.key});
+
+  @override
+  State<ClassroomsScreen> createState() => _ClassroomsScreenState();
+}
+
+class _ClassroomsScreenState extends State<ClassroomsScreen> {
+  Future<_ClassroomsData>? future;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    future ??= load();
+  }
+
+  Future<_ClassroomsData> load() async {
+    final session = context.read<SessionService>();
+    final currentUser = session.currentUser;
+
+    if (currentUser == null) {
+      throw StateError('Nenhum usuÃ¡rio autenticado foi encontrado.');
+    }
+
+    final classroomsFuture = context.read<ClassroomRepository>().getClassrooms(
+      academyId: currentUser.academyId,
+    );
+
+    final teachersFuture = context.read<UserRepository>().getActiveTeachers(
+      academyId: currentUser.academyId,
+    );
+
+    final classrooms = await classroomsFuture;
+    final teachers = await teachersFuture;
+
+    return _ClassroomsData(classrooms: classrooms, teachers: teachers);
+  }
+
+  void reload() {
+    setState(() {
+      future = load();
+    });
+  }
+
+  Future<void> openForm({Classroom? classroom}) async {
+    final changed = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ClassroomFormScreen(classroom: classroom),
+      ),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (changed == true) {
+      reload();
+    }
+  }
+
+  Future<void> toggleActive(Classroom classroom) async {
+    final session = context.read<SessionService>();
+    final currentUser = session.currentUser;
+
+    if (currentUser == null) {
+      return;
+    }
+
+    try {
+      await context.read<ClassroomRepository>().setClassroomActive(
+        academyId: currentUser.academyId,
+        classroomId: classroom.id,
+        isActive: !classroom.isActive,
+        updatedBy: currentUser.id,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      reload();
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('NÃ£o foi possÃ­vel alterar a turma: $error')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Turmas'),
+        backgroundColor: AppColors.background,
+        foregroundColor: AppColors.brandPrimary,
+        elevation: 0,
+        actions: [
+          IconButton(
+            onPressed: reload,
+            tooltip: 'Atualizar',
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => openForm(),
+        backgroundColor: AppColors.brandPrimary,
+        foregroundColor: AppColors.white,
+        icon: const Icon(Icons.add),
+        label: const Text('Nova turma'),
+      ),
+      body: FutureBuilder<_ClassroomsData>(
+        future: future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return _ErrorState(onRetry: reload);
+          }
+
+          final data = snapshot.data!;
+
+          if (data.classrooms.isEmpty) {
+            return const _EmptyState();
+          }
+
+          return RefreshIndicator(
+            onRefresh: () async {
+              reload();
+              await future;
+            },
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+              itemCount: data.classrooms.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final classroom = data.classrooms[index];
+
+                final teacher = data.teacherById(classroom.defaultTeacherId);
+
+                return _ClassroomCard(
+                  classroom: classroom,
+                  teacher: teacher,
+                  onTap: () => openForm(classroom: classroom),
+                  onToggleActive: () => toggleActive(classroom),
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ClassroomsData {
+  final List<Classroom> classrooms;
+  final List<AcademyMember> teachers;
+
+  const _ClassroomsData({required this.classrooms, required this.teachers});
+
+  AcademyMember? teacherById(String? userId) {
+    if (userId == null) {
+      return null;
+    }
+
+    for (final teacher in teachers) {
+      if (teacher.userId == userId) {
+        return teacher;
+      }
+    }
+
+    return null;
+  }
+}
+
+class _ClassroomCard extends StatelessWidget {
+  final Classroom classroom;
+  final AcademyMember? teacher;
+
+  final VoidCallback onTap;
+  final VoidCallback onToggleActive;
+
+  const _ClassroomCard({
+    required this.classroom,
+    required this.teacher,
+    required this.onTap,
+    required this.onToggleActive,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final activeSchedules = classroom.schedules
+        .where((schedule) => schedule.isActive)
+        .toList();
+
+    return Card(
+      color: AppColors.white,
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      classroom.name,
+                      style: const TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.brandPrimary,
+                      ),
+                    ),
+                  ),
+                  Switch(
+                    value: classroom.isActive,
+                    onChanged: (_) => onToggleActive(),
+                  ),
+                ],
+              ),
+              if (classroom.description.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(classroom.description),
+              ],
+              const SizedBox(height: 10),
+              Text(
+                teacher == null
+                    ? 'Professor responsÃ¡vel nÃ£o definido'
+                    : 'Professor: ${teacher!.displayName}',
+                style: const TextStyle(color: AppColors.grey),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '${activeSchedules.length} horÃ¡rio(s) ativo(s)',
+                style: const TextStyle(color: AppColors.grey),
+              ),
+              if (activeSchedules.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                ...activeSchedules
+                    .take(4)
+                    .map(
+                      (schedule) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text(
+                          '${_dayName(schedule.dayOfWeek)} â€¢ '
+                          '${schedule.startTime}'
+                          '${schedule.endTime == null ? '' : ' - ${schedule.endTime}'}'
+                          ' â€¢ ${schedule.name}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.grey,
+                          ),
+                        ),
+                      ),
+                    ),
+                if (activeSchedules.length > 4)
+                  Text(
+                    '+ ${activeSchedules.length - 4} outro(s) horÃ¡rio(s)',
+                    style: const TextStyle(fontSize: 13, color: AppColors.grey),
+                  ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _dayName(int day) {
+    const names = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'SÃ¡b', 'Dom'];
+
+    if (day < 1 || day > names.length) {
+      return '?';
+    }
+
+    return names[day - 1];
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(30),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.calendar_month_outlined,
+              size: 64,
+              color: AppColors.grey,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Nenhuma turma cadastrada',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.brandPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Crie a primeira turma e configure a grade semanal.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.grey),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  final VoidCallback onRetry;
+
+  const _ErrorState({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(30),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.error_outline,
+              size: 60,
+              color: AppColors.gracieRed,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'NÃ£o foi possÃ­vel carregar as turmas.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 18),
+            ElevatedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Tentar novamente'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+------------------------------------------
+C:\Users\XANCAR\tatame_plus\lib\features\classroom\screens\classroom_form_screen.dart
+------------------------------------------
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../../core/theme/app_colors.dart';
+import '../../auth/services/session_service.dart';
 import '../../users/models/academy_member.dart';
 import '../../users/repository/user_repository.dart';
 import '../models/classroom.dart';
@@ -30,13 +418,12 @@ class _ClassroomFormScreenState extends State<ClassroomFormScreen> {
   final List<ClassSchedule> schedules = [];
 
   List<AcademyMember> teachers = [];
-  List<TrainingType> trainingTypes = [];
 
   String? defaultTeacherId;
 
   bool isActive = true;
   bool isLoading = false;
-  bool isLoadingReferences = true;
+  bool isLoadingTeachers = true;
 
   @override
   void initState() {
@@ -53,7 +440,7 @@ class _ClassroomFormScreenState extends State<ClassroomFormScreen> {
       schedules.addAll(classroom.schedules);
     }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) => loadReferences());
+    WidgetsBinding.instance.addPostFrameCallback((_) => loadTeachers());
   }
 
   @override
@@ -63,57 +450,40 @@ class _ClassroomFormScreenState extends State<ClassroomFormScreen> {
     super.dispose();
   }
 
-  Future<void> loadReferences() async {
+  Future<void> loadTeachers() async {
     final session = context.read<SessionService>();
     final currentUser = session.currentUser;
 
     if (currentUser == null) {
-      if (mounted) {
-        setState(() {
-          isLoadingReferences = false;
-        });
-      }
-
+      setState(() {
+        isLoadingTeachers = false;
+      });
       return;
     }
 
     try {
-      final teachersFuture = context.read<UserRepository>().getActiveTeachers(
+      final result = await context.read<UserRepository>().getActiveTeachers(
         academyId: currentUser.academyId,
       );
 
-      final trainingTypesFuture = context
-          .read<TrainingTypeRepository>()
-          .getTrainingTypes(
-            academyId: currentUser.academyId,
-            includeInactive: true,
-          );
-
-      final results = await Future.wait([teachersFuture, trainingTypesFuture]);
-
       if (!mounted) {
         return;
       }
 
       setState(() {
-        teachers = results[0] as List<AcademyMember>;
-
-        trainingTypes = results[1] as List<TrainingType>;
-
-        isLoadingReferences = false;
+        teachers = result;
+        isLoadingTeachers = false;
       });
-    } catch (error) {
+    } catch (_) {
       if (!mounted) {
         return;
       }
 
       setState(() {
-        isLoadingReferences = false;
+        isLoadingTeachers = false;
       });
 
-      _showError(
-        'Não foi possível carregar professores e tipos de treino: $error',
-      );
+      _showError('NÃ£o foi possÃ­vel carregar os professores.');
     }
   }
 
@@ -130,7 +500,7 @@ class _ClassroomFormScreenState extends State<ClassroomFormScreen> {
     final currentUser = session.currentUser;
 
     if (currentUser == null) {
-      _showError('Sua sessão não está disponível.');
+      _showError('Sua sessÃ£o nÃ£o estÃ¡ disponÃ­vel.');
       return;
     }
 
@@ -184,7 +554,7 @@ class _ClassroomFormScreenState extends State<ClassroomFormScreen> {
         return;
       }
 
-      _showError('Não foi possível salvar a turma: $error');
+      _showError('NÃ£o foi possÃ­vel salvar a turma: $error');
     } finally {
       if (mounted) {
         setState(() {
@@ -197,8 +567,7 @@ class _ClassroomFormScreenState extends State<ClassroomFormScreen> {
   Future<void> addSchedule() async {
     final result = await showDialog<ClassSchedule>(
       context: context,
-      builder: (_) =>
-          _ScheduleDialog(teachers: teachers, trainingTypes: trainingTypes),
+      builder: (_) => _ScheduleDialog(teachers: teachers),
     );
 
     if (result == null) {
@@ -214,11 +583,8 @@ class _ClassroomFormScreenState extends State<ClassroomFormScreen> {
   Future<void> editSchedule(int index) async {
     final result = await showDialog<ClassSchedule>(
       context: context,
-      builder: (_) => _ScheduleDialog(
-        teachers: teachers,
-        trainingTypes: trainingTypes,
-        schedule: schedules[index],
-      ),
+      builder: (_) =>
+          _ScheduleDialog(teachers: teachers, schedule: schedules[index]),
     );
 
     if (result == null) {
@@ -271,12 +637,6 @@ class _ClassroomFormScreenState extends State<ClassroomFormScreen> {
     return null;
   }
 
-  List<TrainingType> _trainingTypesByIds(List<String> ids) {
-    return trainingTypes
-        .where((type) => ids.contains(type.id))
-        .toList(growable: false);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -294,7 +654,7 @@ class _ClassroomFormScreenState extends State<ClassroomFormScreen> {
           children: [
             const _SectionTitle(
               title: 'Turma',
-              subtitle: 'Defina as informações gerais da turma.',
+              subtitle: 'Defina as informaÃ§Ãµes gerais da turma.',
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -317,13 +677,13 @@ class _ClassroomFormScreenState extends State<ClassroomFormScreen> {
               controller: descriptionController,
               maxLines: 3,
               decoration: _inputDecoration(
-                label: 'Descrição',
+                label: 'DescriÃ§Ã£o',
                 icon: Icons.description_outlined,
                 optional: true,
               ),
             ),
             const SizedBox(height: 14),
-            if (isLoadingReferences)
+            if (isLoadingTeachers)
               const Center(child: CircularProgressIndicator())
             else
               DropdownButtonFormField<String?>(
@@ -331,7 +691,7 @@ class _ClassroomFormScreenState extends State<ClassroomFormScreen> {
                     ? null
                     : defaultTeacherId,
                 decoration: _inputDecoration(
-                  label: 'Professor responsável',
+                  label: 'Professor responsÃ¡vel',
                   icon: Icons.school_outlined,
                   optional: true,
                 ),
@@ -359,12 +719,12 @@ class _ClassroomFormScreenState extends State<ClassroomFormScreen> {
                 const Expanded(
                   child: _SectionTitle(
                     title: 'Grade semanal',
-                    subtitle: 'Adicione quantos horários forem necessários.',
+                    subtitle: 'Adicione quantos horÃ¡rios forem necessÃ¡rios.',
                   ),
                 ),
                 IconButton.filled(
-                  onPressed: isLoadingReferences ? null : addSchedule,
-                  tooltip: 'Adicionar horário',
+                  onPressed: addSchedule,
+                  tooltip: 'Adicionar horÃ¡rio',
                   icon: const Icon(Icons.add),
                 ),
               ],
@@ -379,7 +739,6 @@ class _ClassroomFormScreenState extends State<ClassroomFormScreen> {
                 return _ScheduleCard(
                   schedule: schedule,
                   teacher: _teacherById(schedule.teacherId),
-                  trainingTypes: _trainingTypesByIds(schedule.trainingTypeIds),
                   onEdit: () => editSchedule(index),
                   onDelete: () => removeSchedule(index),
                 );
@@ -440,14 +799,9 @@ class _ClassroomFormScreenState extends State<ClassroomFormScreen> {
 
 class _ScheduleDialog extends StatefulWidget {
   final List<AcademyMember> teachers;
-  final List<TrainingType> trainingTypes;
   final ClassSchedule? schedule;
 
-  const _ScheduleDialog({
-    required this.teachers,
-    required this.trainingTypes,
-    this.schedule,
-  });
+  const _ScheduleDialog({required this.teachers, this.schedule});
 
   @override
   State<_ScheduleDialog> createState() => _ScheduleDialogState();
@@ -455,14 +809,10 @@ class _ScheduleDialog extends StatefulWidget {
 
 class _ScheduleDialogState extends State<_ScheduleDialog> {
   final formKey = GlobalKey<FormState>();
-
   final nameController = TextEditingController();
 
   late int dayOfWeek;
-
   String? teacherId;
-
-  final Set<String> selectedTrainingTypeIds = {};
 
   TimeOfDay? startTime;
   TimeOfDay? endTime;
@@ -476,13 +826,8 @@ class _ScheduleDialogState extends State<_ScheduleDialog> {
     final schedule = widget.schedule;
 
     nameController.text = schedule?.name ?? '';
-
     dayOfWeek = schedule?.dayOfWeek ?? 1;
-
     teacherId = schedule?.teacherId;
-
-    selectedTrainingTypeIds.addAll(schedule?.trainingTypeIds ?? const []);
-
     isActive = schedule?.isActive ?? true;
 
     if (schedule != null) {
@@ -498,14 +843,6 @@ class _ScheduleDialogState extends State<_ScheduleDialog> {
   void dispose() {
     nameController.dispose();
     super.dispose();
-  }
-
-  List<TrainingType> get selectableTrainingTypes {
-    return widget.trainingTypes
-        .where(
-          (type) => type.isActive || selectedTrainingTypeIds.contains(type.id),
-        )
-        .toList(growable: false);
   }
 
   Future<void> selectStartTime() async {
@@ -539,21 +876,7 @@ class _ScheduleDialogState extends State<_ScheduleDialog> {
       return;
     }
 
-    if (selectedTrainingTypeIds.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Selecione pelo menos um tipo de treino.'),
-        ),
-      );
-
-      return;
-    }
-
     if (startTime == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Informe o horário de início.')),
-      );
-
       return;
     }
 
@@ -567,7 +890,7 @@ class _ScheduleDialogState extends State<_ScheduleDialog> {
         dayOfWeek: dayOfWeek,
         startTime: _formatTime(startTime!),
         endTime: endTime == null ? null : _formatTime(endTime!),
-        trainingTypeIds: selectedTrainingTypeIds.toList(growable: false),
+        trainingTypeId: widget.schedule?.trainingTypeId,
         teacherId: teacherId,
         isActive: isActive,
       ),
@@ -576,34 +899,29 @@ class _ScheduleDialogState extends State<_ScheduleDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final hasSelectedTeacher = widget.teachers.any(
-      (teacher) => teacher.userId == teacherId,
-    );
-
     return AlertDialog(
       title: Text(
-        widget.schedule == null ? 'Adicionar horário' : 'Editar horário',
+        widget.schedule == null ? 'Adicionar horÃ¡rio' : 'Editar horÃ¡rio',
       ),
       content: SizedBox(
-        width: 520,
+        width: 480,
         child: Form(
           key: formKey,
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 TextFormField(
                   controller: nameController,
                   validator: (value) {
                     if ((value ?? '').trim().isEmpty) {
-                      return 'Informe o nome do horário.';
+                      return 'Informe o nome do horÃ¡rio.';
                     }
 
                     return null;
                   },
                   decoration: const InputDecoration(
-                    labelText: 'Nome do horário',
+                    labelText: 'Nome do horÃ¡rio',
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -613,86 +931,45 @@ class _ScheduleDialogState extends State<_ScheduleDialog> {
                   items: List.generate(7, (index) {
                     final day = index + 1;
 
-                    return DropdownMenuItem<int>(
+                    return DropdownMenuItem(
                       value: day,
                       child: Text(_dayName(day)),
                     );
                   }),
                   onChanged: (value) {
-                    if (value == null) {
-                      return;
+                    if (value != null) {
+                      setState(() {
+                        dayOfWeek = value;
+                      });
                     }
-
-                    setState(() {
-                      dayOfWeek = value;
-                    });
                   },
                 ),
-                const SizedBox(height: 18),
-                const Text(
-                  'Tipos de treino',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 6),
-                if (selectableTrainingTypes.isEmpty)
-                  const Text(
-                    'Nenhum tipo de treino ativo. Cadastre ou ative um tipo em Gestão → Tipos de Treino.',
-                    style: TextStyle(color: AppColors.gracieRed),
-                  )
-                else
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: selectableTrainingTypes.map((type) {
-                      final selected = selectedTrainingTypeIds.contains(
-                        type.id,
-                      );
-
-                      return FilterChip(
-                        label: Text(
-                          type.isActive ? type.name : '${type.name} (inativo)',
-                        ),
-                        selected: selected,
-                        onSelected: type.isActive || selected
-                            ? (value) {
-                                setState(() {
-                                  if (value) {
-                                    selectedTrainingTypeIds.add(type.id);
-                                  } else {
-                                    selectedTrainingTypeIds.remove(type.id);
-                                  }
-                                });
-                              }
-                            : null,
-                      );
-                    }).toList(),
-                  ),
                 const SizedBox(height: 14),
                 ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Horário de início'),
+                  title: const Text('HorÃ¡rio de inÃ­cio'),
                   subtitle: Text(
                     startTime == null
-                        ? 'Não definido'
+                        ? 'NÃ£o definido'
                         : _formatTime(startTime!),
                   ),
-                  trailing: const Icon(Icons.schedule),
                   onTap: selectStartTime,
                 ),
                 ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Horário de término'),
+                  title: const Text('HorÃ¡rio de tÃ©rmino'),
                   subtitle: Text(
                     endTime == null ? 'Opcional' : _formatTime(endTime!),
                   ),
-                  trailing: const Icon(Icons.schedule_outlined),
                   onTap: selectEndTime,
                 ),
-                const SizedBox(height: 8),
                 DropdownButtonFormField<String?>(
-                  initialValue: hasSelectedTeacher ? teacherId : null,
+                  initialValue:
+                      widget.teachers.any(
+                        (teacher) => teacher.userId == teacherId,
+                      )
+                      ? teacherId
+                      : null,
                   decoration: const InputDecoration(
-                    labelText: 'Professor deste horário',
+                    labelText: 'Professor deste horÃ¡rio',
                   ),
                   items: [
                     const DropdownMenuItem<String?>(
@@ -712,17 +989,6 @@ class _ScheduleDialogState extends State<_ScheduleDialog> {
                     });
                   },
                 ),
-                const SizedBox(height: 8),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Horário ativo'),
-                  value: isActive,
-                  onChanged: (value) {
-                    setState(() {
-                      isActive = value;
-                    });
-                  },
-                ),
               ],
             ),
           ),
@@ -733,10 +999,7 @@ class _ScheduleDialogState extends State<_ScheduleDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancelar'),
         ),
-        FilledButton(
-          onPressed: selectableTrainingTypes.isEmpty ? null : save,
-          child: const Text('Salvar'),
-        ),
+        FilledButton(onPressed: save, child: const Text('Salvar')),
       ],
     );
   }
@@ -749,7 +1012,6 @@ class _ScheduleDialogState extends State<_ScheduleDialog> {
     }
 
     final hour = int.tryParse(parts[0]);
-
     final minute = int.tryParse(parts[1]);
 
     if (hour == null || minute == null) {
@@ -770,11 +1032,11 @@ class _ScheduleDialogState extends State<_ScheduleDialog> {
   static String _dayName(int day) {
     const names = [
       'Segunda-feira',
-      'Terça-feira',
+      'TerÃ§a-feira',
       'Quarta-feira',
       'Quinta-feira',
       'Sexta-feira',
-      'Sábado',
+      'SÃ¡bado',
       'Domingo',
     ];
 
@@ -785,35 +1047,26 @@ class _ScheduleDialogState extends State<_ScheduleDialog> {
 class _ScheduleCard extends StatelessWidget {
   final ClassSchedule schedule;
   final AcademyMember? teacher;
-  final List<TrainingType> trainingTypes;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const _ScheduleCard({
     required this.schedule,
     required this.teacher,
-    required this.trainingTypes,
     required this.onEdit,
     required this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
-    final typeNames = trainingTypes.isEmpty
-        ? 'Tipo não definido'
-        : trainingTypes.map((type) => type.name).join(' • ');
-
     return Card(
       child: ListTile(
         title: Text(schedule.name),
         subtitle: Text(
-          '$typeNames'
-          '\n${_dayName(schedule.dayOfWeek)} • '
           '${schedule.startTime}'
           '${schedule.endTime == null ? '' : ' - ${schedule.endTime}'}'
-          '${teacher == null ? '' : '\nProfessor: ${teacher!.displayName}'}',
+          '${teacher == null ? '' : '\n${teacher!.displayName}'}',
         ),
-        isThreeLine: true,
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -827,16 +1080,6 @@ class _ScheduleCard extends StatelessWidget {
       ),
     );
   }
-
-  static String _dayName(int day) {
-    const names = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
-
-    if (day < 1 || day > names.length) {
-      return '?';
-    }
-
-    return names[day - 1];
-  }
 }
 
 class _EmptySchedules extends StatelessWidget {
@@ -847,7 +1090,7 @@ class _EmptySchedules extends StatelessWidget {
     return const Card(
       child: Padding(
         padding: EdgeInsets.all(24),
-        child: Text('Nenhum horário cadastrado.'),
+        child: Text('Nenhum horÃ¡rio cadastrado.'),
       ),
     );
   }
