@@ -42,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (user == null) {
         setState(() {
           isLoading = false;
-          errorMessage = 'O usuÃ¡rio nÃ£o pÃ´de ser carregado.';
+          errorMessage = 'O usuário não pôde ser carregado.';
         });
         return;
       }

@@ -24,7 +24,7 @@ const mockStudentDashboardData = StudentDashboardData(
   streak: 5,
   nextAchievement: 'Guerreiro de Bronze',
   achievementProgress: 0.82,
-  nextTraining: 'Hoje â€¢ 20:30',
-  teacherName: 'Professor ThiagÃ£o',
-  quote: 'A disciplina vence o talento quando o talento nÃ£o tem disciplina.',
+  nextTraining: 'Hoje • 20:30',
+  teacherName: 'Professor Thiagão',
+  quote: 'A disciplina vence o talento quando o talento não tem disciplina.',
 );

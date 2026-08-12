@@ -38,7 +38,7 @@ class StudentHomeScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Bom dia, ${student.fullName} ðŸ‘‹',
+              'Bom dia, ${student.fullName} 👋',
               style: const TextStyle(
                 fontSize: 30,
                 fontWeight: FontWeight.bold,
@@ -47,7 +47,7 @@ class StudentHomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Cada treino aproxima vocÃª da sua prÃ³xima evoluÃ§Ã£o.',
+              'Cada treino aproxima você da sua próxima evolução.',
               style: TextStyle(fontSize: 18, color: AppColors.grey),
             ),
             const SizedBox(height: 22),
@@ -67,7 +67,7 @@ class StudentHomeScreen extends StatelessWidget {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text(
-                          'PresenÃ§a registrada com sucesso! +1 treino.',
+                          'Presença registrada com sucesso! +1 treino.',
                         ),
                       ),
                     );
@@ -75,7 +75,7 @@ class StudentHomeScreen extends StatelessWidget {
                 },
                 icon: const Icon(Icons.qr_code_scanner),
                 label: const Text(
-                  'Registrar presenÃ§a',
+                  'Registrar presença',
                   style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
@@ -93,7 +93,7 @@ class StudentHomeScreen extends StatelessWidget {
             const BeltJourneyCard(),
             const SizedBox(height: 18),
             const Text(
-              'Minha graduaÃ§Ã£o',
+              'Minha graduação',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -112,7 +112,7 @@ class StudentHomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             _InfoCard(
-              title: 'ðŸ”¥ Meta do mÃªs',
+              title: '🔥 Meta do mês',
               subtitle:
                   '${dashboard.monthlyTrainings} / '
                   '${dashboard.monthlyGoal} treinos',
@@ -121,25 +121,25 @@ class StudentHomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             _SimpleCard(
-              title: 'ðŸ† PrÃ³xima conquista',
+              title: '🏆 Próxima conquista',
               text:
-                  '${dashboard.nextAchievement} â€¢ '
+                  '${dashboard.nextAchievement} • '
                   '${(dashboard.achievementProgress * 100).round()}%',
             ),
             const SizedBox(height: 18),
             _SimpleCard(
-              title: 'ðŸ”¥ SequÃªncia atual',
+              title: '🔥 Sequência atual',
               text: '${dashboard.streak} treinos consecutivos',
             ),
             const SizedBox(height: 18),
             _SimpleCard(
-              title: 'ðŸ“… PrÃ³ximo treino',
+              title: '📅 Próximo treino',
               text:
                   '${dashboard.nextTraining}\n'
                   '${dashboard.teacherName}',
             ),
             const SizedBox(height: 18),
-            _SimpleCard(title: 'ðŸ’¬ Frase do dia', text: dashboard.quote),
+            _SimpleCard(title: '💬 Frase do dia', text: dashboard.quote),
           ],
         ),
       ),

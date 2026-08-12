@@ -6,8 +6,8 @@ class Student {
 
   /// UID do Firebase Authentication.
   ///
-  /// Pode ser nulo para alunos que nÃ£o possuem login prÃ³prio,
-  /// como crianÃ§as vinculadas a um responsÃ¡vel.
+  /// Pode ser nulo para alunos que não possuem login próprio,
+  /// como crianças vinculadas a um responsável.
   final String? userId;
 
   final String fullName;
@@ -17,12 +17,12 @@ class Student {
   final String? email;
   final String? photoUrl;
 
-  /// Programa oficial de graduaÃ§Ã£o utilizado por este aluno.
+  /// Programa oficial de graduação utilizado por este aluno.
   ///
   /// Exemplo: adult_program_1.
   final String? graduationProgramId;
 
-  /// Data em que comeÃ§ou a praticar Jiu-Jitsu.
+  /// Data em que começou a praticar Jiu-Jitsu.
   final DateTime? jiuJitsuStartDate;
 
   /// Data de entrada nesta academia.
@@ -36,7 +36,7 @@ class Student {
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  /// UID do usuÃ¡rio que realizou o cadastro.
+  /// UID do usuário que realizou o cadastro.
   final String createdBy;
 
   const Student({

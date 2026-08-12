@@ -20,9 +20,8 @@ class GraduationCard extends StatelessWidget {
     final currentStage = _findStage(progress.currentStageId);
 
     if (currentStage == null) {
-      return _UnavailableGraduationCard(
-        message:
-            'O estÃ¡gio atual de graduaÃ§Ã£o nÃ£o foi encontrado no programa.',
+      return const _UnavailableGraduationCard(
+        message: 'O estágio atual de graduação não foi encontrado no programa.',
       );
     }
 
@@ -54,7 +53,7 @@ class GraduationCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'ðŸ¥‹ PrÃ³xima graduaÃ§Ã£o',
+            '🥋 Próxima graduação',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -65,7 +64,7 @@ class GraduationCard extends StatelessWidget {
           Text(
             nextStage == null
                 ? currentStage.name
-                : '${currentStage.name} â†’ ${nextStage.name}',
+                : '${currentStage.name} → ${nextStage.name}',
             style: const TextStyle(fontSize: 18),
           ),
           if (attendanceProgress != null) ...[
@@ -80,14 +79,14 @@ class GraduationCard extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               '${progress.validAttendances} / '
-              '$requiredAttendances presenÃ§as vÃ¡lidas',
+              '$requiredAttendances presenças válidas',
               style: const TextStyle(fontSize: 16),
             ),
           ],
           if (currentStage.minimumDurationMonths != null) ...[
             const SizedBox(height: 12),
             Text(
-              'Tempo mÃ­nimo: '
+              'Tempo mínimo: '
               '${currentStage.minimumDurationMonths} meses',
               style: const TextStyle(color: AppColors.grey),
             ),
@@ -95,7 +94,7 @@ class GraduationCard extends StatelessWidget {
           if (progress.estimatedCompletionDate != null) ...[
             const SizedBox(height: 6),
             Text(
-              'PrevisÃ£o: '
+              'Previsão: '
               '${_formatDate(progress.estimatedCompletionDate!)}',
               style: const TextStyle(
                 color: AppColors.success,
@@ -132,7 +131,7 @@ class GraduationCard extends StatelessWidget {
     const months = [
       'janeiro',
       'fevereiro',
-      'marÃ§o',
+      'março',
       'abril',
       'maio',
       'junho',

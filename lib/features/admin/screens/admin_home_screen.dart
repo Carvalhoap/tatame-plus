@@ -4,10 +4,10 @@ import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_drawer.dart';
 import '../../auth/services/session_service.dart';
+import '../../class_occurrence/screens/class_occurrences_screen.dart';
 import '../../classroom/screens/classrooms_screen.dart';
 import '../../training_type/screens/training_types_screen.dart';
 import '../../users/screens/users_screen.dart';
-import '../../class_occurrence/screens/class_occurrences_screen.dart';
 
 class AdminHomeScreen extends StatelessWidget {
   const AdminHomeScreen({super.key});
@@ -21,7 +21,7 @@ class AdminHomeScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       drawer: const AppDrawer(),
       appBar: AppBar(
-        title: const Text('GestÃƒÂ£o'),
+        title: const Text('Gestão'),
         backgroundColor: AppColors.background,
         foregroundColor: AppColors.brandPrimary,
         elevation: 0,
@@ -32,7 +32,7 @@ class AdminHomeScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'OlÃƒÂ¡, ${user?.name ?? 'Administrador'}',
+              'Olá, ${user?.name ?? 'Administrador'}',
               style: const TextStyle(
                 fontSize: 30,
                 fontWeight: FontWeight.bold,
@@ -41,7 +41,7 @@ class AdminHomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Acompanhe e organize a operaÃƒÂ§ÃƒÂ£o da academia.',
+              'Acompanhe e organize a operação da academia.',
               style: TextStyle(fontSize: 17, color: AppColors.grey),
             ),
             const SizedBox(height: 28),
@@ -54,8 +54,8 @@ class AdminHomeScreen extends StatelessWidget {
               childAspectRatio: 1.1,
               children: [
                 _AdminCard(
-                  title: 'UsuÃƒÂ¡rios',
-                  subtitle: 'Cadastros e permissÃƒÂµes',
+                  title: 'Usuários',
+                  subtitle: 'Cadastros e permissões',
                   icon: Icons.manage_accounts,
                   onTap: () {
                     Navigator.push(
@@ -66,17 +66,17 @@ class AdminHomeScreen extends StatelessWidget {
                 ),
                 const _AdminCard(
                   title: 'Alunos',
-                  subtitle: 'Dados e vÃƒÂ­nculos esportivos',
+                  subtitle: 'Dados e vínculos esportivos',
                   icon: Icons.groups,
                 ),
                 const _AdminCard(
                   title: 'Professores',
-                  subtitle: 'Equipe e permissÃƒÂµes',
+                  subtitle: 'Equipe e permissões',
                   icon: Icons.school,
                 ),
                 _AdminCard(
                   title: 'Turmas',
-                  subtitle: 'HorÃƒÂ¡rios e organizaÃƒÂ§ÃƒÂ£o',
+                  subtitle: 'Horários e organização',
                   icon: Icons.calendar_month,
                   onTap: () {
                     Navigator.push(
@@ -119,13 +119,13 @@ class AdminHomeScreen extends StatelessWidget {
                   icon: Icons.payments_outlined,
                 ),
                 const _AdminCard(
-                  title: 'GraduaÃƒÂ§ÃƒÂµes',
-                  subtitle: 'Aptos e progressÃƒÂ£o',
+                  title: 'Graduações',
+                  subtitle: 'Aptos e progressão',
                   icon: Icons.sports_martial_arts,
                 ),
                 const _AdminCard(
-                  title: 'RelatÃƒÂ³rios',
-                  subtitle: 'PresenÃƒÂ§as e indicadores',
+                  title: 'Relatórios',
+                  subtitle: 'Presenças e indicadores',
                   icon: Icons.bar_chart,
                 ),
               ],
