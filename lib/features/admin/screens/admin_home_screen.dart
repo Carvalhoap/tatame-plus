@@ -51,7 +51,7 @@ class AdminHomeScreen extends StatelessWidget {
               physics: const NeverScrollableScrollPhysics(),
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
-              childAspectRatio: 1.1,
+              childAspectRatio: 0.95,
               children: [
                 _AdminCard(
                   title: 'Usuários',
@@ -169,6 +169,8 @@ class _AdminCard extends StatelessWidget {
               Text(
                 title,
                 textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -179,7 +181,13 @@ class _AdminCard extends StatelessWidget {
               Text(
                 subtitle,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 13, color: AppColors.grey),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.grey,
+                  height: 1.25,
+                ),
               ),
             ],
           ),
