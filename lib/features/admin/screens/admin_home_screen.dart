@@ -7,6 +7,7 @@ import '../../auth/services/session_service.dart';
 import '../../classroom/screens/classrooms_screen.dart';
 import '../../training_type/screens/training_types_screen.dart';
 import '../../users/screens/users_screen.dart';
+import '../../class_occurrence/screens/class_occurrences_screen.dart';
 
 class AdminHomeScreen extends StatelessWidget {
   const AdminHomeScreen({super.key});
@@ -20,7 +21,7 @@ class AdminHomeScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       drawer: const AppDrawer(),
       appBar: AppBar(
-        title: const Text('Gestão'),
+        title: const Text('GestÃƒÂ£o'),
         backgroundColor: AppColors.background,
         foregroundColor: AppColors.brandPrimary,
         elevation: 0,
@@ -31,7 +32,7 @@ class AdminHomeScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Olá, ${user?.name ?? 'Administrador'}',
+              'OlÃƒÂ¡, ${user?.name ?? 'Administrador'}',
               style: const TextStyle(
                 fontSize: 30,
                 fontWeight: FontWeight.bold,
@@ -40,7 +41,7 @@ class AdminHomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Acompanhe e organize a operação da academia.',
+              'Acompanhe e organize a operaÃƒÂ§ÃƒÂ£o da academia.',
               style: TextStyle(fontSize: 17, color: AppColors.grey),
             ),
             const SizedBox(height: 28),
@@ -53,8 +54,8 @@ class AdminHomeScreen extends StatelessWidget {
               childAspectRatio: 1.1,
               children: [
                 _AdminCard(
-                  title: 'Usuários',
-                  subtitle: 'Cadastros e permissões',
+                  title: 'UsuÃƒÂ¡rios',
+                  subtitle: 'Cadastros e permissÃƒÂµes',
                   icon: Icons.manage_accounts,
                   onTap: () {
                     Navigator.push(
@@ -65,17 +66,17 @@ class AdminHomeScreen extends StatelessWidget {
                 ),
                 const _AdminCard(
                   title: 'Alunos',
-                  subtitle: 'Dados e vínculos esportivos',
+                  subtitle: 'Dados e vÃƒÂ­nculos esportivos',
                   icon: Icons.groups,
                 ),
                 const _AdminCard(
                   title: 'Professores',
-                  subtitle: 'Equipe e permissões',
+                  subtitle: 'Equipe e permissÃƒÂµes',
                   icon: Icons.school,
                 ),
                 _AdminCard(
                   title: 'Turmas',
-                  subtitle: 'Horários e organização',
+                  subtitle: 'HorÃƒÂ¡rios e organizaÃƒÂ§ÃƒÂ£o',
                   icon: Icons.calendar_month,
                   onTap: () {
                     Navigator.push(
@@ -99,19 +100,32 @@ class AdminHomeScreen extends StatelessWidget {
                     );
                   },
                 ),
+                _AdminCard(
+                  title: 'Agenda / Exceções',
+                  subtitle: 'Substituições, cancelamentos e treinos extras',
+                  icon: Icons.event_note,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ClassOccurrencesScreen(),
+                      ),
+                    );
+                  },
+                ),
                 const _AdminCard(
                   title: 'Financeiro',
                   subtitle: 'Planos e pagamentos',
                   icon: Icons.payments_outlined,
                 ),
                 const _AdminCard(
-                  title: 'Graduações',
-                  subtitle: 'Aptos e progressão',
+                  title: 'GraduaÃƒÂ§ÃƒÂµes',
+                  subtitle: 'Aptos e progressÃƒÂ£o',
                   icon: Icons.sports_martial_arts,
                 ),
                 const _AdminCard(
-                  title: 'Relatórios',
-                  subtitle: 'Presenças e indicadores',
+                  title: 'RelatÃƒÂ³rios',
+                  subtitle: 'PresenÃƒÂ§as e indicadores',
                   icon: Icons.bar_chart,
                 ),
               ],

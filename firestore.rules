@@ -59,8 +59,7 @@ service cloud.firestore {
 
         allow list: if isAdmin(academyId);
 
-        allow create, update, delete:
-          if false;
+        allow create, update, delete: if false;
       }
 
       match /classrooms/{classroomId} {
@@ -72,6 +71,14 @@ service cloud.firestore {
       }
 
       match /trainingTypes/{trainingTypeId} {
+        allow get, list:
+          if isAcademyMember(academyId);
+
+        allow create, update, delete:
+          if isAdmin(academyId);
+      }
+
+      match /classOccurrences/{occurrenceId} {
         allow get, list:
           if isAcademyMember(academyId);
 
