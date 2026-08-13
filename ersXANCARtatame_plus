@@ -1,0 +1,323 @@
+warning: in the working copy of 'lib/features/admin/screens/admin_home_screen.dart', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/features/student/data/student_mock.dart', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/features/student/models/student.dart', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/features/student/student_home_screen.dart', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/features/student/widgets/graduation_card.dart', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/lib/features/admin/screens/admin_home_screen.dart b/lib/features/admin/screens/admin_home_screen.dart[m
+[1mindex 10c173a..30245dd 100644[m
+[1m--- a/lib/features/admin/screens/admin_home_screen.dart[m
+[1m+++ b/lib/features/admin/screens/admin_home_screen.dart[m
+[36m@@ -4,10 +4,10 @@[m [mimport 'package:provider/provider.dart';[m
+ import '../../../core/theme/app_colors.dart';[m
+ import '../../../core/widgets/app_drawer.dart';[m
+ import '../../auth/services/session_service.dart';[m
+[32m+[m[32mimport '../../class_occurrence/screens/class_occurrences_screen.dart';[m
+ import '../../classroom/screens/classrooms_screen.dart';[m
+ import '../../training_type/screens/training_types_screen.dart';[m
+ import '../../users/screens/users_screen.dart';[m
+[31m-import '../../class_occurrence/screens/class_occurrences_screen.dart';[m
+ [m
+ class AdminHomeScreen extends StatelessWidget {[m
+   const AdminHomeScreen({super.key});[m
+[36m@@ -21,7 +21,7 @@[m [mclass AdminHomeScreen extends StatelessWidget {[m
+       backgroundColor: AppColors.background,[m
+       drawer: const AppDrawer(),[m
+       appBar: AppBar([m
+[31m-        title: const Text('GestÃƒÂ£o'),[m
+[32m+[m[32m        title: const Text('Gestão'),[m
+         backgroundColor: AppColors.background,[m
+         foregroundColor: AppColors.brandPrimary,[m
+         elevation: 0,[m
+[36m@@ -32,7 +32,7 @@[m [mclass AdminHomeScreen extends StatelessWidget {[m
+           crossAxisAlignment: CrossAxisAlignment.start,[m
+           children: [[m
+             Text([m
+[31m-              'OlÃƒÂ¡, ${user?.name ?? 'Administrador'}',[m
+[32m+[m[32m              'Olá, ${user?.name ?? 'Administrador'}',[m
+               style: const TextStyle([m
+                 fontSize: 30,[m
+                 fontWeight: FontWeight.bold,[m
+[36m@@ -41,7 +41,7 @@[m [mclass AdminHomeScreen extends StatelessWidget {[m
+             ),[m
+             const SizedBox(height: 8),[m
+             const Text([m
+[31m-              'Acompanhe e organize a operaÃƒÂ§ÃƒÂ£o da academia.',[m
+[32m+[m[32m              'Acompanhe e organize a operação da academia.',[m
+               style: TextStyle(fontSize: 17, color: AppColors.grey),[m
+             ),[m
+             const SizedBox(height: 28),[m
+[36m@@ -54,8 +54,8 @@[m [mclass AdminHomeScreen extends StatelessWidget {[m
+               childAspectRatio: 1.1,[m
+               children: [[m
+                 _AdminCard([m
+[31m-                  title: 'UsuÃƒÂ¡rios',[m
+[31m-                  subtitle: 'Cadastros e permissÃƒÂµes',[m
+[32m+[m[32m                  title: 'Usuários',[m
+[32m+[m[32m                  subtitle: 'Cadastros e permissões',[m
+                   icon: Icons.manage_accounts,[m
+                   onTap: () {[m
+                     Navigator.push([m
+[36m@@ -66,17 +66,17 @@[m [mclass AdminHomeScreen extends StatelessWidget {[m
+                 ),[m
+                 const _AdminCard([m
+                   title: 'Alunos',[m
+[31m-                  subtitle: 'Dados e vÃƒÂ­nculos esportivos',[m
+[32m+[m[32m                  subtitle: 'Dados e vínculos esportivos',[m
+                   icon: Icons.groups,[m
+                 ),[m
+                 const _AdminCard([m
+                   title: 'Professores',[m
+[31m-                  subtitle: 'Equipe e permissÃƒÂµes',[m
+[32m+[m[32m                  subtitle: 'Equipe e permissões',[m
+                   icon: Icons.school,[m
+                 ),[m
+                 _AdminCard([m
+                   title: 'Turmas',[m
+[31m-                  subtitle: 'HorÃƒÂ¡rios e organizaÃƒÂ§ÃƒÂ£o',[m
+[32m+[m[32m                  subtitle: 'Horários e organização',[m
+                   icon: Icons.calendar_month,[m
+                   onTap: () {[m
+                     Navigator.push([m
+[36m@@ -119,13 +119,13 @@[m [mclass AdminHomeScreen extends StatelessWidget {[m
+                   icon: Icons.payments_outlined,[m
+                 ),[m
+                 const _AdminCard([m
+[31m-                  title: 'GraduaÃƒÂ§ÃƒÂµes',[m
+[31m-                  subtitle: 'Aptos e progressÃƒÂ£o',[m
+[32m+[m[32m                  title: 'Graduações',[m
+[32m+[m[32m                  subtitle: 'Aptos e progressão',[m
+                   icon: Icons.sports_martial_arts,[m
+                 ),[m
+                 const _AdminCard([m
+[31m-                  title: 'RelatÃƒÂ³rios',[m
+[31m-                  subtitle: 'PresenÃƒÂ§as e indicadores',[m
+[32m+[m[32m                  title: 'Relatórios',[m
+[32m+[m[32m                  subtitle: 'Presenças e indicadores',[m
+                   icon: Icons.bar_chart,[m
+                 ),[m
+               ],[m
+[1mdiff --git a/lib/features/auth/screens/login_screen.dart b/lib/features/auth/screens/login_screen.dart[m
+[1mindex ac47972..be6f593 100644[m
+[1m--- a/lib/features/auth/screens/login_screen.dart[m
+[1m+++ b/lib/features/auth/screens/login_screen.dart[m
+[36m@@ -42,7 +42,7 @@[m [mclass _LoginScreenState extends State<LoginScreen> {[m
+       if (user == null) {[m
+         setState(() {[m
+           isLoading = false;[m
+[31m-          errorMessage = 'O usuÃ¡rio nÃ£o pÃ´de ser carregado.';[m
+[32m+[m[32m          errorMessage = 'O usuário não pôde ser carregado.';[m
+         });[m
+         return;[m
+       }[m
+[1mdiff --git a/lib/features/student/data/student_mock.dart b/lib/features/student/data/student_mock.dart[m
+[1mindex 49bf803..5e1b270 100644[m
+[1m--- a/lib/features/student/data/student_mock.dart[m
+[1m+++ b/lib/features/student/data/student_mock.dart[m
+[36m@@ -24,7 +24,7 @@[m [mconst mockStudentDashboardData = StudentDashboardData([m
+   streak: 5,[m
+   nextAchievement: 'Guerreiro de Bronze',[m
+   achievementProgress: 0.82,[m
+[31m-  nextTraining: 'Hoje â€¢ 20:30',[m
+[31m-  teacherName: 'Professor ThiagÃ£o',[m
+[31m-  quote: 'A disciplina vence o talento quando o talento nÃ£o tem disciplina.',[m
+[32m+[m[32m  nextTraining: 'Hoje • 20:30',[m
+[32m+[m[32m  teacherName: 'Professor Thiagão',[m
+[32m+[m[32m  quote: 'A disciplina vence o talento quando o talento não tem disciplina.',[m
+ );[m
+[1mdiff --git a/lib/features/student/models/student.dart b/lib/features/student/models/student.dart[m
+[1mindex 48e68d2..edb68ba 100644[m
+[1m--- a/lib/features/student/models/student.dart[m
+[1m+++ b/lib/features/student/models/student.dart[m
+[36m@@ -6,8 +6,8 @@[m [mclass Student {[m
+ [m
+   /// UID do Firebase Authentication.[m
+   ///[m
+[31m-  /// Pode ser nulo para alunos que nÃ£o possuem login prÃ³prio,[m
+[31m-  /// como crianÃ§as vinculadas a um responsÃ¡vel.[m
+[32m+[m[32m  /// Pode ser nulo para alunos que não possuem login próprio,[m
+[32m+[m[32m  /// como crianças vinculadas a um responsável.[m
+   final String? userId;[m
+ [m
+   final String fullName;[m
+[36m@@ -17,12 +17,12 @@[m [mclass Student {[m
+   final String? email;[m
+   final String? photoUrl;[m
+ [m
+[31m-  /// Programa oficial de graduaÃ§Ã£o utilizado por este aluno.[m
+[32m+[m[32m  /// Programa oficial de graduação utilizado por este aluno.[m
+   ///[m
+   /// Exemplo: adult_program_1.[m
+   final String? graduationProgramId;[m
+ [m
+[31m-  /// Data em que comeÃ§ou a praticar Jiu-Jitsu.[m
+[32m+[m[32m  /// Data em que começou a praticar Jiu-Jitsu.[m
+   final DateTime? jiuJitsuStartDate;[m
+ [m
+   /// Data de entrada nesta academia.[m
+[36m@@ -36,7 +36,7 @@[m [mclass Student {[m
+   final DateTime createdAt;[m
+   final DateTime updatedAt;[m
+ [m
+[31m-  /// UID do usuÃ¡rio que realizou o cadastro.[m
+[32m+[m[32m  /// UID do usuário que realizou o cadastro.[m
+   final String createdBy;[m
+ [m
+   const Student({[m
+[1mdiff --git a/lib/features/student/student_home_screen.dart b/lib/features/student/student_home_screen.dart[m
+[1mindex 5da71af..af02efb 100644[m
+[1m--- a/lib/features/student/student_home_screen.dart[m
+[1m+++ b/lib/features/student/student_home_screen.dart[m
+[36m@@ -38,7 +38,7 @@[m [mclass StudentHomeScreen extends StatelessWidget {[m
+           crossAxisAlignment: CrossAxisAlignment.start,[m
+           children: [[m
+             Text([m
+[31m-              'Bom dia, ${student.fullName} ðŸ‘‹',[m
+[32m+[m[32m              'Bom dia, ${student.fullName} 👋',[m
+               style: const TextStyle([m
+                 fontSize: 30,[m
+                 fontWeight: FontWeight.bold,[m
+[36m@@ -47,7 +47,7 @@[m [mclass StudentHomeScreen extends StatelessWidget {[m
+             ),[m
+             const SizedBox(height: 8),[m
+             const Text([m
+[31m-              'Cada treino aproxima vocÃª da sua prÃ³xima evoluÃ§Ã£o.',[m
+[32m+[m[32m              'Cada treino aproxima você da sua próxima evolução.',[m
+               style: TextStyle(fontSize: 18, color: AppColors.grey),[m
+             ),[m
+             const SizedBox(height: 22),[m
+[36m@@ -67,7 +67,7 @@[m [mclass StudentHomeScreen extends StatelessWidget {[m
+                     ScaffoldMessenger.of(context).showSnackBar([m
+                       const SnackBar([m
+                         content: Text([m
+[31m-                          'PresenÃ§a registrada com sucesso! +1 treino.',[m
+[32m+[m[32m                          'Presença registrada com sucesso! +1 treino.',[m
+                         ),[m
+                       ),[m
+                     );[m
+[36m@@ -75,7 +75,7 @@[m [mclass StudentHomeScreen extends StatelessWidget {[m
+                 },[m
+                 icon: const Icon(Icons.qr_code_scanner),[m
+                 label: const Text([m
+[31m-                  'Registrar presenÃ§a',[m
+[32m+[m[32m                  'Registrar presença',[m
+                   style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),[m
+                 ),[m
+                 style: ElevatedButton.styleFrom([m
+[36m@@ -93,7 +93,7 @@[m [mclass StudentHomeScreen extends StatelessWidget {[m
+             const BeltJourneyCard(),[m
+             const SizedBox(height: 18),[m
+             const Text([m
+[31m-              'Minha graduaÃ§Ã£o',[m
+[32m+[m[32m              'Minha graduação',[m
+               style: TextStyle([m
+                 fontSize: 22,[m
+                 fontWeight: FontWeight.bold,[m
+[36m@@ -112,7 +112,7 @@[m [mclass StudentHomeScreen extends StatelessWidget {[m
+             ),[m
+             const SizedBox(height: 18),[m
+             _InfoCard([m
+[31m-              title: 'ðŸ”¥ Meta do mÃªs',[m
+[32m+[m[32m              title: '🔥 Meta do mês',[m
+               subtitle:[m
+                   '${dashboard.monthlyTrainings} / '[m
+                   '${dashboard.monthlyGoal} treinos',[m
+[36m@@ -121,25 +121,25 @@[m [mclass StudentHomeScreen extends StatelessWidget {[m
+             ),[m
+             const SizedBox(height: 18),[m
+             _SimpleCard([m
+[31m-              title: 'ðŸ† PrÃ³xima conquista',[m
+[32m+[m[32m              title: '🏆 Próxima conquista',[m
+               text:[m
+[31m-                  '${dashboard.nextAchievement} â€¢ '[m
+[32m+[m[32m                  '${dashboard.nextAchievement} • '[m
+                   '${(dashboard.achievementProgress * 100).round()}%',[m
+             ),[m
+             const SizedBox(height: 18),[m
+             _SimpleCard([m
+[31m-              title: 'ðŸ”¥ SequÃªncia atual',[m
+[32m+[m[32m              title: '🔥 Sequência atual',[m
+               text: '${dashboard.streak} treinos consecutivos',[m
+             ),[m
+             const SizedBox(height: 18),[m
+             _SimpleCard([m
+[31m-              title: 'ðŸ“… PrÃ³ximo treino',[m
+[32m+[m[32m              title: '📅 Próximo treino',[m
+               text:[m
+                   '${dashboard.nextTraining}\n'[m
+                   '${dashboard.teacherName}',[m
+             ),[m
+             const SizedBox(height: 18),[m
+[31m-            _SimpleCard(title: 'ðŸ’¬ Frase do dia', text: dashboard.quote),[m
+[32m+[m[32m            _SimpleCard(title: '💬 Frase do dia', text: dashboard.quote),[m
+           ],[m
+         ),[m
+       ),[m
+[1mdiff --git a/lib/features/student/widgets/graduation_card.dart b/lib/features/student/widgets/graduation_card.dart[m
+[1mindex b004f8f..161b7ba 100644[m
+[1m--- a/lib/features/student/widgets/graduation_card.dart[m
+[1m+++ b/lib/features/student/widgets/graduation_card.dart[m
+[36m@@ -20,9 +20,8 @@[m [mclass GraduationCard extends StatelessWidget {[m
+     final currentStage = _findStage(progress.currentStageId);[m
+ [m
+     if (currentStage == null) {[m
+[31m-      return _UnavailableGraduationCard([m
+[31m-        message:[m
+[31m-            'O estÃ¡gio atual de graduaÃ§Ã£o nÃ£o foi encontrado no programa.',[m
+[32m+[m[32m      return const _UnavailableGraduationCard([m
+[32m+[m[32m        message: 'O estágio atual de graduação não foi encontrado no programa.',[m
+       );[m
+     }[m
+ [m
+[36m@@ -54,7 +53,7 @@[m [mclass GraduationCard extends StatelessWidget {[m
+         crossAxisAlignment: CrossAxisAlignment.start,[m
+         children: [[m
+           const Text([m
+[31m-            'ðŸ¥‹ PrÃ³xima graduaÃ§Ã£o',[m
+[32m+[m[32m            '🥋 Próxima graduação',[m
+             style: TextStyle([m
+               fontSize: 22,[m
+               fontWeight: FontWeight.bold,[m
+[36m@@ -65,7 +64,7 @@[m [mclass GraduationCard extends StatelessWidget {[m
+           Text([m
+             nextStage == null[m
+                 ? currentStage.name[m
+[31m-                : '${currentStage.name} â†’ ${nextStage.name}',[m
+[32m+[m[32m                : '${currentStage.name} → ${nextStage.name}',[m
+             style: const TextStyle(fontSize: 18),[m
+           ),[m
+           if (attendanceProgress != null) ...[[m
+[36m@@ -80,14 +79,14 @@[m [mclass GraduationCard extends StatelessWidget {[m
+             const SizedBox(height: 10),[m
+             Text([m
+               '${progress.validAttendances} / '[m
+[31m-              '$requiredAttendances presenÃ§as vÃ¡lidas',[m
+[32m+[m[32m              '$requiredAttendances presenças válidas',[m
+               style: const TextStyle(fontSize: 16),[m
+             ),[m
+           ],[m
+           if (currentStage.minimumDurationMonths != null) ...[[m
+             const SizedBox(height: 12),[m
+             Text([m
+[31m-              'Tempo mÃ­nimo: '[m
+[32m+[m[32m              'Tempo mínimo: '[m
+               '${currentStage.minimumDurationMonths} meses',[m
+               style: const TextStyle(color: AppColors.grey),[m
+             ),[m
+[36m@@ -95,7 +94,7 @@[m [mclass GraduationCard extends StatelessWidget {[m
+           if (progress.estimatedCompletionDate != null) ...[[m
+             const SizedBox(height: 6),[m
+             Text([m
+[31m-              'PrevisÃ£o: '[m
+[32m+[m[32m              'Previsão: '[m
+               '${_formatDate(progress.estimatedCompletionDate!)}',[m
+               style: const TextStyle([m
+                 color: AppColors.success,[m
+[36m@@ -132,7 +131,7 @@[m [mclass GraduationCard extends StatelessWidget {[m
+     const months = [[m
+       'janeiro',[m
+       'fevereiro',[m
+[31m-      'marÃ§o',[m
+[32m+[m[32m      'março',[m
+       'abril',[m
+       'maio',[m
+       'junho',[m

@@ -1,0 +1,694 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../../core/theme/app_colors.dart';
+import '../../auth/services/session_service.dart';
+import '../../classroom/models/classroom.dart';
+import '../../classroom/repository/classroom_repository.dart';
+import '../../training_type/models/training_type.dart';
+import '../../training_type/repository/training_type_repository.dart';
+import '../../users/models/academy_member.dart';
+import '../../users/repository/user_repository.dart';
+import '../models/class_occurrence.dart';
+import '../repository/class_occurrence_repository.dart';
+
+enum _OccurrenceMode { gradeException, extra }
+
+class ClassOccurrenceFormScreen extends StatefulWidget {
+  const ClassOccurrenceFormScreen({super.key});
+
+  @override
+  State<ClassOccurrenceFormScreen> createState() =>
+      _ClassOccurrenceFormScreenState();
+}
+
+class _ClassOccurrenceFormScreenState extends State<ClassOccurrenceFormScreen> {
+  final formKey = GlobalKey<FormState>();
+
+  final nameController = TextEditingController();
+  final noteController = TextEditingController();
+
+  _OccurrenceMode mode = _OccurrenceMode.gradeException;
+
+  ClassOccurrenceStatus exceptionStatus = ClassOccurrenceStatus.substituted;
+
+  List<Classroom> classrooms = [];
+  List<TrainingType> trainingTypes = [];
+  List<AcademyMember> teachers = [];
+
+  String? classroomId;
+  String? scheduleId;
+  String? teacherId;
+
+  final Set<String> selectedTrainingTypeIds = {};
+
+  DateTime selectedDate = DateTime.now();
+
+  TimeOfDay? startTime;
+  TimeOfDay? endTime;
+
+  bool isLoadingReferences = true;
+  bool isSaving = false;
+
+  Classroom? get selectedClassroom {
+    for (final classroom in classrooms) {
+      if (classroom.id == classroomId) {
+        return classroom;
+      }
+    }
+
+    return null;
+  }
+
+  ClassSchedule? get selectedSchedule {
+    final classroom = selectedClassroom;
+
+    if (classroom == null || scheduleId == null) {
+      return null;
+    }
+
+    for (final schedule in classroom.schedules) {
+      if (schedule.id == scheduleId) {
+        return schedule;
+      }
+    }
+
+    return null;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => loadReferences());
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    noteController.dispose();
+    super.dispose();
+  }
+
+  Future<void> loadReferences() async {
+    final currentUser = context.read<SessionService>().currentUser;
+
+    if (currentUser == null) {
+      setState(() {
+        isLoadingReferences = false;
+      });
+
+      return;
+    }
+
+    try {
+      final results = await Future.wait([
+        context.read<ClassroomRepository>().getClassrooms(
+          academyId: currentUser.academyId,
+          includeInactive: false,
+        ),
+        context.read<TrainingTypeRepository>().getTrainingTypes(
+          academyId: currentUser.academyId,
+          includeInactive: true,
+        ),
+        context.read<UserRepository>().getActiveTeachers(
+          academyId: currentUser.academyId,
+        ),
+      ]);
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        classrooms = results[0] as List<Classroom>;
+        trainingTypes = results[1] as List<TrainingType>;
+        teachers = results[2] as List<AcademyMember>;
+
+        isLoadingReferences = false;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        isLoadingReferences = false;
+      });
+
+      _showError('Não foi possível carregar os dados: $error');
+    }
+  }
+
+  void selectClassroom(String? value) {
+    setState(() {
+      classroomId = value;
+      scheduleId = null;
+
+      nameController.clear();
+      selectedTrainingTypeIds.clear();
+
+      teacherId = null;
+      startTime = null;
+      endTime = null;
+    });
+  }
+
+  void selectSchedule(String? value) {
+    setState(() {
+      scheduleId = value;
+
+      final schedule = selectedSchedule;
+      final classroom = selectedClassroom;
+
+      if (schedule == null) {
+        return;
+      }
+
+      nameController.text = schedule.name;
+
+      selectedTrainingTypeIds
+        ..clear()
+        ..addAll(schedule.trainingTypeIds);
+
+      teacherId = schedule.teacherId ?? classroom?.defaultTeacherId;
+
+      startTime = _parseTime(schedule.startTime);
+
+      endTime = schedule.endTime == null ? null : _parseTime(schedule.endTime!);
+    });
+  }
+
+  void changeMode(_OccurrenceMode newMode) {
+    setState(() {
+      mode = newMode;
+
+      classroomId = null;
+      scheduleId = null;
+      teacherId = null;
+
+      nameController.clear();
+      noteController.clear();
+
+      selectedTrainingTypeIds.clear();
+
+      startTime = null;
+      endTime = null;
+
+      exceptionStatus = ClassOccurrenceStatus.substituted;
+    });
+  }
+
+  Future<void> selectDate() async {
+    final result = await showDatePicker(
+      context: context,
+      initialDate: selectedDate,
+      firstDate: DateTime(DateTime.now().year - 1),
+      lastDate: DateTime(DateTime.now().year + 3),
+    );
+
+    if (result == null) {
+      return;
+    }
+
+    setState(() {
+      selectedDate = result;
+    });
+  }
+
+  Future<void> selectStartTime() async {
+    final result = await showTimePicker(
+      context: context,
+      initialTime: startTime ?? const TimeOfDay(hour: 20, minute: 0),
+    );
+
+    if (result != null) {
+      setState(() {
+        startTime = result;
+      });
+    }
+  }
+
+  Future<void> selectEndTime() async {
+    final result = await showTimePicker(
+      context: context,
+      initialTime: endTime ?? startTime ?? const TimeOfDay(hour: 21, minute: 0),
+    );
+
+    if (result != null) {
+      setState(() {
+        endTime = result;
+      });
+    }
+  }
+
+  Future<void> save() async {
+    if (isSaving) {
+      return;
+    }
+
+    if (!(formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    if (startTime == null) {
+      _showError('Informe o horário de início.');
+      return;
+    }
+
+    if (selectedTrainingTypeIds.isEmpty) {
+      _showError('Selecione pelo menos um tipo de treino.');
+      return;
+    }
+
+    if (mode == _OccurrenceMode.gradeException && selectedSchedule == null) {
+      _showError('Selecione uma turma e um horário.');
+      return;
+    }
+
+    if (mode == _OccurrenceMode.gradeException &&
+        exceptionStatus == ClassOccurrenceStatus.substituted &&
+        teacherId == null) {
+      _showError('Selecione o professor substituto.');
+      return;
+    }
+
+    final currentUser = context.read<SessionService>().currentUser;
+
+    if (currentUser == null) {
+      _showError('Sua sessão não está disponível.');
+      return;
+    }
+
+    setState(() {
+      isSaving = true;
+    });
+
+    try {
+      final status = mode == _OccurrenceMode.extra
+          ? ClassOccurrenceStatus.extra
+          : exceptionStatus;
+
+      await context.read<ClassOccurrenceRepository>().createOccurrence(
+        academyId: currentUser.academyId,
+        classroomId: mode == _OccurrenceMode.gradeException
+            ? classroomId
+            : null,
+        scheduleId: mode == _OccurrenceMode.gradeException ? scheduleId : null,
+        name: nameController.text.trim(),
+        date: selectedDate,
+        startTime: _formatTime(startTime!),
+        endTime: endTime == null ? null : _formatTime(endTime!),
+        trainingTypeIds: selectedTrainingTypeIds.toList(growable: false),
+        teacherId: status == ClassOccurrenceStatus.cancelled ? null : teacherId,
+        status: status,
+        note: noteController.text.trim(),
+        createdBy: currentUser.id,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ocorrência salva com sucesso.')),
+      );
+
+      Navigator.pop(context, true);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      _showError('Não foi possível salvar: $error');
+    } finally {
+      if (mounted) {
+        setState(() {
+          isSaving = false;
+        });
+      }
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: AppColors.gracieRed),
+      );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Nova ocorrência'),
+        backgroundColor: AppColors.background,
+        foregroundColor: AppColors.brandPrimary,
+        elevation: 0,
+      ),
+      body: isLoadingReferences
+          ? const Center(child: CircularProgressIndicator())
+          : Form(
+              key: formKey,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+                children: [
+                  const Text(
+                    'O que você deseja fazer?',
+                    style: TextStyle(
+                      fontSize: 21,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.brandPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SegmentedButton<_OccurrenceMode>(
+                    segments: const [
+                      ButtonSegment(
+                        value: _OccurrenceMode.gradeException,
+                        icon: Icon(Icons.edit_calendar),
+                        label: Text('Alterar aula'),
+                      ),
+                      ButtonSegment(
+                        value: _OccurrenceMode.extra,
+                        icon: Icon(Icons.add_circle_outline),
+                        label: Text('Treino extra'),
+                      ),
+                    ],
+                    selected: {mode},
+                    onSelectionChanged: (selection) {
+                      changeMode(selection.first);
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  if (mode == _OccurrenceMode.gradeException)
+                    ..._buildGradeFields()
+                  else
+                    ..._buildExtraFields(),
+                  const SizedBox(height: 18),
+                  _buildDateField(),
+                  const SizedBox(height: 14),
+                  _buildTimeFields(),
+                  const SizedBox(height: 18),
+                  _buildTrainingTypes(),
+                  const SizedBox(height: 18),
+                  if (mode == _OccurrenceMode.extra ||
+                      exceptionStatus == ClassOccurrenceStatus.substituted)
+                    _buildTeacherField(),
+                  const SizedBox(height: 18),
+                  TextFormField(
+                    controller: noteController,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      labelText: 'Observação (opcional)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          color: AppColors.white,
+          child: SizedBox(
+            height: 54,
+            child: ElevatedButton.icon(
+              onPressed: isSaving ? null : save,
+              icon: const Icon(Icons.save),
+              label: Text(isSaving ? 'Salvando...' : 'Salvar ocorrência'),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildGradeFields() {
+    return [
+      DropdownButtonFormField<String>(
+        initialValue: classroomId,
+        decoration: const InputDecoration(
+          labelText: 'Turma',
+          border: OutlineInputBorder(),
+        ),
+        items: classrooms
+            .map(
+              (classroom) => DropdownMenuItem(
+                value: classroom.id,
+                child: Text(classroom.name),
+              ),
+            )
+            .toList(),
+        onChanged: selectClassroom,
+        validator: (value) {
+          if (value == null) {
+            return 'Selecione a turma.';
+          }
+
+          return null;
+        },
+      ),
+      const SizedBox(height: 14),
+      DropdownButtonFormField<String>(
+        initialValue: scheduleId,
+        decoration: const InputDecoration(
+          labelText: 'Horário da grade',
+          border: OutlineInputBorder(),
+        ),
+        items: (selectedClassroom?.schedules ?? const [])
+            .where((schedule) => schedule.isActive)
+            .map(
+              (schedule) => DropdownMenuItem(
+                value: schedule.id,
+                child: Text(
+                  '${_dayName(schedule.dayOfWeek)} • '
+                  '${schedule.startTime} • '
+                  '${schedule.name}',
+                ),
+              ),
+            )
+            .toList(),
+        onChanged: classroomId == null ? null : selectSchedule,
+        validator: (value) {
+          if (value == null) {
+            return 'Selecione o horário.';
+          }
+
+          return null;
+        },
+      ),
+      const SizedBox(height: 14),
+      DropdownButtonFormField<ClassOccurrenceStatus>(
+        initialValue: exceptionStatus,
+        decoration: const InputDecoration(
+          labelText: 'Tipo de alteração',
+          border: OutlineInputBorder(),
+        ),
+        items: const [
+          DropdownMenuItem(
+            value: ClassOccurrenceStatus.substituted,
+            child: Text('Substituição de professor'),
+          ),
+          DropdownMenuItem(
+            value: ClassOccurrenceStatus.cancelled,
+            child: Text('Cancelar aula'),
+          ),
+        ],
+        onChanged: (value) {
+          if (value == null) {
+            return;
+          }
+
+          setState(() {
+            exceptionStatus = value;
+          });
+        },
+      ),
+      const SizedBox(height: 14),
+      TextFormField(
+        controller: nameController,
+        decoration: const InputDecoration(
+          labelText: 'Nome da ocorrência',
+          border: OutlineInputBorder(),
+        ),
+        validator: _validateName,
+      ),
+    ];
+  }
+
+  List<Widget> _buildExtraFields() {
+    return [
+      TextFormField(
+        controller: nameController,
+        textCapitalization: TextCapitalization.words,
+        decoration: const InputDecoration(
+          labelText: 'Nome do treino extra',
+          border: OutlineInputBorder(),
+        ),
+        validator: _validateName,
+      ),
+    ];
+  }
+
+  Widget _buildDateField() {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: const Text('Data'),
+      subtitle: Text(_formatDate(selectedDate)),
+      trailing: const Icon(Icons.calendar_today),
+      onTap: selectDate,
+    );
+  }
+
+  Widget _buildTimeFields() {
+    return Row(
+      children: [
+        Expanded(
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Início'),
+            subtitle: Text(
+              startTime == null ? 'Não definido' : _formatTime(startTime!),
+            ),
+            onTap: selectStartTime,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Término'),
+            subtitle: Text(
+              endTime == null ? 'Opcional' : _formatTime(endTime!),
+            ),
+            onTap: selectEndTime,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTrainingTypes() {
+    final selectableTypes = trainingTypes
+        .where(
+          (type) => type.isActive || selectedTrainingTypeIds.contains(type.id),
+        )
+        .toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Tipos de treino',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: selectableTypes.map((type) {
+            final selected = selectedTrainingTypeIds.contains(type.id);
+
+            return FilterChip(
+              label: Text(type.isActive ? type.name : '${type.name} (inativo)'),
+              selected: selected,
+              onSelected: (value) {
+                setState(() {
+                  if (value) {
+                    selectedTrainingTypeIds.add(type.id);
+                  } else {
+                    selectedTrainingTypeIds.remove(type.id);
+                  }
+                });
+              },
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTeacherField() {
+    return DropdownButtonFormField<String?>(
+      initialValue: teachers.any((teacher) => teacher.userId == teacherId)
+          ? teacherId
+          : null,
+      decoration: const InputDecoration(
+        labelText: 'Professor',
+        border: OutlineInputBorder(),
+      ),
+      items: [
+        const DropdownMenuItem<String?>(
+          value: null,
+          child: Text('Sem professor definido'),
+        ),
+        ...teachers.map(
+          (teacher) => DropdownMenuItem<String?>(
+            value: teacher.userId,
+            child: Text(teacher.displayName),
+          ),
+        ),
+      ],
+      onChanged: (value) {
+        setState(() {
+          teacherId = value;
+        });
+      },
+    );
+  }
+
+  String? _validateName(String? value) {
+    if ((value ?? '').trim().isEmpty) {
+      return 'Informe o nome.';
+    }
+
+    return null;
+  }
+
+  static TimeOfDay? _parseTime(String value) {
+    final parts = value.split(':');
+
+    if (parts.length != 2) {
+      return null;
+    }
+
+    final hour = int.tryParse(parts[0]);
+
+    final minute = int.tryParse(parts[1]);
+
+    if (hour == null || minute == null) {
+      return null;
+    }
+
+    return TimeOfDay(hour: hour, minute: minute);
+  }
+
+  static String _formatTime(TimeOfDay value) {
+    final hour = value.hour.toString().padLeft(2, '0');
+
+    final minute = value.minute.toString().padLeft(2, '0');
+
+    return '$hour:$minute';
+  }
+
+  static String _formatDate(DateTime value) {
+    final day = value.day.toString().padLeft(2, '0');
+
+    final month = value.month.toString().padLeft(2, '0');
+
+    return '$day/$month/${value.year}';
+  }
+
+  static String _dayName(int day) {
+    const names = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+
+    if (day < 1 || day > names.length) {
+      return '?';
+    }
+
+    return names[day - 1];
+  }
+}

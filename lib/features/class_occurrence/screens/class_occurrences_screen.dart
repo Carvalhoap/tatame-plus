@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../auth/services/session_service.dart';
 import '../models/class_occurrence.dart';
+import 'class_occurrence_form_screen.dart';
 import '../repository/class_occurrence_repository.dart';
 
 class ClassOccurrencesScreen extends StatefulWidget {
@@ -112,12 +113,17 @@ class _ClassOccurrencesScreenState extends State<ClassOccurrencesScreen> {
         elevation: 0,
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('O cadastro de exceções será o próximo passo.'),
+        onPressed: () async {
+          final changed = await Navigator.push<bool>(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const ClassOccurrenceFormScreen(),
             ),
           );
+
+          if (changed == true && mounted) {
+            await loadOccurrences();
+          }
         },
         icon: const Icon(Icons.add),
         label: const Text('Nova ocorrência'),
