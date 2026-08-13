@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -15,11 +15,7 @@ import '../repository/class_occurrence_repository.dart';
 enum _OccurrenceMode { gradeException, extra }
 
 class ClassOccurrenceFormScreen extends StatefulWidget {
-  final ClassOccurrence? occurrence;
-
-  const ClassOccurrenceFormScreen({super.key, this.occurrence});
-
-  bool get isEditing => occurrence != null;
+  const ClassOccurrenceFormScreen({super.key});
 
   @override
   State<ClassOccurrenceFormScreen> createState() =>
@@ -84,46 +80,7 @@ class _ClassOccurrenceFormScreenState extends State<ClassOccurrenceFormScreen> {
   void initState() {
     super.initState();
 
-    _loadOccurrenceValues();
-
     WidgetsBinding.instance.addPostFrameCallback((_) => loadReferences());
-  }
-
-  void _loadOccurrenceValues() {
-    final occurrence = widget.occurrence;
-
-    if (occurrence == null) {
-      return;
-    }
-
-    mode = occurrence.status == ClassOccurrenceStatus.extra
-        ? _OccurrenceMode.extra
-        : _OccurrenceMode.gradeException;
-
-    if (occurrence.status == ClassOccurrenceStatus.cancelled) {
-      exceptionStatus = ClassOccurrenceStatus.cancelled;
-    } else {
-      exceptionStatus = ClassOccurrenceStatus.substituted;
-    }
-
-    classroomId = occurrence.classroomId;
-    scheduleId = occurrence.scheduleId;
-    teacherId = occurrence.teacherId;
-
-    nameController.text = occurrence.name;
-    noteController.text = occurrence.note;
-
-    selectedDate = occurrence.date;
-
-    startTime = _parseTime(occurrence.startTime);
-
-    endTime = occurrence.endTime == null
-        ? null
-        : _parseTime(occurrence.endTime!);
-
-    selectedTrainingTypeIds
-      ..clear()
-      ..addAll(occurrence.trainingTypeIds);
   }
 
   @override
@@ -179,7 +136,7 @@ class _ClassOccurrenceFormScreenState extends State<ClassOccurrenceFormScreen> {
         isLoadingReferences = false;
       });
 
-      _showError('Não foi possível carregar os dados: $error');
+      _showError('NÃ£o foi possÃ­vel carregar os dados: $error');
     }
   }
 
@@ -295,7 +252,7 @@ class _ClassOccurrenceFormScreenState extends State<ClassOccurrenceFormScreen> {
     }
 
     if (startTime == null) {
-      _showError('Informe o horário de início.');
+      _showError('Informe o horÃ¡rio de inÃ­cio.');
       return;
     }
 
@@ -305,7 +262,7 @@ class _ClassOccurrenceFormScreenState extends State<ClassOccurrenceFormScreen> {
     }
 
     if (mode == _OccurrenceMode.gradeException && selectedSchedule == null) {
-      _showError('Selecione uma turma e um horário.');
+      _showError('Selecione uma turma e um horÃ¡rio.');
       return;
     }
 
@@ -319,7 +276,7 @@ class _ClassOccurrenceFormScreenState extends State<ClassOccurrenceFormScreen> {
     final currentUser = context.read<SessionService>().currentUser;
 
     if (currentUser == null) {
-      _showError('Sua sessão não está disponível.');
+      _showError('Sua sessÃ£o nÃ£o estÃ¡ disponÃ­vel.');
       return;
     }
 
@@ -332,65 +289,29 @@ class _ClassOccurrenceFormScreenState extends State<ClassOccurrenceFormScreen> {
           ? ClassOccurrenceStatus.extra
           : exceptionStatus;
 
-      final repository = context.read<ClassOccurrenceRepository>();
-
-      if (widget.isEditing) {
-        await repository.updateOccurrence(
-          academyId: currentUser.academyId,
-          occurrenceId: widget.occurrence!.id,
-          classroomId: mode == _OccurrenceMode.gradeException
-              ? classroomId
-              : null,
-          scheduleId: mode == _OccurrenceMode.gradeException
-              ? scheduleId
-              : null,
-          name: nameController.text.trim(),
-          date: selectedDate,
-          startTime: _formatTime(startTime!),
-          endTime: endTime == null ? null : _formatTime(endTime!),
-          trainingTypeIds: selectedTrainingTypeIds.toList(growable: false),
-          teacherId: status == ClassOccurrenceStatus.cancelled
-              ? null
-              : teacherId,
-          status: status,
-          note: noteController.text.trim(),
-          updatedBy: currentUser.id,
-        );
-      } else {
-        await repository.createOccurrence(
-          academyId: currentUser.academyId,
-          classroomId: mode == _OccurrenceMode.gradeException
-              ? classroomId
-              : null,
-          scheduleId: mode == _OccurrenceMode.gradeException
-              ? scheduleId
-              : null,
-          name: nameController.text.trim(),
-          date: selectedDate,
-          startTime: _formatTime(startTime!),
-          endTime: endTime == null ? null : _formatTime(endTime!),
-          trainingTypeIds: selectedTrainingTypeIds.toList(growable: false),
-          teacherId: status == ClassOccurrenceStatus.cancelled
-              ? null
-              : teacherId,
-          status: status,
-          note: noteController.text.trim(),
-          createdBy: currentUser.id,
-        );
-      }
+      await context.read<ClassOccurrenceRepository>().createOccurrence(
+        academyId: currentUser.academyId,
+        classroomId: mode == _OccurrenceMode.gradeException
+            ? classroomId
+            : null,
+        scheduleId: mode == _OccurrenceMode.gradeException ? scheduleId : null,
+        name: nameController.text.trim(),
+        date: selectedDate,
+        startTime: _formatTime(startTime!),
+        endTime: endTime == null ? null : _formatTime(endTime!),
+        trainingTypeIds: selectedTrainingTypeIds.toList(growable: false),
+        teacherId: status == ClassOccurrenceStatus.cancelled ? null : teacherId,
+        status: status,
+        note: noteController.text.trim(),
+        createdBy: currentUser.id,
+      );
 
       if (!mounted) {
         return;
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            widget.isEditing
-                ? 'Ocorrência atualizada com sucesso.'
-                : 'Ocorrência salva com sucesso.',
-          ),
-        ),
+        const SnackBar(content: Text('OcorrÃªncia salva com sucesso.')),
       );
 
       Navigator.pop(context, true);
@@ -399,7 +320,7 @@ class _ClassOccurrenceFormScreenState extends State<ClassOccurrenceFormScreen> {
         return;
       }
 
-      _showError('Não foi possível salvar: $error');
+      _showError('NÃ£o foi possÃ­vel salvar: $error');
     } finally {
       if (mounted) {
         setState(() {
@@ -422,7 +343,7 @@ class _ClassOccurrenceFormScreenState extends State<ClassOccurrenceFormScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(widget.isEditing ? 'Editar ocorrência' : 'Nova ocorrência'),
+        title: const Text('Nova ocorrÃªncia'),
         backgroundColor: AppColors.background,
         foregroundColor: AppColors.brandPrimary,
         elevation: 0,
@@ -435,7 +356,7 @@ class _ClassOccurrenceFormScreenState extends State<ClassOccurrenceFormScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
                 children: [
                   const Text(
-                    'O que você deseja fazer?',
+                    'O que vocÃª deseja fazer?',
                     style: TextStyle(
                       fontSize: 21,
                       fontWeight: FontWeight.bold,
@@ -481,7 +402,7 @@ class _ClassOccurrenceFormScreenState extends State<ClassOccurrenceFormScreen> {
                     controller: noteController,
                     maxLines: 3,
                     decoration: const InputDecoration(
-                      labelText: 'Observação (opcional)',
+                      labelText: 'ObservaÃ§Ã£o (opcional)',
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -497,13 +418,7 @@ class _ClassOccurrenceFormScreenState extends State<ClassOccurrenceFormScreen> {
             child: ElevatedButton.icon(
               onPressed: isSaving ? null : save,
               icon: const Icon(Icons.save),
-              label: Text(
-                isSaving
-                    ? 'Salvando...'
-                    : widget.isEditing
-                    ? 'Salvar alterações'
-                    : 'Salvar ocorrência',
-              ),
+              label: Text(isSaving ? 'Salvando...' : 'Salvar ocorrÃªncia'),
             ),
           ),
         ),
@@ -540,7 +455,7 @@ class _ClassOccurrenceFormScreenState extends State<ClassOccurrenceFormScreen> {
       DropdownButtonFormField<String>(
         initialValue: scheduleId,
         decoration: const InputDecoration(
-          labelText: 'Horário da grade',
+          labelText: 'HorÃ¡rio da grade',
           border: OutlineInputBorder(),
         ),
         items: (selectedClassroom?.schedules ?? const [])
@@ -549,8 +464,8 @@ class _ClassOccurrenceFormScreenState extends State<ClassOccurrenceFormScreen> {
               (schedule) => DropdownMenuItem(
                 value: schedule.id,
                 child: Text(
-                  '${_dayName(schedule.dayOfWeek)} • '
-                  '${schedule.startTime} • '
+                  '${_dayName(schedule.dayOfWeek)} â€¢ '
+                  '${schedule.startTime} â€¢ '
                   '${schedule.name}',
                 ),
               ),
@@ -559,7 +474,7 @@ class _ClassOccurrenceFormScreenState extends State<ClassOccurrenceFormScreen> {
         onChanged: classroomId == null ? null : selectSchedule,
         validator: (value) {
           if (value == null) {
-            return 'Selecione o horário.';
+            return 'Selecione o horÃ¡rio.';
           }
 
           return null;
@@ -569,13 +484,13 @@ class _ClassOccurrenceFormScreenState extends State<ClassOccurrenceFormScreen> {
       DropdownButtonFormField<ClassOccurrenceStatus>(
         initialValue: exceptionStatus,
         decoration: const InputDecoration(
-          labelText: 'Tipo de alteração',
+          labelText: 'Tipo de alteraÃ§Ã£o',
           border: OutlineInputBorder(),
         ),
         items: const [
           DropdownMenuItem(
             value: ClassOccurrenceStatus.substituted,
-            child: Text('Substituição de professor'),
+            child: Text('SubstituiÃ§Ã£o de professor'),
           ),
           DropdownMenuItem(
             value: ClassOccurrenceStatus.cancelled,
@@ -596,7 +511,7 @@ class _ClassOccurrenceFormScreenState extends State<ClassOccurrenceFormScreen> {
       TextFormField(
         controller: nameController,
         decoration: const InputDecoration(
-          labelText: 'Nome da ocorrência',
+          labelText: 'Nome da ocorrÃªncia',
           border: OutlineInputBorder(),
         ),
         validator: _validateName,
@@ -634,9 +549,9 @@ class _ClassOccurrenceFormScreenState extends State<ClassOccurrenceFormScreen> {
         Expanded(
           child: ListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Início'),
+            title: const Text('InÃ­cio'),
             subtitle: Text(
-              startTime == null ? 'Não definido' : _formatTime(startTime!),
+              startTime == null ? 'NÃ£o definido' : _formatTime(startTime!),
             ),
             onTap: selectStartTime,
           ),
@@ -645,7 +560,7 @@ class _ClassOccurrenceFormScreenState extends State<ClassOccurrenceFormScreen> {
         Expanded(
           child: ListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Término'),
+            title: const Text('TÃ©rmino'),
             subtitle: Text(
               endTime == null ? 'Opcional' : _formatTime(endTime!),
             ),
@@ -768,7 +683,7 @@ class _ClassOccurrenceFormScreenState extends State<ClassOccurrenceFormScreen> {
   }
 
   static String _dayName(int day) {
-    const names = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+    const names = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'SÃ¡b', 'Dom'];
 
     if (day < 1 || day > names.length) {
       return '?';
@@ -777,3 +692,4 @@ class _ClassOccurrenceFormScreenState extends State<ClassOccurrenceFormScreen> {
     return names[day - 1];
   }
 }
+

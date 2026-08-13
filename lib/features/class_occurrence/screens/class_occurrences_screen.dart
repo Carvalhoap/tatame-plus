@@ -167,7 +167,92 @@ class _ClassOccurrencesScreenState extends State<ClassOccurrencesScreen> {
               )
             else
               ...occurrences.map(
-                (occurrence) => _OccurrenceCard(occurrence: occurrence),
+                (occurrence) => _OccurrenceCard(
+                  occurrence: occurrence,
+                  onTap: () async {
+                    final changed = await Navigator.push<bool>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            ClassOccurrenceFormScreen(occurrence: occurrence),
+                      ),
+                    );
+
+                    if (changed == true && mounted) {
+                      await loadOccurrences();
+                    }
+                  },
+                  onDelete: () async {
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (dialogContext) {
+                        return AlertDialog(
+                          title: const Text('Excluir ocorrência'),
+                          content: Text(
+                            'Deseja realmente excluir "${occurrence.name}"?',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(dialogContext, false);
+                              },
+                              child: const Text('Cancelar'),
+                            ),
+                            FilledButton(
+                              onPressed: () {
+                                Navigator.pop(dialogContext, true);
+                              },
+                              child: const Text('Excluir'),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+
+                    if (confirmed != true || !context.mounted) {
+                      return;
+                    }
+
+                    final currentUser = context
+                        .read<SessionService>()
+                        .currentUser;
+
+                    if (currentUser == null) {
+                      return;
+                    }
+
+                    try {
+                      await context
+                          .read<ClassOccurrenceRepository>()
+                          .deleteOccurrence(
+                            academyId: currentUser.academyId,
+                            occurrenceId: occurrence.id,
+                          );
+
+                      if (!context.mounted) {
+                        return;
+                      }
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Ocorrência excluída com sucesso.'),
+                        ),
+                      );
+
+                      await loadOccurrences();
+                    } catch (error) {
+                      if (!context.mounted) {
+                        return;
+                      }
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Não foi possível excluir: $error'),
+                        ),
+                      );
+                    }
+                  },
+                ),
               ),
           ],
         ),
@@ -243,14 +328,21 @@ class _MonthSelector extends StatelessWidget {
 
 class _OccurrenceCard extends StatelessWidget {
   final ClassOccurrence occurrence;
+  final VoidCallback onTap;
+  final VoidCallback onDelete;
 
-  const _OccurrenceCard({required this.occurrence});
+  const _OccurrenceCard({
+    required this.occurrence,
+    required this.onTap,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
+        onTap: onTap,
         leading: CircleAvatar(child: Icon(_statusIcon(occurrence.status))),
         title: Text(
           occurrence.name,
@@ -264,6 +356,11 @@ class _OccurrenceCard extends StatelessWidget {
           '${occurrence.note.isEmpty ? '' : '\n${occurrence.note}'}',
         ),
         isThreeLine: true,
+        trailing: IconButton(
+          tooltip: 'Excluir ocorrência',
+          onPressed: onDelete,
+          icon: const Icon(Icons.delete_outline),
+        ),
       ),
     );
   }
