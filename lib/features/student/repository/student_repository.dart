@@ -5,6 +5,11 @@ abstract class StudentRepository {
 
   Future<Student?> getStudentById(String studentId);
 
+  Future<Student?> getStudentByUserId({
+    required String academyId,
+    required String userId,
+  });
+
   Future<String> createStudent({
     required String academyId,
     required String? userId,

@@ -1,24 +1,265 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_drawer.dart';
 import '../../core/widgets/graduation_belt_widget.dart';
-import '../graduation/data/mock/adult_graduation_program_mock.dart';
-import '../graduation/data/mock/student_graduation_progress_mock.dart';
 import '../graduation/models/belt_color.dart';
 import '../mascot/data/mascot_mock.dart';
+import '../auth/services/session_service.dart';
+import '../graduation/models/graduation_program.dart';
+import '../graduation/models/graduation_stage.dart';
+import '../graduation/models/student_graduation_progress.dart';
+import '../graduation/models/stripe_progress.dart';
+import '../graduation/repository/graduation_program_repository.dart';
+import '../graduation/repository/student_graduation_progress_repository.dart';
+import 'models/student.dart';
+import 'repository/student_repository.dart';
 import '../mascot/widgets/mascot_card.dart';
 import 'data/student_mock.dart';
 import 'screens/student_qr_scanner_screen.dart';
 import 'widgets/belt_journey_card.dart';
 import 'widgets/graduation_card.dart';
 
-class StudentHomeScreen extends StatelessWidget {
+class StudentHomeScreen extends StatefulWidget {
   const StudentHomeScreen({super.key});
 
   @override
+  State<StudentHomeScreen> createState() => _StudentHomeScreenState();
+}
+
+class _StudentHomeScreenState extends State<StudentHomeScreen> {
+  bool isLoading = true;
+  String? errorMessage;
+  Student? loadedStudent;
+  StudentGraduationProgress? graduationProgress;
+  GraduationProgram? graduationProgram;
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => loadStudent());
+  }
+
+  Future<void> loadStudent() async {
+    final currentUser = context.read<SessionService>().currentUser;
+
+    if (currentUser == null) {
+      setState(() {
+        isLoading = false;
+        errorMessage = 'Sessão não encontrada.';
+      });
+
+      return;
+    }
+
+    try {
+      final studentRepository = context.read<StudentRepository>();
+
+      final graduationProgressRepository = context
+          .read<StudentGraduationProgressRepository>();
+
+      final graduationProgramRepository = context
+          .read<GraduationProgramRepository>();
+
+      final student = await studentRepository.getStudentByUserId(
+        academyId: currentUser.academyId,
+        userId: currentUser.id,
+      );
+
+      StudentGraduationProgress? progress;
+      GraduationProgram? program;
+
+      if (student != null) {
+        progress = await graduationProgressRepository.getByStudent(
+          academyId: currentUser.academyId,
+          studentId: student.id,
+        );
+
+        final programId =
+            progress?.graduationProgramId ?? student.graduationProgramId;
+
+        if (programId != null && programId.isNotEmpty) {
+          program = await graduationProgramRepository.getProgramById(
+            academyId: currentUser.academyId,
+            programId: programId,
+          );
+        }
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        loadedStudent = student;
+        graduationProgress = progress;
+        graduationProgram = program;
+        isLoading = false;
+
+        if (student == null) {
+          errorMessage =
+              'Nenhum cadastro de aluno está vinculado a este usuário.';
+        }
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        isLoading = false;
+        errorMessage = 'Não foi possível carregar seus dados: $error';
+      });
+    }
+  }
+
+  GraduationStage? get currentGraduationStage {
+    final progress = graduationProgress;
+    final program = graduationProgram;
+
+    if (progress == null || program == null) {
+      return null;
+    }
+
+    for (final stage in program.stages) {
+      if (stage.id == progress.currentStageId) {
+        return stage;
+      }
+    }
+
+    return null;
+  }
+
+  BeltColor _beltColorFromName(String beltName) {
+    switch (beltName.trim().toLowerCase()) {
+      case 'branca':
+        return BeltColor.white;
+
+      case 'cinza e branca':
+        return BeltColor.greyWhite;
+
+      case 'cinza':
+        return BeltColor.grey;
+
+      case 'cinza e preta':
+        return BeltColor.greyBlack;
+
+      case 'amarela e branca':
+        return BeltColor.yellowWhite;
+
+      case 'amarela':
+        return BeltColor.yellow;
+
+      case 'amarela e preta':
+        return BeltColor.yellowBlack;
+
+      case 'laranja e branca':
+        return BeltColor.orangeWhite;
+
+      case 'laranja':
+        return BeltColor.orange;
+
+      case 'laranja e preta':
+        return BeltColor.orangeBlack;
+
+      case 'verde e branca':
+        return BeltColor.greenWhite;
+
+      case 'verde':
+        return BeltColor.green;
+
+      case 'verde e preta':
+        return BeltColor.greenBlack;
+
+      case 'azul':
+        return BeltColor.blue;
+
+      case 'roxa':
+        return BeltColor.purple;
+
+      case 'marrom':
+        return BeltColor.brown;
+
+      case 'preta':
+        return BeltColor.black;
+
+      default:
+        return BeltColor.white;
+    }
+  }
+
+  List<StripeProgress> get currentStageStripes {
+    final stage = currentGraduationStage;
+
+    if (stage == null) {
+      return const [];
+    }
+
+    final degreeName = stage.degreeName;
+
+    if (degreeName == null || degreeName.isEmpty) {
+      return const [];
+    }
+
+    final match = RegExp(r'\d+').firstMatch(degreeName);
+
+    final earned = match == null ? 0 : int.tryParse(match.group(0) ?? '') ?? 0;
+
+    if (earned <= 0) {
+      return const [];
+    }
+
+    final stripeColor = switch (stage.stripeColor?.trim().toLowerCase()) {
+      'vermelha' || 'vermelho' => StripeColor.red,
+      'preta' || 'preto' => StripeColor.black,
+      _ => StripeColor.white,
+    };
+
+    return [StripeProgress(color: stripeColor, earned: earned, total: 4)];
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final student = mockStudent;
+    if (isLoading) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        drawer: const AppDrawer(),
+        appBar: AppBar(
+          title: const Text('Minha Jornada'),
+          backgroundColor: AppColors.background,
+          foregroundColor: AppColors.brandPrimary,
+          elevation: 0,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (errorMessage != null || loadedStudent == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        drawer: const AppDrawer(),
+        appBar: AppBar(
+          title: const Text('Minha Jornada'),
+          backgroundColor: AppColors.background,
+          foregroundColor: AppColors.brandPrimary,
+          elevation: 0,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              errorMessage ?? 'Cadastro de aluno não encontrado.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 17, color: AppColors.grey),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final student = loadedStudent!;
     const dashboard = mockStudentDashboardData;
 
     final mascot = mascots.first;
@@ -101,15 +342,32 @@ class StudentHomeScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            GraduationBeltWidget(
-              beltColor: BeltColor.white,
-              stripes: studentGraduationProgressMock.stripes,
-            ),
-            const SizedBox(height: 18),
-            GraduationCard(
-              progress: studentGraduationProgressMock,
-              program: adultGraduationProgramMock,
-            ),
+            if (graduationProgress != null &&
+                graduationProgram != null &&
+                currentGraduationStage != null) ...[
+              GraduationBeltWidget(
+                beltColor: _beltColorFromName(currentGraduationStage!.beltName),
+                stripes: currentStageStripes,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                currentGraduationStage!.name,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.brandPrimary,
+                ),
+              ),
+              const SizedBox(height: 18),
+              GraduationCard(
+                progress: graduationProgress!,
+                program: graduationProgram!,
+              ),
+            ] else
+              const _SimpleCard(
+                title: 'Graduação',
+                text: 'Graduação ainda não definida.',
+              ),
             const SizedBox(height: 18),
             _InfoCard(
               title: '🔥 Meta do mês',

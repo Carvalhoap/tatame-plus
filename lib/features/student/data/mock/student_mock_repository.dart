@@ -40,6 +40,20 @@ class StudentMockRepository implements StudentRepository {
   }
 
   @override
+  Future<Student?> getStudentByUserId({
+    required String academyId,
+    required String userId,
+  }) async {
+    for (final student in _students) {
+      if (student.academyId == academyId && student.userId == userId) {
+        return student;
+      }
+    }
+
+    return null;
+  }
+
+  @override
   Future<String> createStudent({
     required String academyId,
     required String? userId,
