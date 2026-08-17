@@ -1,8 +1,12 @@
 import '../models/graduation_template.dart';
 import 'templates/ibjjf_adult_2026_template.dart';
+import 'templates/ibjjf_kids_2026_template.dart';
 
 class GraduationTemplateCatalog {
-  static const List<GraduationTemplate> templates = [ibjjfAdult2026Template];
+  static final List<GraduationTemplate> templates = [
+    ibjjfAdult2026Template,
+    ibjjfKids2026Template,
+  ];
 
   static List<GraduationTemplate> get activeTemplates {
     return templates

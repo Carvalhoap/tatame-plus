@@ -6,6 +6,7 @@ import '../../auth/services/session_service.dart';
 import '../../classroom/models/classroom.dart';
 import '../../classroom/repository/classroom_repository.dart';
 import '../../graduation/models/graduation_program.dart';
+import '../../graduation/models/graduation_stage.dart';
 import '../../graduation/repository/graduation_program_repository.dart';
 import '../../graduation/models/student_graduation_progress.dart';
 import '../../graduation/repository/student_graduation_progress_repository.dart';
@@ -40,8 +41,10 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
 
   String? userId;
   String? graduationProgramId;
+  String? currentGraduationStageId;
 
   DateTime? birthDate;
+  DateTime? currentGraduationStageDate;
   DateTime? jiuJitsuStartDate;
   DateTime? academyJoinDate;
 
@@ -123,10 +126,35 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
 
       final members = results[2] as List<AcademyMember>;
 
+      StudentGraduationProgress? graduationProgress;
+
+      if (widget.student != null) {
+        graduationProgress = await context
+            .read<StudentGraduationProgressRepository>()
+            .getByStudent(
+              academyId: currentUser.academyId,
+              studentId: widget.student!.id,
+            );
+
+        if (!mounted) {
+          return;
+        }
+      }
+
       setState(() {
         classrooms = results[0] as List<Classroom>;
 
         graduationPrograms = results[1] as List<GraduationProgram>;
+
+        if (graduationProgress != null) {
+          graduationProgramId = graduationProgress.graduationProgramId;
+          currentGraduationStageId = graduationProgress.currentStageId;
+          currentGraduationStageDate = graduationProgress.stageStartedAt;
+        } else if (!widget.isEditing &&
+            birthDate != null &&
+            graduationProgramId == null) {
+          graduationProgramId = _suggestGraduationProgramId(birthDate!);
+        }
 
         studentUsers = members
             .where(
@@ -158,6 +186,50 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
     }
   }
 
+  GraduationProgram? get selectedGraduationProgram {
+    final programId = graduationProgramId;
+
+    if (programId == null) {
+      return null;
+    }
+
+    for (final program in graduationPrograms) {
+      if (program.id == programId) {
+        return program;
+      }
+    }
+
+    return null;
+  }
+
+  List<GraduationStage> get availableGraduationStages {
+    final program = selectedGraduationProgram;
+
+    if (program == null) {
+      return const [];
+    }
+
+    final result = List<GraduationStage>.of(program.stages)
+      ..sort((a, b) => a.order.compareTo(b.order));
+
+    return result;
+  }
+
+  Future<void> selectCurrentGraduationStageDate() async {
+    final result = await showDatePicker(
+      context: context,
+      initialDate: currentGraduationStageDate ?? DateTime.now(),
+      firstDate: DateTime(1950),
+      lastDate: DateTime.now(),
+    );
+
+    if (result != null) {
+      setState(() {
+        currentGraduationStageDate = result;
+      });
+    }
+  }
+
   Future<void> selectBirthDate() async {
     final result = await showDatePicker(
       context: context,
@@ -169,8 +241,35 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
     if (result != null) {
       setState(() {
         birthDate = result;
+        graduationProgramId = _suggestGraduationProgramId(result);
       });
     }
+  }
+
+  String? _suggestGraduationProgramId(DateTime dateOfBirth) {
+    final today = DateTime.now();
+
+    var age = today.year - dateOfBirth.year;
+
+    final birthdayHasOccurred =
+        today.month > dateOfBirth.month ||
+        (today.month == dateOfBirth.month && today.day >= dateOfBirth.day);
+
+    if (!birthdayHasOccurred) {
+      age--;
+    }
+
+    final desiredAudience = age >= 16
+        ? GraduationAudience.adult
+        : GraduationAudience.kids;
+
+    for (final program in graduationPrograms) {
+      if (program.audience == desiredAudience) {
+        return program.id;
+      }
+    }
+
+    return graduationProgramId;
   }
 
   Future<void> selectJiuJitsuStartDate() async {
@@ -201,6 +300,46 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
         academyJoinDate = result;
       });
     }
+  }
+
+  Future<void> _saveGraduationProgress({
+    required String studentId,
+    required String academyId,
+  }) async {
+    final programId = graduationProgramId;
+    final stageId = currentGraduationStageId;
+
+    if (programId == null || stageId == null) {
+      return;
+    }
+
+    final progressRepository = context
+        .read<StudentGraduationProgressRepository>();
+
+    StudentGraduationProgress? existingProgress;
+
+    if (widget.isEditing) {
+      existingProgress = await progressRepository.getByStudent(
+        academyId: academyId,
+        studentId: studentId,
+      );
+    }
+
+    await progressRepository.saveProgress(
+      progress: StudentGraduationProgress(
+        id: studentId,
+        academyId: academyId,
+        studentId: studentId,
+        graduationProgramId: programId,
+        currentStageId: stageId,
+        stageStartedAt:
+            currentGraduationStageDate ?? academyJoinDate ?? DateTime.now(),
+        validAttendances: existingProgress?.validAttendances ?? 0,
+        stripes: existingProgress?.stripes ?? const [],
+        estimatedCompletionDate: existingProgress?.estimatedCompletionDate,
+        approvedByTeacher: existingProgress?.approvedByTeacher ?? false,
+      ),
+    );
   }
 
   Future<void> save() async {
@@ -244,6 +383,11 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
           status: status,
           updatedBy: currentUser.id,
         );
+
+        await _saveGraduationProgress(
+          studentId: widget.student!.id,
+          academyId: currentUser.academyId,
+        );
       } else {
         final studentId = await repository.createStudent(
           academyId: currentUser.academyId,
@@ -261,47 +405,10 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
           status: status,
           createdBy: currentUser.id,
         );
-
-        final selectedProgramId = graduationProgramId;
-
-        if (selectedProgramId != null) {
-          GraduationProgram? selectedProgram;
-
-          for (final program in graduationPrograms) {
-            if (program.id == selectedProgramId) {
-              selectedProgram = program;
-              break;
-            }
-          }
-
-          if (selectedProgram != null && selectedProgram.stages.isNotEmpty) {
-            final orderedStages = List.of(selectedProgram.stages)
-              ..sort((a, b) => a.order.compareTo(b.order));
-
-            final firstStage = orderedStages.first;
-
-            if (!mounted) {
-              return;
-            }
-
-            await context
-                .read<StudentGraduationProgressRepository>()
-                .saveProgress(
-                  progress: StudentGraduationProgress(
-                    id: studentId,
-                    academyId: currentUser.academyId,
-                    studentId: studentId,
-                    graduationProgramId: selectedProgram.id,
-                    currentStageId: firstStage.id,
-                    stageStartedAt: academyJoinDate ?? DateTime.now(),
-                    validAttendances: 0,
-                    stripes: const [],
-                    estimatedCompletionDate: null,
-                    approvedByTeacher: false,
-                  ),
-                );
-          }
-        }
+        await _saveGraduationProgress(
+          studentId: studentId,
+          academyId: currentUser.academyId,
+        );
       }
 
       if (!mounted) {
@@ -516,6 +623,53 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                         graduationProgramId = value;
                       });
                     },
+                  ),
+                  const SizedBox(height: 14),
+
+                  DropdownButtonFormField<String?>(
+                    initialValue:
+                        availableGraduationStages.any(
+                          (stage) => stage.id == currentGraduationStageId,
+                        )
+                        ? currentGraduationStageId
+                        : null,
+                    decoration: const InputDecoration(
+                      labelText: 'Graduação atual',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      const DropdownMenuItem<String?>(
+                        value: null,
+                        child: Text('Sem graduação definida'),
+                      ),
+                      ...availableGraduationStages.map(
+                        (stage) => DropdownMenuItem<String?>(
+                          value: stage.id,
+                          child: Text(stage.name),
+                        ),
+                      ),
+                    ],
+                    onChanged: graduationProgramId == null
+                        ? null
+                        : (value) {
+                            setState(() {
+                              currentGraduationStageId = value;
+
+                              if (value != null &&
+                                  currentGraduationStageDate == null) {
+                                currentGraduationStageDate = DateTime.now();
+                              }
+                            });
+                          },
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  _DateField(
+                    label: 'Data da graduação atual',
+                    date: currentGraduationStageDate,
+                    onTap: selectCurrentGraduationStageDate,
+                    optional: true,
                   ),
 
                   const SizedBox(height: 24),
