@@ -94,6 +94,28 @@ service cloud.firestore {
           if isAdmin(academyId);
       }
 
+      match /students/{studentId} {
+        allow get, list:
+          if isAcademyMember(academyId);
+
+        allow create, update:
+          if isAdmin(academyId);
+
+        allow delete:
+          if false;
+      }
+
+      match /studentGraduationProgress/{studentId} {
+        allow get, list:
+          if isAcademyMember(academyId);
+
+        allow create, update:
+          if isAdmin(academyId);
+
+        allow delete:
+          if false;
+      }
+
       match /auditLogs/{documentId} {
         allow read, write: if false;
       }

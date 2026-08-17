@@ -7,6 +7,8 @@ import '../../auth/services/session_service.dart';
 import '../../class_occurrence/screens/class_occurrences_screen.dart';
 import '../../classroom/screens/classrooms_screen.dart';
 import '../../training_type/screens/training_types_screen.dart';
+import '../../student/screens/students_screen.dart';
+import '../../graduation/screens/graduation_programs_screen.dart';
 import '../../users/screens/users_screen.dart';
 
 class AdminHomeScreen extends StatelessWidget {
@@ -64,10 +66,16 @@ class AdminHomeScreen extends StatelessWidget {
                     );
                   },
                 ),
-                const _AdminCard(
+                _AdminCard(
                   title: 'Alunos',
                   subtitle: 'Dados e vínculos esportivos',
                   icon: Icons.groups,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const StudentsScreen()),
+                    );
+                  },
                 ),
                 const _AdminCard(
                   title: 'Professores',
@@ -118,10 +126,19 @@ class AdminHomeScreen extends StatelessWidget {
                   subtitle: 'Planos e pagamentos',
                   icon: Icons.payments_outlined,
                 ),
-                const _AdminCard(
+                _AdminCard(
                   title: 'Graduações',
                   subtitle: 'Aptos e progressão',
                   icon: Icons.sports_martial_arts,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            const GraduationProgramsScreen(),
+                      ),
+                    );
+                  },
                 ),
                 const _AdminCard(
                   title: 'Relatórios',

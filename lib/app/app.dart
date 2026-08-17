@@ -8,7 +8,7 @@ import '../features/auth/repository/auth_repository.dart';
 import '../features/auth/screens/session_router.dart';
 import '../features/auth/services/session_service.dart';
 
-import '../features/student/data/mock/student_mock_repository.dart';
+import '../features/student/data/firebase/firestore_student_repository.dart';
 import '../features/student/repository/student_repository.dart';
 
 import '../features/attendance/data/mock/attendance_mock_repository.dart';
@@ -27,6 +27,8 @@ import '../features/classroom/repository/classroom_repository.dart';
 
 import '../features/graduation/data/firebase/firestore_graduation_program_repository.dart';
 import '../features/graduation/repository/graduation_program_repository.dart';
+import '../features/graduation/data/firebase/firestore_student_graduation_progress_repository.dart';
+import '../features/graduation/repository/student_graduation_progress_repository.dart';
 
 import '../features/training_type/data/firebase/firestore_training_type_repository.dart';
 import '../features/training_type/repository/training_type_repository.dart';
@@ -55,6 +57,10 @@ class TatamePlusApp extends StatelessWidget {
           create: (_) => FirestoreGraduationProgramRepository(),
         ),
 
+        Provider<StudentGraduationProgressRepository>(
+          create: (_) => FirestoreStudentGraduationProgressRepository(),
+        ),
+
         Provider<TrainingTypeRepository>(
           create: (_) => FirestoreTrainingTypeRepository(),
         ),
@@ -63,7 +69,9 @@ class TatamePlusApp extends StatelessWidget {
           create: (_) => FirestoreClassOccurrenceRepository(),
         ),
 
-        Provider<StudentRepository>(create: (_) => StudentMockRepository()),
+        Provider<StudentRepository>(
+          create: (_) => FirestoreStudentRepository(),
+        ),
 
         Provider<AttendanceRepository>(
           create: (_) => AttendanceMockRepository(),
