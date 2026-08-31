@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../repository/auth_repository.dart';
 import '../services/session_service.dart';
+import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -210,6 +211,21 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                     ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextButton.icon(
+                    onPressed: isLoading
+                        ? null
+                        : () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const RegisterScreen(),
+                              ),
+                            );
+                          },
+                    icon: const Icon(Icons.person_add_outlined),
+                    label: const Text('Criar conta'),
                   ),
                 ],
               ),

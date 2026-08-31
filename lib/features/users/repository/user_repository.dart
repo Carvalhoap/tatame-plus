@@ -14,4 +14,12 @@ abstract class UserRepository {
     required List<String> roles,
     required bool isActive,
   });
+
+  Future<void> updateAcademyUser({
+    required String academyId,
+    required String userId,
+    required String displayName,
+    required List<String> roles,
+    required bool isActive,
+  });
 }

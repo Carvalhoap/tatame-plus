@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../attendance/repository/check_in_session_repository.dart';
+import '../../auth/services/session_service.dart';
+import '../models/student.dart';
+import '../repository/student_repository.dart';
 
 class StudentQrScannerScreen extends StatefulWidget {
-  const StudentQrScannerScreen({super.key});
+  final Student? student;
+
+  const StudentQrScannerScreen({super.key, this.student});
 
   @override
   State<StudentQrScannerScreen> createState() => _StudentQrScannerScreenState();
@@ -26,6 +33,43 @@ class _StudentQrScannerScreenState extends State<StudentQrScannerScreen> {
     super.dispose();
   }
 
+  Future<bool> _confirmGuardianCheckIn(Student student) async {
+    if (!mounted) {
+      return false;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          icon: const Icon(
+            Icons.family_restroom,
+            size: 56,
+            color: AppColors.brandPrimary,
+          ),
+          title: const Text('Confirmar aluno', textAlign: TextAlign.center),
+          content: Text(
+            'Registrar a presença de ${student.fullName}?',
+            textAlign: TextAlign.center,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Confirmar presença'),
+            ),
+          ],
+        );
+      },
+    );
+
+    return confirmed == true;
+  }
+
   Future<void> handleDetection(BarcodeCapture capture) async {
     if (isProcessing || capture.barcodes.isEmpty) {
       return;
@@ -38,33 +82,125 @@ class _StudentQrScannerScreenState extends State<StudentQrScannerScreen> {
     }
 
     isProcessing = true;
+
+    final currentUser = context.read<SessionService>().currentUser;
+
+    final studentRepository = context.read<StudentRepository>();
+
+    final checkInRepository = context.read<CheckInSessionRepository>();
+
     await scannerController.stop();
 
     try {
       final sessionId = rawValue.trim();
 
-      if (sessionId.isEmpty || !sessionId.startsWith('session_')) {
-        throw const FormatException('Sessão inválida.');
+      if (sessionId.isEmpty) {
+        throw const FormatException('Sess\u00E3o inv\u00E1lida.');
+      }
+      if (currentUser == null) {
+        throw StateError(
+          'Sua sess\u00E3o no Tatame+ n\u00E3o est\u00E1 dispon\u00EDvel.',
+        );
+      }
+
+      final student =
+          widget.student ??
+          await studentRepository.getStudentByUserId(
+            academyId: currentUser.academyId,
+            userId: currentUser.id,
+          );
+
+      if (student == null) {
+        throw StateError('Nenhum aluno está vinculado a este usuário.');
+      }
+
+      if (widget.student != null &&
+          !student.guardianIds.contains(currentUser.id)) {
+        throw StateError(
+          'Este aluno não está vinculado à sua conta de responsável.',
+        );
+      }
+
+      final session = await checkInRepository.findSessionById(
+        academyId: currentUser.academyId,
+        sessionId: sessionId,
+      );
+
+      if (session == null) {
+        throw const FormatException('Sess\u00E3o n\u00E3o encontrada.');
+      }
+
+      if (session.academyId != currentUser.academyId) {
+        throw const FormatException(
+          'Esta sess\u00E3o pertence a outra academia.',
+        );
+      }
+
+      if (!session.isActive) {
+        throw StateError(
+          'Esta sess\u00E3o de check-in n\u00E3o est\u00E1 mais ativa.',
+        );
+      }
+
+      if (widget.student != null) {
+        final confirmed = await _confirmGuardianCheckIn(student);
+
+        if (!confirmed) {
+          isProcessing = false;
+
+          if (mounted) {
+            await scannerController.start();
+          }
+
+          return;
+        }
+      }
+
+      final alreadyCheckedIn = await checkInRepository.isStudentCheckedIn(
+        academyId: currentUser.academyId,
+        sessionId: sessionId,
+        studentId: student.id,
+      );
+
+      if (alreadyCheckedIn) {
+        throw StateError('Sua presença já foi registrada nesta aula.');
+      }
+
+      final attendance = await checkInRepository.registerAttendance(
+        academyId: currentUser.academyId,
+        sessionId: sessionId,
+        studentId: student.id,
+      );
+
+      if (attendance == null) {
+        throw StateError(
+          'N\u00E3o foi poss\u00EDvel registrar sua presen\u00E7a.',
+        );
       }
 
       await showResultDialog(
         success: true,
-        title: 'QR Code reconhecido!',
-        message:
-            'Sessão identificada com sucesso.\n\nAgora vamos registrar sua presença.',
+        title: 'Presença registrada!',
+        message: 'Seu check-in foi realizado com sucesso.',
       );
     } on FormatException {
       await showResultDialog(
         success: false,
         title: 'QR Code inválido',
-        message: 'Este código não pertence a uma sessão válida do Tatame+.',
+        message:
+            'Este c\u00F3digo n\u00E3o pertence a uma sess\u00E3o v\u00E1lida do Tatame+.',
+      );
+    } on StateError catch (error) {
+      await showResultDialog(
+        success: false,
+        title: 'Check-in n\u00E3o realizado',
+        message: error.message.toString(),
       );
     } catch (_) {
       await showResultDialog(
         success: false,
-        title: 'Não foi possível registrar',
-        message:
-            'Ocorreu um problema ao interpretar o QR Code. Tente novamente.',
+        title: 'N\u00E3o foi poss\u00EDvel registrar',
+        message: 'Ocorreu um problema ao realizar o check-in. Tente novamente.',
       );
     }
   }
@@ -148,7 +284,7 @@ class _StudentQrScannerScreenState extends State<StudentQrScannerScreen> {
             errorBuilder: (context, error) {
               return _ScannerError(
                 message:
-                    'Não foi possível abrir a câmera.\nVerifique a permissão do aplicativo.',
+                    'N\u00E3o foi poss\u00EDvel abrir a c\u00E2mera.\nVerifique a permiss\u00E3o do aplicativo.',
                 onRetry: restartScanner,
               );
             },

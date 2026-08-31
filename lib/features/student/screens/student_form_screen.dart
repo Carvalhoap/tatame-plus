@@ -3,6 +3,9 @@ import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../auth/services/session_service.dart';
+import '../../attendance/repository/attendance_repository.dart';
+import '../../graduation/models/student_graduation_history.dart';
+import '../../graduation/repository/student_graduation_history_repository.dart';
 import '../../classroom/models/classroom.dart';
 import '../../classroom/repository/classroom_repository.dart';
 import '../../graduation/models/graduation_program.dart';
@@ -36,8 +39,10 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
   List<Classroom> classrooms = [];
   List<GraduationProgram> graduationPrograms = [];
   List<AcademyMember> studentUsers = [];
+  List<AcademyMember> guardianUsers = [];
 
   final Set<String> selectedClassroomIds = {};
+  final Set<String> selectedGuardianIds = {};
 
   String? userId;
   String? graduationProgramId;
@@ -83,6 +88,10 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
     selectedClassroomIds
       ..clear()
       ..addAll(student.classroomIds);
+
+    selectedGuardianIds
+      ..clear()
+      ..addAll(student.guardianIds);
 
     status = student.status;
   }
@@ -166,6 +175,21 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
             .toList();
 
         studentUsers.sort(
+          (a, b) => a.displayName.toLowerCase().compareTo(
+            b.displayName.toLowerCase(),
+          ),
+        );
+
+        guardianUsers = members
+            .where(
+              (member) =>
+                  member.isActive &&
+                  member.status == 'active' &&
+                  member.hasRole('guardian'),
+            )
+            .toList();
+
+        guardianUsers.sort(
           (a, b) => a.displayName.toLowerCase().compareTo(
             b.displayName.toLowerCase(),
           ),
@@ -305,6 +329,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
   Future<void> _saveGraduationProgress({
     required String studentId,
     required String academyId,
+    required String approvedBy,
   }) async {
     final programId = graduationProgramId;
     final stageId = currentGraduationStageId;
@@ -316,6 +341,11 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
     final progressRepository = context
         .read<StudentGraduationProgressRepository>();
 
+    final historyRepository = context
+        .read<StudentGraduationHistoryRepository>();
+
+    final attendanceRepository = context.read<AttendanceRepository>();
+
     StudentGraduationProgress? existingProgress;
 
     if (widget.isEditing) {
@@ -325,6 +355,63 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
       );
     }
 
+    final stageChanged =
+        existingProgress != null && existingProgress.currentStageId != stageId;
+
+    var stageStartedAt =
+        currentGraduationStageDate ?? academyJoinDate ?? DateTime.now();
+
+    var validAttendances = existingProgress?.validAttendances ?? 0;
+    var stripes = existingProgress?.stripes ?? const [];
+    var estimatedCompletionDate = existingProgress?.estimatedCompletionDate;
+    var approvedByTeacher = existingProgress?.approvedByTeacher ?? false;
+
+    if (stageChanged) {
+      final previousProgress = existingProgress;
+      final now = DateTime.now();
+
+      final previousStage = graduationPrograms
+          .where(
+            (program) => program.id == previousProgress.graduationProgramId,
+          )
+          .expand((program) => program.stages)
+          .where((stage) => stage.id == previousProgress.currentStageId)
+          .firstOrNull;
+
+      final attendances = await attendanceRepository.getAttendancesByStudent(
+        academyId: academyId,
+        studentId: studentId,
+        start: previousProgress.stageStartedAt,
+        end: now.add(const Duration(days: 1)),
+      );
+
+      final stageAttendances = attendances
+          .where((attendance) => attendance.isValid)
+          .length;
+
+      await historyRepository.addHistory(
+        history: StudentGraduationHistory(
+          id: '',
+          academyId: academyId,
+          studentId: studentId,
+          graduationProgramId: previousProgress.graduationProgramId,
+          stageId: previousProgress.currentStageId,
+          stageName: previousStage?.name ?? previousProgress.currentStageId,
+          startedAt: previousProgress.stageStartedAt,
+          endedAt: now,
+          validAttendances: stageAttendances,
+          approvedBy: approvedBy,
+          observation: pendingGraduationObservation,
+        ),
+      );
+
+      stageStartedAt = now;
+      validAttendances = 0;
+      stripes = const [];
+      estimatedCompletionDate = null;
+      approvedByTeacher = false;
+    }
+
     await progressRepository.saveProgress(
       progress: StudentGraduationProgress(
         id: studentId,
@@ -332,14 +419,126 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
         studentId: studentId,
         graduationProgramId: programId,
         currentStageId: stageId,
-        stageStartedAt:
-            currentGraduationStageDate ?? academyJoinDate ?? DateTime.now(),
-        validAttendances: existingProgress?.validAttendances ?? 0,
-        stripes: existingProgress?.stripes ?? const [],
-        estimatedCompletionDate: existingProgress?.estimatedCompletionDate,
-        approvedByTeacher: existingProgress?.approvedByTeacher ?? false,
+        stageStartedAt: stageStartedAt,
+        validAttendances: validAttendances,
+        stripes: stripes,
+        estimatedCompletionDate: estimatedCompletionDate,
+        approvedByTeacher: approvedByTeacher,
       ),
     );
+  }
+
+  String? pendingGraduationObservation;
+
+  Future<bool> _confirmGraduationChange({
+    required String academyId,
+    required String studentId,
+  }) async {
+    pendingGraduationObservation = null;
+
+    final newStageId = currentGraduationStageId;
+
+    if (newStageId == null) {
+      return true;
+    }
+
+    final progressRepository = context
+        .read<StudentGraduationProgressRepository>();
+
+    final existingProgress = await progressRepository.getByStudent(
+      academyId: academyId,
+      studentId: studentId,
+    );
+
+    if (existingProgress == null ||
+        existingProgress.currentStageId == newStageId) {
+      return true;
+    }
+
+    final previousStage = graduationPrograms
+        .where((program) => program.id == existingProgress.graduationProgramId)
+        .expand((program) => program.stages)
+        .where((stage) => stage.id == existingProgress.currentStageId)
+        .firstOrNull;
+
+    final nextStage = graduationPrograms
+        .expand((program) => program.stages)
+        .where((stage) => stage.id == newStageId)
+        .firstOrNull;
+
+    if (!mounted) {
+      return false;
+    }
+
+    final observationController = TextEditingController();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Confirmar gradua\u00e7\u00e3o'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Voc\u00ea est\u00e1 prestes a alterar a gradua\u00e7\u00e3o de '
+                  '${widget.student?.fullName ?? nameController.text.trim()}.\n\n'
+                  '${previousStage?.name ?? 'Gradua\u00e7\u00e3o atual'}\n'
+                  '\u2192\n'
+                  '${nextStage?.name ?? 'Nova gradua\u00e7\u00e3o'}\n\n'
+                  'Essa altera\u00e7\u00e3o ser\u00e1 registrada no hist\u00f3rico do aluno.',
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: observationController,
+                  minLines: 3,
+                  maxLines: 5,
+                  maxLength: 300,
+                  decoration: const InputDecoration(
+                    labelText: 'Observa\u00e7\u00e3o (opcional)',
+                    hintText:
+                        'Ex.: Excelente evolu\u00e7\u00e3o t\u00e9cnica e comprometimento.',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop(false);
+              },
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final observation = observationController.text.trim();
+
+                pendingGraduationObservation = observation.isEmpty
+                    ? null
+                    : observation;
+
+                Navigator.of(dialogContext).pop(true);
+              },
+              child: const Text('Confirmar gradua\u00e7\u00e3o'),
+            ),
+          ],
+        );
+      },
+    );
+
+    observationController.dispose();
+
+    if (confirmed != true) {
+      pendingGraduationObservation = null;
+      return false;
+    }
+
+    return true;
   }
 
   Future<void> save() async {
@@ -356,6 +555,21 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
     if (currentUser == null) {
       _showError('Sua sessão não está disponível.');
       return;
+    }
+
+    if (widget.isEditing) {
+      final graduationConfirmed = await _confirmGraduationChange(
+        academyId: currentUser.academyId,
+        studentId: widget.student!.id,
+      );
+
+      if (!graduationConfirmed) {
+        return;
+      }
+
+      if (!mounted) {
+        return;
+      }
     }
 
     setState(() {
@@ -379,7 +593,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
           jiuJitsuStartDate: jiuJitsuStartDate,
           academyJoinDate: academyJoinDate,
           classroomIds: selectedClassroomIds.toList(growable: false),
-          guardianIds: widget.student!.guardianIds,
+          guardianIds: selectedGuardianIds.toList(growable: false),
           status: status,
           updatedBy: currentUser.id,
         );
@@ -387,6 +601,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
         await _saveGraduationProgress(
           studentId: widget.student!.id,
           academyId: currentUser.academyId,
+          approvedBy: currentUser.id,
         );
       } else {
         final studentId = await repository.createStudent(
@@ -401,13 +616,14 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
           jiuJitsuStartDate: jiuJitsuStartDate,
           academyJoinDate: academyJoinDate,
           classroomIds: selectedClassroomIds.toList(growable: false),
-          guardianIds: const [],
+          guardianIds: selectedGuardianIds.toList(growable: false),
           status: status,
           createdBy: currentUser.id,
         );
         await _saveGraduationProgress(
           studentId: studentId,
           academyId: currentUser.academyId,
+          approvedBy: currentUser.id,
         );
       }
 
@@ -572,6 +788,47 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                       });
                     },
                   ),
+
+                  const SizedBox(height: 28),
+
+                  const _SectionTitle(
+                    title: 'Responsáveis',
+                    subtitle:
+                        'Selecione uma ou mais contas responsáveis por este aluno.',
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  if (guardianUsers.isEmpty)
+                    const Text(
+                      'Nenhuma conta de responsável ativa cadastrada.',
+                      style: TextStyle(color: AppColors.grey),
+                    )
+                  else
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: guardianUsers.map((member) {
+                        final selected = selectedGuardianIds.contains(
+                          member.userId,
+                        );
+
+                        return FilterChip(
+                          avatar: const Icon(Icons.family_restroom, size: 18),
+                          label: Text(member.displayName),
+                          selected: selected,
+                          onSelected: (value) {
+                            setState(() {
+                              if (value) {
+                                selectedGuardianIds.add(member.userId);
+                              } else {
+                                selectedGuardianIds.remove(member.userId);
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
 
                   const SizedBox(height: 28),
 

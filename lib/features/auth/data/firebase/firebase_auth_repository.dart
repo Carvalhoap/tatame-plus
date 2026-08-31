@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
@@ -9,12 +10,17 @@ import '../../repository/auth_repository.dart';
 class FirebaseAuthRepository implements AuthRepository {
   final FirebaseAuth firebaseAuth;
   final FirebaseFirestore firestore;
+  final FirebaseFunctions functions;
 
   FirebaseAuthRepository({
     FirebaseAuth? firebaseAuth,
     FirebaseFirestore? firestore,
+    FirebaseFunctions? functions,
   }) : firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
-       firestore = firestore ?? FirebaseFirestore.instance;
+       firestore = firestore ?? FirebaseFirestore.instance,
+       functions =
+           functions ??
+           FirebaseFunctions.instanceFor(region: 'southamerica-east1');
 
   @override
   Future<TatameUser?> login({
@@ -75,8 +81,18 @@ class FirebaseAuthRepository implements AuthRepository {
 
     final userData = userSnapshot.data();
 
-    if (userData == null || userData['isActive'] != true) {
+    if (userData == null) {
       await firebaseAuth.signOut();
+
+      throw StateError('Não foi possível carregar os dados deste usuário.');
+    }
+
+    if (userData['isActive'] != true) {
+      await firebaseAuth.signOut();
+
+      if (userData['registrationStatus'] == 'pending') {
+        throw StateError('Seu cadastro está aguardando aprovação da academia.');
+      }
 
       throw StateError('Este usuário não está ativo no Tatame+.');
     }
@@ -159,6 +175,52 @@ class FirebaseAuthRepository implements AuthRepository {
     if (rawRoles['guardian'] == true) roles.add(UserRole.guardian);
 
     return roles;
+  }
+
+  @override
+  Future<void> register({
+    required String displayName,
+    required String email,
+    required String password,
+    String? phone,
+  }) async {
+    final callable = functions.httpsCallable('selfRegisterUser');
+
+    try {
+      await callable.call<Map<String, dynamic>>({
+        'displayName': displayName.trim(),
+        'email': email.trim().toLowerCase(),
+        'password': password,
+        'phone': phone?.trim(),
+      });
+    } on FirebaseFunctionsException catch (error) {
+      switch (error.code) {
+        case 'already-exists':
+          throw const RegistrationException(
+            'Já existe uma conta cadastrada com este e-mail.',
+          );
+
+        case 'invalid-argument':
+          throw RegistrationException(
+            error.message ?? 'Os dados informados são inválidos.',
+          );
+
+        case 'unavailable':
+          throw const RegistrationException(
+            'O serviço está indisponível. Tente novamente em instantes.',
+          );
+
+        case 'deadline-exceeded':
+          throw const RegistrationException(
+            'A solicitação demorou demais. Verifique sua conexão e tente novamente.',
+          );
+
+        default:
+          throw RegistrationException(
+            error.message ?? 'Não foi possível solicitar o cadastro.',
+          );
+      }
+    }
   }
 
   @override

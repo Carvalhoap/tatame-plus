@@ -4,25 +4,37 @@ import '../models/attendance.dart';
 import '../models/check_in_session.dart';
 
 abstract class CheckInSessionRepository extends ChangeNotifier {
-  CheckInSession createSession({
+  Future<CheckInSession> createSession({
     required String academyId,
     required String classroomId,
     required String teacherId,
     Duration validity = const Duration(minutes: 5),
   });
 
-  CheckInSession? findSessionById(String sessionId);
-
-  bool closeSession(String sessionId);
-
-  List<Attendance> getAttendances(String sessionId);
-
-  Attendance? registerAttendance({
+  Future<CheckInSession?> findSessionById({
+    required String academyId,
     required String sessionId,
-    required String studentId,
   });
 
-  bool isStudentCheckedIn({
+  Future<bool> closeSession({
+    required String academyId,
+    required String sessionId,
+  });
+
+  Future<List<Attendance>> getAttendances({
+    required String academyId,
+    required String sessionId,
+  });
+
+  Future<Attendance?> registerAttendance({
+    required String academyId,
+    required String sessionId,
+    required String studentId,
+    AttendanceSource source = AttendanceSource.qrCode,
+  });
+
+  Future<bool> isStudentCheckedIn({
+    required String academyId,
     required String sessionId,
     required String studentId,
   });

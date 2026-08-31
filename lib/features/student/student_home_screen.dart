@@ -9,10 +9,13 @@ import '../mascot/data/mascot_mock.dart';
 import '../auth/services/session_service.dart';
 import '../graduation/models/graduation_program.dart';
 import '../graduation/models/graduation_stage.dart';
+import '../graduation/screens/student_graduation_history_screen.dart';
 import '../graduation/models/student_graduation_progress.dart';
 import '../graduation/models/stripe_progress.dart';
 import '../graduation/repository/graduation_program_repository.dart';
 import '../graduation/repository/student_graduation_progress_repository.dart';
+import '../attendance/repository/attendance_repository.dart';
+import '../classroom/repository/classroom_repository.dart';
 import 'models/student.dart';
 import 'repository/student_repository.dart';
 import '../mascot/widgets/mascot_card.dart';
@@ -22,7 +25,14 @@ import 'widgets/belt_journey_card.dart';
 import 'widgets/graduation_card.dart';
 
 class StudentHomeScreen extends StatefulWidget {
-  const StudentHomeScreen({super.key});
+  final Student? selectedStudent;
+  final bool guardianView;
+
+  const StudentHomeScreen({
+    super.key,
+    this.selectedStudent,
+    this.guardianView = false,
+  });
 
   @override
   State<StudentHomeScreen> createState() => _StudentHomeScreenState();
@@ -34,6 +44,11 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   Student? loadedStudent;
   StudentGraduationProgress? graduationProgress;
   GraduationProgram? graduationProgram;
+  int monthlyTrainings = 0;
+  int currentStreak = 0;
+  int trainingsInCurrentGraduation = 0;
+  String nextTrainingText = 'Nenhum treino agendado';
+  String nextTeacherName = '';
 
   @override
   void initState() {
@@ -63,19 +78,271 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
       final graduationProgramRepository = context
           .read<GraduationProgramRepository>();
 
-      final student = await studentRepository.getStudentByUserId(
-        academyId: currentUser.academyId,
-        userId: currentUser.id,
-      );
+      final attendanceRepository = context.read<AttendanceRepository>();
+
+      final classroomRepository = context.read<ClassroomRepository>();
+
+      final student =
+          widget.selectedStudent ??
+          await studentRepository.getStudentByUserId(
+            academyId: currentUser.academyId,
+            userId: currentUser.id,
+          );
 
       StudentGraduationProgress? progress;
       GraduationProgram? program;
 
+      int loadedMonthlyTrainings = 0;
+      int loadedCurrentStreak = 0;
+      int loadedTrainingsInCurrentGraduation = 0;
+      String loadedNextTrainingText = 'Nenhum treino agendado';
+      String loadedNextTeacherName = '';
+
       if (student != null) {
+        final now = DateTime.now();
+
+        final monthStart = DateTime(now.year, now.month, 1);
+
+        final nextMonthStart = DateTime(now.year, now.month + 1, 1);
+
+        final monthlyAttendances = await attendanceRepository
+            .getAttendancesByStudent(
+              academyId: currentUser.academyId,
+              studentId: student.id,
+              start: monthStart,
+              end: nextMonthStart,
+            );
+
+        loadedMonthlyTrainings = monthlyAttendances.length;
+
+        final allClassrooms = await classroomRepository.getClassrooms(
+          academyId: currentUser.academyId,
+          includeInactive: false,
+        );
+
+        final studentClassrooms = allClassrooms
+            .where((classroom) => student.classroomIds.contains(classroom.id))
+            .toList();
+
+        DateTime? nextTrainingDateTime;
+
+        for (final classroom in studentClassrooms) {
+          for (final schedule in classroom.schedules) {
+            if (!schedule.isActive) {
+              continue;
+            }
+
+            final parts = schedule.startTime.split(':');
+
+            if (parts.length < 2) {
+              continue;
+            }
+
+            final hour = int.tryParse(parts[0]);
+            final minute = int.tryParse(parts[1]);
+
+            if (hour == null || minute == null) {
+              continue;
+            }
+
+            var daysUntil = (schedule.dayOfWeek - now.weekday + 7) % 7;
+
+            var candidateDate = now.add(Duration(days: daysUntil));
+
+            var candidate = DateTime(
+              candidateDate.year,
+              candidateDate.month,
+              candidateDate.day,
+              hour,
+              minute,
+            );
+
+            if (!candidate.isAfter(now)) {
+              daysUntil += 7;
+
+              candidateDate = now.add(Duration(days: daysUntil));
+
+              candidate = DateTime(
+                candidateDate.year,
+                candidateDate.month,
+                candidateDate.day,
+                hour,
+                minute,
+              );
+            }
+
+            if (nextTrainingDateTime == null ||
+                candidate.isBefore(nextTrainingDateTime)) {
+              nextTrainingDateTime = candidate;
+            }
+          }
+        }
+
+        final nextTraining = nextTrainingDateTime;
+
+        if (nextTraining != null) {
+          final hour = nextTraining.hour.toString().padLeft(2, '0');
+          final minute = nextTraining.minute.toString().padLeft(2, '0');
+
+          final today = DateTime(now.year, now.month, now.day);
+
+          final tomorrow = today.add(const Duration(days: 1));
+
+          final trainingDay = DateTime(
+            nextTraining.year,
+            nextTraining.month,
+            nextTraining.day,
+          );
+
+          String dayLabel;
+
+          if (trainingDay == today) {
+            dayLabel = 'Hoje';
+          } else if (trainingDay == tomorrow) {
+            dayLabel = 'Amanhã';
+          } else {
+            const weekdayNames = [
+              'Segunda',
+              'Terça',
+              'Quarta',
+              'Quinta',
+              'Sexta',
+              'Sábado',
+              'Domingo',
+            ];
+
+            dayLabel = weekdayNames[nextTraining.weekday - 1];
+          }
+
+          loadedNextTrainingText = '$dayLabel • $hour:$minute';
+        }
+
+        final streakStart = now.subtract(const Duration(days: 90));
+
+        final streakAttendances = await attendanceRepository
+            .getAttendancesByStudent(
+              academyId: currentUser.academyId,
+              studentId: student.id,
+              start: streakStart,
+              end: now.add(const Duration(days: 1)),
+            );
+
+        final attendanceDates = streakAttendances
+            .where((attendance) => attendance.isValid)
+            .map(
+              (attendance) => DateTime(
+                attendance.dateTime.year,
+                attendance.dateTime.month,
+                attendance.dateTime.day,
+              ),
+            )
+            .toSet();
+
+        final expectedTrainings = <DateTime>[];
+
+        for (final classroom in studentClassrooms) {
+          for (final schedule in classroom.schedules) {
+            if (!schedule.isActive) {
+              continue;
+            }
+
+            for (
+              var date = DateTime(
+                streakStart.year,
+                streakStart.month,
+                streakStart.day,
+              );
+              !date.isAfter(now);
+              date = date.add(const Duration(days: 1))
+            ) {
+              if (date.weekday != schedule.dayOfWeek) {
+                continue;
+              }
+
+              final parts = schedule.startTime.split(':');
+
+              if (parts.length < 2) {
+                continue;
+              }
+
+              final hour = int.tryParse(parts[0]);
+              final minute = int.tryParse(parts[1]);
+
+              if (hour == null || minute == null) {
+                continue;
+              }
+
+              final scheduledDateTime = DateTime(
+                date.year,
+                date.month,
+                date.day,
+                hour,
+                minute,
+              );
+
+              if (scheduledDateTime.isAfter(now)) {
+                continue;
+              }
+
+              expectedTrainings.add(scheduledDateTime);
+            }
+          }
+        }
+
+        for (final attendanceDay in attendanceDates) {
+          if (attendanceDay.isBefore(streakStart)) {
+            continue;
+          }
+
+          if (attendanceDay.isAfter(now)) {
+            continue;
+          }
+
+          expectedTrainings.add(attendanceDay);
+        }
+
+        expectedTrainings.sort((a, b) => b.compareTo(a));
+        final seenDays = <String>{};
+
+        for (final expectedTraining in expectedTrainings) {
+          final dayKey =
+              '${expectedTraining.year}-'
+              '${expectedTraining.month}-'
+              '${expectedTraining.day}';
+
+          if (!seenDays.add(dayKey)) {
+            continue;
+          }
+
+          final trainingDay = DateTime(
+            expectedTraining.year,
+            expectedTraining.month,
+            expectedTraining.day,
+          );
+
+          if (attendanceDates.contains(trainingDay)) {
+            loadedCurrentStreak++;
+          } else {
+            break;
+          }
+        }
+
         progress = await graduationProgressRepository.getByStudent(
           academyId: currentUser.academyId,
           studentId: student.id,
         );
+
+        if (progress != null) {
+          final graduationAttendances = await attendanceRepository
+              .getAttendancesByStudent(
+                academyId: currentUser.academyId,
+                studentId: student.id,
+                start: progress.stageStartedAt,
+                end: DateTime.now().add(const Duration(days: 1)),
+              );
+
+          loadedTrainingsInCurrentGraduation = graduationAttendances.length;
+        }
 
         final programId =
             progress?.graduationProgramId ?? student.graduationProgramId;
@@ -94,6 +361,11 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
 
       setState(() {
         loadedStudent = student;
+        monthlyTrainings = loadedMonthlyTrainings;
+        currentStreak = loadedCurrentStreak;
+        trainingsInCurrentGraduation = loadedTrainingsInCurrentGraduation;
+        nextTrainingText = loadedNextTrainingText;
+        nextTeacherName = loadedNextTeacherName;
         graduationProgress = progress;
         graduationProgram = program;
         isLoading = false;
@@ -220,12 +492,35 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     return [StripeProgress(color: stripeColor, earned: earned, total: 4)];
   }
 
+  String get _nextGraduationStageName {
+    final currentStage = currentGraduationStage;
+    final program = graduationProgram;
+
+    if (currentStage == null || program == null) {
+      return 'Graduação ainda não definida';
+    }
+
+    final nextStageId = currentStage.nextStageId;
+
+    if (nextStageId == null || nextStageId.isEmpty) {
+      return 'Graduação máxima alcançada';
+    }
+
+    for (final stage in program.stages) {
+      if (stage.id == nextStageId) {
+        return stage.name;
+      }
+    }
+
+    return 'Próxima graduação não encontrada';
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
       return Scaffold(
         backgroundColor: AppColors.background,
-        drawer: const AppDrawer(),
+        drawer: widget.guardianView ? null : const AppDrawer(),
         appBar: AppBar(
           title: const Text('Minha Jornada'),
           backgroundColor: AppColors.background,
@@ -239,7 +534,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     if (errorMessage != null || loadedStudent == null) {
       return Scaffold(
         backgroundColor: AppColors.background,
-        drawer: const AppDrawer(),
+        drawer: widget.guardianView ? null : const AppDrawer(),
         appBar: AppBar(
           title: const Text('Minha Jornada'),
           backgroundColor: AppColors.background,
@@ -262,11 +557,38 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     final student = loadedStudent!;
     const dashboard = mockStudentDashboardData;
 
-    final mascot = mascots.first;
+    final currentBeltName = currentGraduationStage?.beltName
+        .trim()
+        .toLowerCase();
+
+    final mascot = mascots.firstWhere((item) {
+      if (currentBeltName == null || currentBeltName.isEmpty) {
+        return false;
+      }
+
+      if (currentBeltName.contains('cinza')) {
+        return item.name == 'Esquilo';
+      }
+
+      if (currentBeltName.contains('amarela')) {
+        return item.name == 'Guepardo';
+      }
+
+      if (currentBeltName.contains('laranja')) {
+        return item.name == 'Raposa';
+      }
+
+      if (currentBeltName.contains('verde')) {
+        return item.name == 'Lobo';
+      }
+
+      return item.belt.toLowerCase().contains(currentBeltName) ||
+          currentBeltName.contains(item.belt.toLowerCase());
+    }, orElse: () => mascots.first);
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      drawer: const AppDrawer(),
+      drawer: widget.guardianView ? null : const AppDrawer(),
       appBar: AppBar(
         title: const Text('Minha Jornada'),
         backgroundColor: AppColors.background,
@@ -300,7 +622,9 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                   final checkInConfirmed = await Navigator.push<bool>(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const StudentQrScannerScreen(),
+                      builder: (_) => StudentQrScannerScreen(
+                        student: widget.guardianView ? student : null,
+                      ),
                     ),
                   );
 
@@ -369,35 +693,87 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                 text: 'Graduação ainda não definida.',
               ),
             const SizedBox(height: 18),
+            InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => StudentGraduationHistoryScreen(
+                      student: student,
+                      currentProgress: graduationProgress,
+                      currentStageName: currentGraduationStage?.name,
+                    ),
+                  ),
+                );
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(18),
+                decoration: _cardDecoration(),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.history_edu,
+                      color: AppColors.brandPrimary,
+                      size: 30,
+                    ),
+                    SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Histórico de graduações',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.brandPrimary,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Veja sua evolução no Jiu-Jitsu',
+                            style: TextStyle(fontSize: 14),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_right, color: AppColors.brandPrimary),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
             _InfoCard(
-              title: '🔥 Meta do mês',
-              subtitle:
-                  '${dashboard.monthlyTrainings} / '
-                  '${dashboard.monthlyGoal} treinos',
-              progress: dashboard.monthlyProgress,
+              title: 'Meta do mês',
+              subtitle: '$monthlyTrainings / ${dashboard.monthlyGoal} treinos',
+              progress: dashboard.monthlyGoal == 0
+                  ? 0
+                  : (monthlyTrainings / dashboard.monthlyGoal).clamp(0.0, 1.0),
               color: AppColors.brandPrimary,
             ),
             const SizedBox(height: 18),
             _SimpleCard(
-              title: '🏆 Próxima conquista',
-              text:
-                  '${dashboard.nextAchievement} • '
-                  '${(dashboard.achievementProgress * 100).round()}%',
+              title: 'Próxima conquista',
+              text: _nextGraduationStageName,
             ),
             const SizedBox(height: 18),
             _SimpleCard(
               title: '🔥 Sequência atual',
-              text: '${dashboard.streak} treinos consecutivos',
+              text: '$currentStreak treinos consecutivos',
             ),
             const SizedBox(height: 18),
             _SimpleCard(
-              title: '📅 Próximo treino',
-              text:
-                  '${dashboard.nextTraining}\n'
-                  '${dashboard.teacherName}',
+              title: 'Próximo treino',
+              text: nextTeacherName.isEmpty
+                  ? nextTrainingText
+                  : '$nextTrainingText\n$nextTeacherName',
             ),
             const SizedBox(height: 18),
-            _SimpleCard(title: '💬 Frase do dia', text: dashboard.quote),
+            _SimpleCard(
+              title: '🥋 Treinos na graduação atual',
+              text: '$trainingsInCurrentGraduation treinos',
+            ),
           ],
         ),
       ),

@@ -25,10 +25,10 @@ class MascotCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 34,
-            backgroundColor: AppColors.brandPrimary,
-            child: Text(mascot.emoji, style: const TextStyle(fontSize: 32)),
+          SizedBox(
+            width: 100,
+            height: 110,
+            child: Image.asset(mascot.assetPath, fit: BoxFit.contain),
           ),
           const SizedBox(width: 18),
           Expanded(

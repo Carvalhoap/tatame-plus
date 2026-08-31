@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/enums/user_role.dart';
 import '../../admin/screens/admin_home_screen.dart';
+import '../../guardian/screens/guardian_home_screen.dart';
 import '../../student/student_home_screen.dart';
 import '../../teacher/teacher_home_screen.dart';
 import '../repository/auth_repository.dart';
@@ -80,11 +81,7 @@ class _SessionRouterState extends State<SessionRouter> {
             return const StudentHomeScreen();
 
           case UserRole.guardian:
-            return const Scaffold(
-              body: Center(
-                child: Text('Área do responsável em desenvolvimento'),
-              ),
-            );
+            return const GuardianHomeScreen();
 
           case null:
             return const LoginScreen();

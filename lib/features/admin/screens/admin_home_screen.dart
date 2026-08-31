@@ -134,8 +134,7 @@ class AdminHomeScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) =>
-                            const GraduationProgramsScreen(),
+                        builder: (_) => const GraduationProgramsScreen(),
                       ),
                     );
                   },

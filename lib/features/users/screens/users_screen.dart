@@ -7,6 +7,7 @@ import '../../auth/services/session_service.dart';
 import '../models/academy_member.dart';
 import '../repository/user_repository.dart';
 import 'create_user_screen.dart';
+import 'edit_user_screen.dart';
 
 class UsersScreen extends StatefulWidget {
   const UsersScreen({super.key});
@@ -59,6 +60,21 @@ class _UsersScreenState extends State<UsersScreen> {
     }
 
     if (created == true) {
+      reload();
+    }
+  }
+
+  Future<void> openEditUser(AcademyMember member) async {
+    final updated = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => EditUserScreen(member: member)),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (updated == true) {
       reload();
     }
   }
@@ -180,7 +196,12 @@ class _UsersScreenState extends State<UsersScreen> {
                       separatorBuilder: (context, index) =>
                           const SizedBox(height: 12),
                       itemBuilder: (context, index) {
-                        return _MemberCard(member: filteredMembers[index]);
+                        final member = filteredMembers[index];
+
+                        return _MemberCard(
+                          member: member,
+                          onTap: () => openEditUser(member),
+                        );
                       },
                     ),
                   );
@@ -196,8 +217,9 @@ class _UsersScreenState extends State<UsersScreen> {
 
 class _MemberCard extends StatelessWidget {
   final AcademyMember member;
+  final VoidCallback onTap;
 
-  const _MemberCard({required this.member});
+  const _MemberCard({required this.member, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -210,6 +232,7 @@ class _MemberCard extends StatelessWidget {
       elevation: 1,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: ListTile(
+        onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 18,
           vertical: 10,
@@ -240,12 +263,19 @@ class _MemberCard extends StatelessWidget {
             Text(roles.isEmpty ? 'Sem perfil autorizado' : roles),
           ],
         ),
-        trailing: Tooltip(
-          message: isUserActive ? 'Usuário ativo' : 'Usuário inativo',
-          child: Icon(
-            isUserActive ? Icons.check_circle : Icons.cancel,
-            color: isUserActive ? AppColors.success : AppColors.gracieRed,
-          ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Tooltip(
+              message: isUserActive ? 'Usuário ativo' : 'Usuário inativo',
+              child: Icon(
+                isUserActive ? Icons.check_circle : Icons.cancel,
+                color: isUserActive ? AppColors.success : AppColors.gracieRed,
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Icon(Icons.edit_outlined, color: AppColors.brandPrimary),
+          ],
         ),
       ),
     );

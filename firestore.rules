@@ -42,6 +42,74 @@ service cloud.firestore {
         ).data.roles.admin == true;
     }
 
+    function isTeacher(academyId) {
+      return isAcademyMember(academyId)
+        && get(
+          memberPath(
+            academyId,
+            request.auth.uid
+          )
+        ).data.roles.teacher == true;
+    }
+
+    function isPartner(academyId) {
+      return isAcademyMember(academyId)
+        && get(
+          memberPath(
+            academyId,
+            request.auth.uid
+          )
+        ).data.roles.partner == true;
+    }
+
+    function studentPath(academyId, studentId) {
+      return /databases/$(database)/documents/academies/$(academyId)/students/$(studentId);
+    }
+
+    function ownsStudent(academyId, studentId) {
+      return isAcademyMember(academyId)
+        && exists(
+          studentPath(
+            academyId,
+            studentId
+          )
+        )
+        && get(
+          studentPath(
+            academyId,
+            studentId
+          )
+        ).data.userId == request.auth.uid;
+    }
+
+    function guardsStudent(academyId, studentId) {
+      return isAcademyMember(academyId)
+        && get(
+          memberPath(
+            academyId,
+            request.auth.uid
+          )
+        ).data.roles.guardian == true
+        && exists(
+          studentPath(
+            academyId,
+            studentId
+          )
+        )
+        && get(
+          studentPath(
+            academyId,
+            studentId
+          )
+        ).data.guardianIds is list
+        && request.auth.uid in get(
+          studentPath(
+            academyId,
+            studentId
+          )
+        ).data.guardianIds;
+    }
+
     match /users/{uid} {
       allow get: if isOwner(uid);
       allow list: if false;
@@ -111,6 +179,143 @@ service cloud.firestore {
 
         allow create, update:
           if isAdmin(academyId);
+
+        allow delete:
+          if false;
+      }
+
+      match /studentGraduationHistory/{historyId} {
+        allow get, list:
+          if isAcademyMember(academyId);
+
+        allow create:
+          if isAdmin(academyId);
+
+        allow update, delete:
+          if false;
+      }
+
+      match /studentGraduationEvaluations/{evaluationId} {
+        allow get, list:
+          if isAdmin(academyId)
+            || isTeacher(academyId)
+            || isPartner(academyId);
+
+        allow create:
+          if (
+            isAdmin(academyId)
+            || isTeacher(academyId)
+            || isPartner(academyId)
+          )
+          && request.resource.data.studentId is string
+          && request.resource.data.graduationProgramId is string
+          && request.resource.data.stageId is string
+          && request.resource.data.evaluatedBy == request.auth.uid
+          && (
+            request.resource.data.status == 'monitoring'
+            || request.resource.data.status == 'approved'
+          );
+
+        allow update, delete:
+          if false;
+      }
+
+      match /checkInSessions/{sessionId} {
+        allow get, list:
+          if isAcademyMember(academyId);
+
+        allow create:
+          if isAdmin(academyId)
+            || isTeacher(academyId);
+
+        allow update:
+          if isAdmin(academyId)
+            || isTeacher(academyId);
+
+        allow delete:
+          if false;
+      }
+
+      match /attendances/{attendanceId} {
+        allow get, list:
+          if isAdmin(academyId)
+            || isTeacher(academyId)
+            || ownsStudent(
+              academyId,
+              resource.data.studentId
+            )
+            || guardsStudent(
+              academyId,
+              resource.data.studentId
+            );
+
+        allow create:
+          if request.resource.data.isValid == true
+          && request.resource.data.checkInSessionId is string
+          && exists(
+            /databases/$(database)/documents/academies/$(academyId)/checkInSessions/$(request.resource.data.checkInSessionId)
+          )
+          && get(
+            /databases/$(database)/documents/academies/$(academyId)/checkInSessions/$(request.resource.data.checkInSessionId)
+          ).data.closedAt == null
+          && request.time
+            < get(
+                /databases/$(database)/documents/academies/$(academyId)/checkInSessions/$(request.resource.data.checkInSessionId)
+              ).data.expiresAt
+          && request.resource.data.classroomId
+            == get(
+                /databases/$(database)/documents/academies/$(academyId)/checkInSessions/$(request.resource.data.checkInSessionId)
+              ).data.classroomId
+          && request.resource.data.teacherId
+            == get(
+                /databases/$(database)/documents/academies/$(academyId)/checkInSessions/$(request.resource.data.checkInSessionId)
+              ).data.teacherId
+          && (
+            (
+              (
+                ownsStudent(
+                  academyId,
+                  request.resource.data.studentId
+                )
+                || guardsStudent(
+                  academyId,
+                  request.resource.data.studentId
+                )
+              )
+              && request.resource.data.source == 'qrCode'
+            )
+            ||
+            (
+              (
+                isAdmin(academyId)
+                || isTeacher(academyId)
+                || isPartner(academyId)
+              )
+              && request.resource.data.source == 'manual'
+              && exists(
+                /databases/$(database)/documents/academies/$(academyId)/students/$(request.resource.data.studentId)
+              )
+            )
+          );
+
+        allow update:
+          if (
+            isAdmin(academyId)
+            || isTeacher(academyId)
+            || isPartner(academyId)
+          )
+          && resource.data.isValid == true
+          && request.resource.data.isValid == false
+          && request.resource.data.invalidatedBy == request.auth.uid
+          && request.resource.data.invalidatedAt == request.time
+          && request.resource.data
+            .diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              'isValid',
+              'invalidatedAt',
+              'invalidatedBy'
+            ]);
 
         allow delete:
           if false;

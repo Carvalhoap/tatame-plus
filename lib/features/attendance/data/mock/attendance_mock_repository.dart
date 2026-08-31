@@ -3,11 +3,14 @@ import '../../repository/attendance_repository.dart';
 
 class AttendanceMockRepository implements AttendanceRepository {
   @override
-  List<Attendance> getAttendanceBySession(String checkInSessionId) {
+  Future<List<Attendance>> getAttendanceBySession({
+    required String academyId,
+    required String checkInSessionId,
+  }) async {
     return [
       Attendance(
         id: '1',
-        academyId: 'academy_1',
+        academyId: academyId,
         studentId: 'student_1',
         classroomId: 'class_1',
         teacherId: 'teacher_1',
@@ -15,28 +18,25 @@ class AttendanceMockRepository implements AttendanceRepository {
         dateTime: DateTime.now(),
         source: AttendanceSource.qrCode,
       ),
-
-      Attendance(
-        id: '2',
-        academyId: 'academy_1',
-        studentId: 'student_2',
-        classroomId: 'class_1',
-        teacherId: 'teacher_1',
-        checkInSessionId: checkInSessionId,
-        dateTime: DateTime.now(),
-        source: AttendanceSource.qrCode,
-      ),
-
-      Attendance(
-        id: '3',
-        academyId: 'academy_1',
-        studentId: 'student_3',
-        classroomId: 'class_1',
-        teacherId: 'teacher_1',
-        checkInSessionId: checkInSessionId,
-        dateTime: DateTime.now(),
-        source: AttendanceSource.manual,
-      ),
     ];
+  }
+
+  @override
+  Future<List<Attendance>> getAttendancesByStudent({
+    required String academyId,
+    required String studentId,
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    return const [];
+  }
+
+  @override
+  Future<void> invalidateAttendance({
+    required String academyId,
+    required String attendanceId,
+    required String invalidatedBy,
+  }) async {
+    // Mock sem persistência real.
   }
 }

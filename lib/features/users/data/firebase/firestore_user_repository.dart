@@ -154,6 +154,32 @@ class FirestoreUserRepository implements UserRepository {
     }
   }
 
+  @override
+  Future<void> updateAcademyUser({
+    required String academyId,
+    required String userId,
+    required String displayName,
+    required List<String> roles,
+    required bool isActive,
+  }) async {
+    final callable = functions.httpsCallable('updateAcademyUser');
+
+    try {
+      await callable.call<Map<String, dynamic>>({
+        'academyId': academyId,
+        'userId': userId,
+        'displayName': displayName.trim(),
+        'roles': roles,
+        'isActive': isActive,
+      });
+    } on FirebaseFunctionsException catch (error) {
+      throw UserUpdateException(
+        code: error.code,
+        message: _functionErrorMessage(error),
+      );
+    }
+  }
+
   Map<String, bool> _parseRoles(dynamic rawRoles) {
     if (rawRoles is! Map) {
       return const {};
@@ -195,6 +221,16 @@ class UserCreationException implements Exception {
   final String message;
 
   const UserCreationException({required this.code, required this.message});
+
+  @override
+  String toString() => message;
+}
+
+class UserUpdateException implements Exception {
+  final String code;
+  final String message;
+
+  const UserUpdateException({required this.code, required this.message});
 
   @override
   String toString() => message;

@@ -514,25 +514,25 @@ class _StageCard extends StatelessWidget {
             DropdownButtonFormField<ProgressionCriterion>(
               initialValue: stage.criterion,
               decoration: const InputDecoration(
-                labelText: 'Critério',
+                labelText: 'Marco de acompanhamento',
                 border: OutlineInputBorder(),
               ),
               items: const [
                 DropdownMenuItem(
                   value: ProgressionCriterion.manual,
-                  child: Text('Manual'),
+                  child: Text('Manual — sem alerta'),
                 ),
                 DropdownMenuItem(
                   value: ProgressionCriterion.attendance,
-                  child: Text('Presença'),
+                  child: Text('Número de treinos'),
                 ),
                 DropdownMenuItem(
                   value: ProgressionCriterion.time,
-                  child: Text('Tempo'),
+                  child: Text('Tempo na graduação'),
                 ),
                 DropdownMenuItem(
                   value: ProgressionCriterion.attendanceAndTime,
-                  child: Text('Presença + tempo'),
+                  child: Text('Treinos + tempo'),
                 ),
               ],
               onChanged: (value) {
@@ -549,7 +549,7 @@ class _StageCard extends StatelessWidget {
                 controller: stage.attendancesController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
-                  labelText: 'Presenças necessárias',
+                  labelText: 'Alertar a partir de quantos treinos?',
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -561,7 +561,7 @@ class _StageCard extends StatelessWidget {
                 controller: stage.monthsController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
-                  labelText: 'Tempo mínimo em meses',
+                  labelText: 'Alertar a partir de quantos meses?',
                   border: OutlineInputBorder(),
                 ),
               ),

@@ -7,12 +7,12 @@ class CheckInSessionMockRepository extends CheckInSessionRepository {
   final Map<String, List<Attendance>> _attendancesBySession = {};
 
   @override
-  CheckInSession createSession({
+  Future<CheckInSession> createSession({
     required String academyId,
     required String classroomId,
     required String teacherId,
     Duration validity = const Duration(minutes: 5),
-  }) {
+  }) async {
     final now = DateTime.now();
     final sessionId = 'session_${now.microsecondsSinceEpoch}';
 
@@ -34,13 +34,28 @@ class CheckInSessionMockRepository extends CheckInSessionRepository {
   }
 
   @override
-  CheckInSession? findSessionById(String sessionId) {
-    return _sessions[sessionId];
+  Future<CheckInSession?> findSessionById({
+    required String academyId,
+    required String sessionId,
+  }) async {
+    final session = _sessions[sessionId];
+
+    if (session == null || session.academyId != academyId) {
+      return null;
+    }
+
+    return session;
   }
 
   @override
-  bool closeSession(String sessionId) {
-    final session = _sessions[sessionId];
+  Future<bool> closeSession({
+    required String academyId,
+    required String sessionId,
+  }) async {
+    final session = await findSessionById(
+      academyId: academyId,
+      sessionId: sessionId,
+    );
 
     if (session == null || session.isClosed) {
       return false;
@@ -54,32 +69,61 @@ class CheckInSessionMockRepository extends CheckInSessionRepository {
   }
 
   @override
-  List<Attendance> getAttendances(String sessionId) {
+  Future<List<Attendance>> getAttendances({
+    required String academyId,
+    required String sessionId,
+  }) async {
+    final session = await findSessionById(
+      academyId: academyId,
+      sessionId: sessionId,
+    );
+
+    if (session == null) {
+      return const [];
+    }
+
     return List.unmodifiable(_attendancesBySession[sessionId] ?? const []);
   }
 
   @override
-  bool isStudentCheckedIn({
+  Future<bool> isStudentCheckedIn({
+    required String academyId,
     required String sessionId,
     required String studentId,
-  }) {
-    return getAttendances(sessionId).any(
+  }) async {
+    final attendances = await getAttendances(
+      academyId: academyId,
+      sessionId: sessionId,
+    );
+
+    return attendances.any(
       (attendance) => attendance.studentId == studentId && attendance.isValid,
     );
   }
 
   @override
-  Attendance? registerAttendance({
+  Future<Attendance?> registerAttendance({
+    required String academyId,
     required String sessionId,
     required String studentId,
-  }) {
-    final session = findSessionById(sessionId);
+    AttendanceSource source = AttendanceSource.qrCode,
+  }) async {
+    final session = await findSessionById(
+      academyId: academyId,
+      sessionId: sessionId,
+    );
 
     if (session == null || !session.isActive) {
       return null;
     }
 
-    if (isStudentCheckedIn(sessionId: sessionId, studentId: studentId)) {
+    final alreadyCheckedIn = await isStudentCheckedIn(
+      academyId: academyId,
+      sessionId: sessionId,
+      studentId: studentId,
+    );
+
+    if (alreadyCheckedIn) {
       return null;
     }
 
@@ -87,16 +131,16 @@ class CheckInSessionMockRepository extends CheckInSessionRepository {
 
     final attendance = Attendance(
       id: 'attendance_${now.microsecondsSinceEpoch}',
-      academyId: session.academyId,
+      academyId: academyId,
       studentId: studentId,
       classroomId: session.classroomId,
       teacherId: session.teacherId,
       checkInSessionId: session.id,
       dateTime: now,
-      source: AttendanceSource.qrCode,
+      source: source,
     );
 
-    _attendancesBySession[sessionId]!.add(attendance);
+    _attendancesBySession.putIfAbsent(sessionId, () => []).add(attendance);
 
     notifyListeners();
 

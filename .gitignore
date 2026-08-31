@@ -47,3 +47,5 @@ app.*.map.json
 # Firebase Agent Skills
 .agents/
 skills-lock.json
+
+/release/

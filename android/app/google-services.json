@@ -7,6 +7,25 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:14520324998:android:f9b780bd534c4fe1f55207",
+        "android_client_info": {
+          "package_name": "br.com.tatameplus.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC0WUYiEYEmBxwqABoKj8YG5k2whndIVM8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:14520324998:android:eccfb97a205b84ddf55207",
         "android_client_info": {
           "package_name": "com.example.tatame_plus"

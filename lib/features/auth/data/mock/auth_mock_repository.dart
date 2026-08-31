@@ -29,6 +29,22 @@ class AuthMockRepository implements AuthRepository {
   }
 
   @override
+  Future<void> register({
+    required String displayName,
+    required String email,
+    required String password,
+    String? phone,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    if (displayName.trim().isEmpty ||
+        email.trim().isEmpty ||
+        password.length < 8) {
+      throw const RegistrationException('Os dados informados são inválidos.');
+    }
+  }
+
+  @override
   Future<TatameUser?> restoreSession() async {
     return _currentUser;
   }

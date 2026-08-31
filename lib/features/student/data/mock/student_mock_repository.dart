@@ -54,6 +54,26 @@ class StudentMockRepository implements StudentRepository {
   }
 
   @override
+  Future<List<Student>> getStudentsByGuardianId({
+    required String academyId,
+    required String guardianId,
+  }) async {
+    final students = _students
+        .where(
+          (student) =>
+              student.academyId == academyId &&
+              student.guardianIds.contains(guardianId),
+        )
+        .toList();
+
+    students.sort(
+      (a, b) => a.fullName.toLowerCase().compareTo(b.fullName.toLowerCase()),
+    );
+
+    return students;
+  }
+
+  @override
   Future<String> createStudent({
     required String academyId,
     required String? userId,

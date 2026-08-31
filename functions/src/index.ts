@@ -12,3 +12,10 @@ export {
   createAcademyUser,
   syncAcademyMemberProfiles,
 } from "./create_academy_user";
+
+export {
+  updateAcademyUser,
+} from "./update_academy_user";
+export {
+  selfRegisterUser,
+} from "./self_register_user";

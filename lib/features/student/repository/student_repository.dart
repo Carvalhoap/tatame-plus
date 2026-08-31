@@ -10,6 +10,11 @@ abstract class StudentRepository {
     required String userId,
   });
 
+  Future<List<Student>> getStudentsByGuardianId({
+    required String academyId,
+    required String guardianId,
+  });
+
   Future<String> createStudent({
     required String academyId,
     required String? userId,

@@ -5,6 +5,7 @@ class Mascot {
   final String value;
   final String description;
   final String emoji;
+  final String assetPath;
 
   const Mascot({
     required this.belt,
@@ -13,5 +14,6 @@ class Mascot {
     required this.value,
     required this.description,
     required this.emoji,
+    required this.assetPath,
   });
 }

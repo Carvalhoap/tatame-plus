@@ -1,4 +1,4 @@
-package com.example.tatame_plus
+package br.com.tatameplus.app
 
 import io.flutter.embedding.android.FlutterActivity
 
