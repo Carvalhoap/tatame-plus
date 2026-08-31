@@ -1,5 +1,7 @@
 {
-  "projects": {
-    "default": "tatame-plus"
-  }
+    "projects":  {
+                     "default":  "tatame-plus",
+                     "production":  "tatame-plus",
+                     "development":  "tatame-plus-desenvolvimento"
+                 }
 }
