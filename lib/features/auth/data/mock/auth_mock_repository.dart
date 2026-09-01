@@ -50,6 +50,31 @@ class AuthMockRepository implements AuthRepository {
   }
 
   @override
+  Future<void> sendPasswordResetEmail({required String email}) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    if (email.trim().isEmpty) {
+      throw const PasswordManagementException(
+        'Informe o e-mail usado no cadastro.',
+      );
+    }
+  }
+
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    if (currentPassword.isEmpty || newPassword.length < 8) {
+      throw const PasswordManagementException(
+        'Os dados informados são inválidos.',
+      );
+    }
+  }
+
+  @override
   Future<void> logout() async {
     _currentUser = null;
   }

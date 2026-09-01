@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../repository/auth_repository.dart';
 import '../services/session_service.dart';
+import 'forgot_password_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -175,6 +176,24 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     onSubmitted: (_) => login(),
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: isLoading
+                          ? null
+                          : () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ForgotPasswordScreen(
+                                    initialEmail: emailController.text.trim(),
+                                  ),
+                                ),
+                              );
+                            },
+                      child: const Text('Esqueci minha senha'),
+                    ),
                   ),
                   if (errorMessage != null) ...[
                     const SizedBox(height: 14),

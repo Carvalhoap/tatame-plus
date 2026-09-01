@@ -5,6 +5,7 @@ import '../../features/auth/services/session_service.dart';
 import '../enums/user_role.dart';
 import '../theme/app_colors.dart';
 import '../../features/auth/repository/auth_repository.dart';
+import '../../features/auth/screens/change_password_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -136,6 +137,22 @@ class AppDrawer extends StatelessWidget {
 
                   const Divider(height: 32),
 
+                  ListTile(
+                    leading: const Icon(
+                      Icons.password_outlined,
+                      color: AppColors.grey,
+                    ),
+                    title: const Text('Alterar minha senha'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ChangePasswordScreen(),
+                        ),
+                      );
+                    },
+                  ),
                   ListTile(
                     leading: const Icon(
                       Icons.info_outline,
