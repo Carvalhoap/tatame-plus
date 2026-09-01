@@ -41,7 +41,9 @@ import '../features/class_occurrence/data/firebase/firestore_class_occurrence_re
 import '../features/class_occurrence/repository/class_occurrence_repository.dart';
 
 class TatamePlusApp extends StatelessWidget {
-  const TatamePlusApp({super.key});
+  final bool isDevelopment;
+
+  const TatamePlusApp({super.key, required this.isDevelopment});
 
   @override
   Widget build(BuildContext context) {
@@ -108,8 +110,22 @@ class TatamePlusApp extends StatelessWidget {
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: 'Tatame+',
+        title: isDevelopment ? 'Tatame+ Desenvolvimento' : 'Tatame+',
         theme: AppTheme.light,
+        builder: (context, child) {
+          final content = child ?? const SizedBox.shrink();
+
+          if (!isDevelopment) {
+            return content;
+          }
+
+          return Banner(
+            message: 'DESENVOLVIMENTO',
+            location: BannerLocation.topEnd,
+            color: Colors.orange,
+            child: content,
+          );
+        },
         home: const SessionRouter(),
       ),
     );

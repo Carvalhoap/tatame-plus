@@ -19,5 +19,7 @@ Future<void> main() async {
 
   await Firebase.initializeApp(options: firebaseOptions);
 
-  runApp(const TatamePlusApp());
+  final isDevelopment = firebaseEnvironment == 'development';
+
+  runApp(TatamePlusApp(isDevelopment: isDevelopment));
 }
