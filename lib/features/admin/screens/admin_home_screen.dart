@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_drawer.dart';
+import '../../attendance/screens/attendance_reports_screen.dart';
 import '../../auth/services/session_service.dart';
 import '../../class_occurrence/screens/class_occurrences_screen.dart';
 import '../../classroom/screens/classrooms_screen.dart';
@@ -139,10 +140,18 @@ class AdminHomeScreen extends StatelessWidget {
                     );
                   },
                 ),
-                const _AdminCard(
+                _AdminCard(
                   title: 'Relatórios',
                   subtitle: 'Presenças e indicadores',
                   icon: Icons.bar_chart,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AttendanceReportsScreen(),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),

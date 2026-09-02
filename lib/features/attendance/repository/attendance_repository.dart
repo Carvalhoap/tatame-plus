@@ -13,6 +13,13 @@ abstract class AttendanceRepository {
     required DateTime end,
   });
 
+  Future<List<Attendance>> getAttendancesByPeriod({
+    required String academyId,
+    required DateTime start,
+    required DateTime end,
+    bool includeInvalid = false,
+  });
+
   Future<void> invalidateAttendance({
     required String academyId,
     required String attendanceId,

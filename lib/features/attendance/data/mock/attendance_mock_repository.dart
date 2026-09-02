@@ -32,6 +32,16 @@ class AttendanceMockRepository implements AttendanceRepository {
   }
 
   @override
+  Future<List<Attendance>> getAttendancesByPeriod({
+    required String academyId,
+    required DateTime start,
+    required DateTime end,
+    bool includeInvalid = false,
+  }) async {
+    return const [];
+  }
+
+  @override
   Future<void> invalidateAttendance({
     required String academyId,
     required String attendanceId,
