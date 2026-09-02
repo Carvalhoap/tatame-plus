@@ -11,6 +11,18 @@ abstract class CheckInSessionRepository extends ChangeNotifier {
     Duration validity = const Duration(minutes: 5),
   });
 
+  Future<List<CheckInSession>> getSessionsByPeriod({
+    required String academyId,
+    required DateTime start,
+    required DateTime end,
+  });
+
+  Future<CheckInSession?> reopenSession({
+    required String academyId,
+    required String sessionId,
+    Duration validity = const Duration(minutes: 5),
+  });
+
   Future<CheckInSession?> findSessionById({
     required String academyId,
     required String sessionId,

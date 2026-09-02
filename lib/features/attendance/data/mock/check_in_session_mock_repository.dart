@@ -34,6 +34,59 @@ class CheckInSessionMockRepository extends CheckInSessionRepository {
   }
 
   @override
+  Future<List<CheckInSession>> getSessionsByPeriod({
+    required String academyId,
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    final result = _sessions.values
+        .where(
+          (session) =>
+              session.academyId == academyId &&
+              !session.createdAt.isBefore(start) &&
+              session.createdAt.isBefore(end),
+        )
+        .toList();
+
+    result.sort((first, second) => second.createdAt.compareTo(first.createdAt));
+
+    return List.unmodifiable(result);
+  }
+
+  @override
+  Future<CheckInSession?> reopenSession({
+    required String academyId,
+    required String sessionId,
+    Duration validity = const Duration(minutes: 5),
+  }) async {
+    final currentSession = await findSessionById(
+      academyId: academyId,
+      sessionId: sessionId,
+    );
+
+    if (currentSession == null) {
+      return null;
+    }
+
+    final now = DateTime.now();
+
+    final reopenedSession = CheckInSession(
+      id: currentSession.id,
+      academyId: currentSession.academyId,
+      classroomId: currentSession.classroomId,
+      teacherId: currentSession.teacherId,
+      createdAt: currentSession.createdAt,
+      expiresAt: now.add(validity),
+    );
+
+    _sessions[sessionId] = reopenedSession;
+
+    notifyListeners();
+
+    return reopenedSession;
+  }
+
+  @override
   Future<CheckInSession?> findSessionById({
     required String academyId,
     required String sessionId,

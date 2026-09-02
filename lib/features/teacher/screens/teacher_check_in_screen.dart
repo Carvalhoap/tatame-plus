@@ -133,6 +133,11 @@ class _TeacherCheckInScreenState extends State<TeacherCheckInScreen> {
       return;
     }
 
+    await refreshSessionData();
+
+    if (!mounted) {
+      return;
+    }
     startAutoRefresh();
   }
 
