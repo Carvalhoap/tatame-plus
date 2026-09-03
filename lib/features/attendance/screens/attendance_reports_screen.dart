@@ -11,6 +11,7 @@ import '../models/attendance.dart';
 import '../models/check_in_session.dart';
 import '../repository/attendance_repository.dart';
 import '../repository/check_in_session_repository.dart';
+import 'student_attendance_summary_screen.dart';
 
 class AttendanceReportsScreen extends StatefulWidget {
   const AttendanceReportsScreen({super.key});
@@ -368,6 +369,23 @@ class _AttendanceReportsScreenState extends State<AttendanceReportsScreen> {
                         showInvalid = value;
                       });
                     },
+                  ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                const StudentAttendanceSummaryScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.groups_outlined),
+                      label: const Text('Abrir resumo por aluno'),
+                    ),
                   ),
                   const SizedBox(height: 20),
                   Wrap(
