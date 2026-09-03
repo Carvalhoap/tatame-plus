@@ -8,7 +8,9 @@ import '../../classroom/repository/classroom_repository.dart';
 import '../../student/models/student.dart';
 import '../../student/repository/student_repository.dart';
 import '../models/attendance.dart';
+import '../models/check_in_session.dart';
 import '../repository/attendance_repository.dart';
+import '../repository/check_in_session_repository.dart';
 
 class AttendanceReportsScreen extends StatefulWidget {
   const AttendanceReportsScreen({super.key});
@@ -23,6 +25,7 @@ class _AttendanceReportsScreenState extends State<AttendanceReportsScreen> {
   late DateTime endDate;
 
   List<Attendance> attendances = const [];
+  List<CheckInSession> sessions = const [];
   List<Student> students = const [];
   List<Classroom> classrooms = const [];
 
@@ -73,11 +76,17 @@ class _AttendanceReportsScreenState extends State<AttendanceReportsScreen> {
         context.read<ClassroomRepository>().getClassrooms(
           academyId: currentUser.academyId,
         ),
+        context.read<CheckInSessionRepository>().getSessionsByPeriod(
+          academyId: currentUser.academyId,
+          start: startDate,
+          end: endDate.add(const Duration(days: 1)),
+        ),
       ]);
 
       final loadedAttendances = results[0] as List<Attendance>;
       final loadedStudents = results[1] as List<Student>;
       final loadedClassrooms = results[2] as List<Classroom>;
+      final loadedSessions = results[3] as List<CheckInSession>;
 
       loadedStudents.sort(
         (first, second) => first.fullName.toLowerCase().compareTo(
@@ -98,6 +107,7 @@ class _AttendanceReportsScreenState extends State<AttendanceReportsScreen> {
         attendances = loadedAttendances;
         students = loadedStudents;
         classrooms = loadedClassrooms;
+        sessions = loadedSessions;
 
         if (selectedStudentId != null &&
             !loadedStudents.any((student) => student.id == selectedStudentId)) {
@@ -225,6 +235,11 @@ class _AttendanceReportsScreenState extends State<AttendanceReportsScreen> {
     return value.toString().padLeft(2, '0');
   }
 
+  String classDayKey(String classroomId, DateTime date) {
+    return '$classroomId|'
+        '${date.year}-${twoDigits(date.month)}-${twoDigits(date.day)}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final filtered = filteredAttendances;
@@ -249,6 +264,67 @@ class _AttendanceReportsScreenState extends State<AttendanceReportsScreen> {
         .map((attendance) => attendance.studentId)
         .toSet()
         .length;
+    Student? frequencyStudent;
+
+    if (selectedStudentId != null) {
+      for (final student in students) {
+        if (student.id == selectedStudentId) {
+          frequencyStudent = student;
+          break;
+        }
+      }
+    }
+
+    final completedClassKeys = <String>{};
+
+    for (final session in sessions) {
+      if (session.isActive) {
+        continue;
+      }
+
+      if (selectedClassroomId != null &&
+          session.classroomId != selectedClassroomId) {
+        continue;
+      }
+
+      if (frequencyStudent != null) {
+        if (!frequencyStudent.classroomIds.contains(session.classroomId)) {
+          continue;
+        }
+
+        final joinDate = frequencyStudent.academyJoinDate;
+
+        if (joinDate != null) {
+          final normalizedJoinDate = DateTime(
+            joinDate.year,
+            joinDate.month,
+            joinDate.day,
+          );
+
+          if (session.createdAt.isBefore(normalizedJoinDate)) {
+            continue;
+          }
+        }
+      }
+
+      completedClassKeys.add(
+        classDayKey(session.classroomId, session.createdAt),
+      );
+    }
+
+    final attendedClassKeys = validAttendances
+        .map(
+          (attendance) =>
+              classDayKey(attendance.classroomId, attendance.dateTime),
+        )
+        .where(completedClassKeys.contains)
+        .toSet();
+
+    final absenceCount = completedClassKeys.length - attendedClassKeys.length;
+
+    final frequencyPercentage = completedClassKeys.isEmpty
+        ? null
+        : attendedClassKeys.length * 100 / completedClassKeys.length;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -322,6 +398,34 @@ class _AttendanceReportsScreenState extends State<AttendanceReportsScreen> {
                         icon: Icons.touch_app_outlined,
                         color: Colors.orange,
                       ),
+                      _MetricCard(
+                        label: 'Aulas realizadas',
+                        value: completedClassKeys.length.toString(),
+                        icon: Icons.event_available_outlined,
+                        color: Colors.indigo,
+                      ),
+                      if (frequencyStudent != null) ...[
+                        _MetricCard(
+                          label: 'Aulas com presença',
+                          value: attendedClassKeys.length.toString(),
+                          icon: Icons.how_to_reg_outlined,
+                          color: Colors.teal,
+                        ),
+                        _MetricCard(
+                          label: 'Faltas',
+                          value: absenceCount.toString(),
+                          icon: Icons.person_off_outlined,
+                          color: AppColors.gracieRed,
+                        ),
+                        _MetricCard(
+                          label: 'Frequência',
+                          value: frequencyPercentage == null
+                              ? '--'
+                              : '${frequencyPercentage.toStringAsFixed(1)}%',
+                          icon: Icons.percent,
+                          color: Colors.purple,
+                        ),
+                      ],
                       if (showInvalid)
                         _MetricCard(
                           label: 'Invalidadas',
