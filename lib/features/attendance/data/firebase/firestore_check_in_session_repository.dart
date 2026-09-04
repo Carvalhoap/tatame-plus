@@ -59,6 +59,67 @@ class FirestoreCheckInSessionRepository extends CheckInSessionRepository {
   }
 
   @override
+  Future<List<CheckInSession>> getSessionsByPeriod({
+    required String academyId,
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    final snapshot = await _sessions(academyId)
+        .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
+        .where('createdAt', isLessThan: Timestamp.fromDate(end))
+        .get();
+
+    final result = snapshot.docs
+        .map(
+          (document) =>
+              _sessionFromDocument(academyId: academyId, document: document),
+        )
+        .toList();
+
+    result.sort((first, second) => second.createdAt.compareTo(first.createdAt));
+
+    return result;
+  }
+
+  @override
+  Future<CheckInSession?> reopenSession({
+    required String academyId,
+    required String sessionId,
+    Duration validity = const Duration(minutes: 5),
+  }) async {
+    final currentSession = await findSessionById(
+      academyId: academyId,
+      sessionId: sessionId,
+    );
+
+    if (currentSession == null) {
+      return null;
+    }
+
+    final now = DateTime.now();
+    final newExpiresAt = now.add(validity);
+
+    await _sessions(academyId).doc(sessionId).update({
+      'expiresAt': Timestamp.fromDate(newExpiresAt),
+      'closedAt': null,
+      'reopenedAt': Timestamp.fromDate(now),
+    });
+
+    final reopenedSession = CheckInSession(
+      id: currentSession.id,
+      academyId: currentSession.academyId,
+      classroomId: currentSession.classroomId,
+      teacherId: currentSession.teacherId,
+      createdAt: currentSession.createdAt,
+      expiresAt: newExpiresAt,
+    );
+
+    notifyListeners();
+
+    return reopenedSession;
+  }
+
+  @override
   Future<CheckInSession?> findSessionById({
     required String academyId,
     required String sessionId,

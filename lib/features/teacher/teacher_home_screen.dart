@@ -4,6 +4,7 @@ import '../../core/theme/app_colors.dart';
 import 'screens/teacher_check_in_screen.dart';
 import '../graduation/screens/graduation_attention_screen.dart';
 import '../../core/widgets/app_drawer.dart';
+import '../attendance/screens/attendance_reports_screen.dart';
 
 class TeacherHomeScreen extends StatelessWidget {
   const TeacherHomeScreen({super.key});
@@ -73,6 +74,26 @@ class TeacherHomeScreen extends StatelessWidget {
                 icon: const Icon(Icons.sports_martial_arts),
                 label: const Text(
                   'Acompanhamento de graduação',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const AttendanceReportsScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.bar_chart),
+                label: const Text(
+                  'Relatório de presenças',
                   style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                 ),
               ),

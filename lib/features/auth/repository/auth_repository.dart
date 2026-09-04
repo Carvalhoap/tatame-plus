@@ -15,6 +15,15 @@ abstract class AuthRepository {
     String? phone,
   });
 
+  /// Envia um e-mail para redefinição da senha.
+  Future<void> sendPasswordResetEmail({required String email});
+
+  /// Troca a senha do usuário autenticado.
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  });
+
   /// Logout
   Future<void> logout();
 }
@@ -23,6 +32,15 @@ class RegistrationException implements Exception {
   final String message;
 
   const RegistrationException(this.message);
+
+  @override
+  String toString() => message;
+}
+
+class PasswordManagementException implements Exception {
+  final String message;
+
+  const PasswordManagementException(this.message);
 
   @override
   String toString() => message;

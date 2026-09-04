@@ -37,27 +37,55 @@ class TeacherCheckInController extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final now = DateTime.now();
+      final dayStart = DateTime(now.year, now.month, now.day);
+      final nextDay = dayStart.add(const Duration(days: 1));
+
+      CheckInSession? sessionToReopen;
+
       final previousSession = _currentSession;
 
-      final session = await repository.createSession(
-        academyId: academyId,
-        classroomId: classroomId,
-        teacherId: teacherId,
-      );
+      if (previousSession != null &&
+          previousSession.classroomId == classroomId &&
+          !previousSession.createdAt.isBefore(dayStart) &&
+          previousSession.createdAt.isBefore(nextDay)) {
+        sessionToReopen = previousSession;
+      } else {
+        final todaySessions = await repository.getSessionsByPeriod(
+          academyId: academyId,
+          start: dayStart,
+          end: nextDay,
+        );
 
-      // Uma turma diferente inicia uma chamada diferente.
-      if (previousSession == null ||
-          previousSession.classroomId != session.classroomId) {
-        _sessionIds.clear();
+        for (final session in todaySessions) {
+          if (session.classroomId == classroomId) {
+            sessionToReopen = session;
+            break;
+          }
+        }
       }
 
-      if (!_sessionIds.contains(session.id)) {
-        _sessionIds.add(session.id);
-      }
+      final reopenedSession = sessionToReopen == null
+          ? null
+          : await repository.reopenSession(
+              academyId: academyId,
+              sessionId: sessionToReopen.id,
+            );
+
+      final session =
+          reopenedSession ??
+          await repository.createSession(
+            academyId: academyId,
+            classroomId: classroomId,
+            teacherId: teacherId,
+          );
+
+      _sessionIds
+        ..clear()
+        ..add(session.id);
 
       _currentSession = session;
 
-      // Reúne as presenças dos QRs anteriores e do QR novo.
       await _loadAttendancesForCurrentCall();
 
       notifyListeners();

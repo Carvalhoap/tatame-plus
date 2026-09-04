@@ -224,6 +224,114 @@ class FirebaseAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<void> sendPasswordResetEmail({required String email}) async {
+    final normalizedEmail = email.trim().toLowerCase();
+
+    if (normalizedEmail.isEmpty) {
+      throw const PasswordManagementException(
+        'Informe o e-mail usado no cadastro.',
+      );
+    }
+
+    try {
+      await firebaseAuth.setLanguageCode('pt-BR');
+      await firebaseAuth.sendPasswordResetEmail(email: normalizedEmail);
+    } on FirebaseAuthException catch (error) {
+      if (error.code == 'user-not-found') {
+        return;
+      }
+
+      switch (error.code) {
+        case 'invalid-email':
+          throw const PasswordManagementException(
+            'Informe um endereço de e-mail válido.',
+          );
+        case 'too-many-requests':
+          throw const PasswordManagementException(
+            'Muitas tentativas foram realizadas. Aguarde alguns minutos.',
+          );
+        case 'network-request-failed':
+          throw const PasswordManagementException(
+            'Não foi possível conectar. Verifique sua internet.',
+          );
+        default:
+          throw const PasswordManagementException(
+            'Não foi possível enviar a redefinição de senha.',
+          );
+      }
+    }
+  }
+
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final user = firebaseAuth.currentUser;
+    final email = user?.email;
+
+    if (user == null || email == null || email.isEmpty) {
+      throw const PasswordManagementException(
+        'Sua sessão não está disponível. Entre novamente.',
+      );
+    }
+
+    if (currentPassword.isEmpty) {
+      throw const PasswordManagementException('Informe sua senha atual.');
+    }
+
+    if (newPassword.length < 8) {
+      throw const PasswordManagementException(
+        'A nova senha precisa ter pelo menos 8 caracteres.',
+      );
+    }
+
+    if (currentPassword == newPassword) {
+      throw const PasswordManagementException(
+        'A nova senha deve ser diferente da senha atual.',
+      );
+    }
+
+    try {
+      final credential = EmailAuthProvider.credential(
+        email: email,
+        password: currentPassword,
+      );
+
+      await user.reauthenticateWithCredential(credential);
+      await user.updatePassword(newPassword);
+    } on FirebaseAuthException catch (error) {
+      switch (error.code) {
+        case 'wrong-password':
+        case 'invalid-credential':
+          throw const PasswordManagementException(
+            'A senha atual está incorreta.',
+          );
+        case 'weak-password':
+          throw const PasswordManagementException(
+            'A nova senha é muito fraca.',
+          );
+        case 'requires-recent-login':
+          throw const PasswordManagementException(
+            'Entre novamente no aplicativo antes de trocar a senha.',
+          );
+        case 'too-many-requests':
+          throw const PasswordManagementException(
+            'Muitas tentativas foram realizadas. Aguarde alguns minutos.',
+          );
+        case 'network-request-failed':
+          throw const PasswordManagementException(
+            'Não foi possível conectar. Verifique sua internet.',
+          );
+        default:
+          throw const PasswordManagementException(
+            'Não foi possível alterar a senha.',
+          );
+      }
+    }
+  }
+
+  @override
   Future<void> logout() async {
     await firebaseAuth.signOut();
   }

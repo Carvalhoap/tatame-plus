@@ -62,6 +62,30 @@ class FirestoreAttendanceRepository implements AttendanceRepository {
   }
 
   @override
+  Future<List<Attendance>> getAttendancesByPeriod({
+    required String academyId,
+    required DateTime start,
+    required DateTime end,
+    bool includeInvalid = false,
+  }) async {
+    final snapshot = await _attendances(academyId)
+        .where('dateTime', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
+        .where('dateTime', isLessThan: Timestamp.fromDate(end))
+        .get();
+
+    final result = snapshot.docs
+        .map(
+          (document) => _fromDocument(academyId: academyId, document: document),
+        )
+        .where((attendance) => includeInvalid || attendance.isValid)
+        .toList();
+
+    result.sort((first, second) => second.dateTime.compareTo(first.dateTime));
+
+    return result;
+  }
+
+  @override
   Future<void> invalidateAttendance({
     required String academyId,
     required String attendanceId,

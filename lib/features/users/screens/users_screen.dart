@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../auth/repository/auth_repository.dart';
 import '../../auth/services/session_service.dart';
 import '../models/academy_member.dart';
 import '../repository/user_repository.dart';
@@ -76,6 +77,79 @@ class _UsersScreenState extends State<UsersScreen> {
 
     if (updated == true) {
       reload();
+    }
+  }
+
+  Future<void> sendPasswordReset(AcademyMember member) async {
+    if (member.email.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Este usuário não possui e-mail cadastrado.'),
+        ),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Redefinir senha'),
+        content: Text('Enviar um link de redefinição para ${member.email}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            icon: const Icon(Icons.send_outlined),
+            label: const Text('Enviar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    try {
+      await context.read<AuthRepository>().sendPasswordResetEmail(
+        email: member.email,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Link de redefinição enviado para ${member.email}.'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } on PasswordManagementException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.message),
+          backgroundColor: AppColors.gracieRed,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível enviar a redefinição de senha.'),
+          backgroundColor: AppColors.gracieRed,
+        ),
+      );
     }
   }
 
@@ -201,6 +275,7 @@ class _UsersScreenState extends State<UsersScreen> {
                         return _MemberCard(
                           member: member,
                           onTap: () => openEditUser(member),
+                          onSendPasswordReset: () => sendPasswordReset(member),
                         );
                       },
                     ),
@@ -218,8 +293,13 @@ class _UsersScreenState extends State<UsersScreen> {
 class _MemberCard extends StatelessWidget {
   final AcademyMember member;
   final VoidCallback onTap;
+  final VoidCallback onSendPasswordReset;
 
-  const _MemberCard({required this.member, required this.onTap});
+  const _MemberCard({
+    required this.member,
+    required this.onTap,
+    required this.onSendPasswordReset,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -273,8 +353,39 @@ class _MemberCard extends StatelessWidget {
                 color: isUserActive ? AppColors.success : AppColors.gracieRed,
               ),
             ),
-            const SizedBox(width: 10),
-            const Icon(Icons.edit_outlined, color: AppColors.brandPrimary),
+            const SizedBox(width: 6),
+            PopupMenuButton<String>(
+              tooltip: 'Ações do usuário',
+              icon: const Icon(Icons.more_vert, color: AppColors.brandPrimary),
+              onSelected: (value) {
+                if (value == 'resetPassword') {
+                  onSendPasswordReset();
+                  return;
+                }
+
+                if (value == 'edit') {
+                  onTap();
+                }
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem<String>(
+                  value: 'edit',
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.edit_outlined),
+                    title: Text('Editar usuário'),
+                  ),
+                ),
+                PopupMenuItem<String>(
+                  value: 'resetPassword',
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.lock_reset),
+                    title: Text('Enviar redefinição de senha'),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
