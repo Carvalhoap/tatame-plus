@@ -142,6 +142,16 @@ class _StudentQrScannerScreenState extends State<StudentQrScannerScreen> {
         );
       }
 
+      if (!student.isActive) {
+        throw StateError('Este aluno não está ativo na academia.');
+      }
+
+      if (!student.classroomIds.contains(session.classroomId)) {
+        throw StateError(
+          'Este aluno não pertence à turma desta chamada. Volte e selecione o aluno correto.',
+        );
+      }
+
       if (widget.student != null) {
         final confirmed = await _confirmGuardianCheckIn(student);
 

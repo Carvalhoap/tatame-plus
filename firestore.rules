@@ -110,6 +110,37 @@ service cloud.firestore {
         ).data.guardianIds;
     }
 
+    function activeStudentBelongsToClassroom(
+      academyId,
+      studentId,
+      classroomId
+    ) {
+      return exists(
+        studentPath(
+          academyId,
+          studentId
+        )
+      )
+      && get(
+        studentPath(
+          academyId,
+          studentId
+        )
+      ).data.status == 'active'
+      && get(
+        studentPath(
+          academyId,
+          studentId
+        )
+      ).data.classroomIds is list
+      && classroomId in get(
+        studentPath(
+          academyId,
+          studentId
+        )
+      ).data.classroomIds;
+    }
+
     match /users/{uid} {
       allow get: if isOwner(uid);
       allow list: if false;
@@ -250,8 +281,26 @@ service cloud.firestore {
             );
 
         allow create:
-          if request.resource.data.isValid == true
+          if request.resource.data.keys().hasOnly([
+            'studentId',
+            'classroomId',
+            'teacherId',
+            'checkInSessionId',
+            'dateTime',
+            'source',
+            'isValid'
+          ])
+          && request.resource.data.studentId is string
+          && request.resource.data.classroomId is string
+          && request.resource.data.teacherId is string
           && request.resource.data.checkInSessionId is string
+          && request.resource.data.source is string
+          && request.resource.data.isValid == true
+          && request.resource.data.dateTime == request.time
+          && attendanceId
+            == request.resource.data.checkInSessionId
+              + '_'
+              + request.resource.data.studentId
           && exists(
             /databases/$(database)/documents/academies/$(academyId)/checkInSessions/$(request.resource.data.checkInSessionId)
           )
@@ -270,6 +319,11 @@ service cloud.firestore {
             == get(
                 /databases/$(database)/documents/academies/$(academyId)/checkInSessions/$(request.resource.data.checkInSessionId)
               ).data.teacherId
+          && activeStudentBelongsToClassroom(
+            academyId,
+            request.resource.data.studentId,
+            request.resource.data.classroomId
+          )
           && (
             (
               (

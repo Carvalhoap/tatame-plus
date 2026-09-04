@@ -241,7 +241,7 @@ class FirestoreCheckInSessionRepository extends CheckInSessionRepository {
         'classroomId': attendance.classroomId,
         'teacherId': attendance.teacherId,
         'checkInSessionId': attendance.checkInSessionId,
-        'dateTime': Timestamp.fromDate(attendance.dateTime),
+        'dateTime': FieldValue.serverTimestamp(),
         'source': attendance.source.name,
         'isValid': attendance.isValid,
       });
