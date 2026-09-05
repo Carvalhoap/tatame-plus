@@ -78,10 +78,18 @@ class AdminHomeScreen extends StatelessWidget {
                     );
                   },
                 ),
-                const _AdminCard(
+                _AdminCard(
                   title: 'Professores',
                   subtitle: 'Equipe e permissões',
                   icon: Icons.school,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const UsersScreen.teachers(),
+                      ),
+                    );
+                  },
                 ),
                 _AdminCard(
                   title: 'Turmas',

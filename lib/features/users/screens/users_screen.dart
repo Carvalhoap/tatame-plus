@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/enums/user_role.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../auth/repository/auth_repository.dart';
 import '../../auth/services/session_service.dart';
@@ -11,7 +12,14 @@ import 'create_user_screen.dart';
 import 'edit_user_screen.dart';
 
 class UsersScreen extends StatefulWidget {
-  const UsersScreen({super.key});
+  final UserRole? roleFilter;
+  final String title;
+
+  const UsersScreen({super.key, this.roleFilter, this.title = 'Usuários'});
+
+  const UsersScreen.teachers({super.key})
+    : roleFilter = UserRole.teacher,
+      title = 'Professores';
 
   @override
   State<UsersScreen> createState() => _UsersScreenState();
@@ -164,7 +172,7 @@ class _UsersScreenState extends State<UsersScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Usuários'),
+        title: Text(widget.title),
         backgroundColor: AppColors.background,
         foregroundColor: AppColors.brandPrimary,
         elevation: 0,
@@ -181,7 +189,11 @@ class _UsersScreenState extends State<UsersScreen> {
         backgroundColor: AppColors.brandPrimary,
         foregroundColor: AppColors.white,
         icon: const Icon(Icons.person_add_alt_1),
-        label: const Text('Novo usuário'),
+        label: Text(
+          widget.roleFilter == UserRole.teacher
+              ? 'Novo professor'
+              : 'Novo usuário',
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
@@ -234,6 +246,13 @@ class _UsersScreenState extends State<UsersScreen> {
 
                   final filteredMembers = members
                       .where((member) {
+                        final roleFilter = widget.roleFilter;
+
+                        if (roleFilter != null &&
+                            !member.hasRole(roleFilter.name)) {
+                          return false;
+                        }
+
                         if (searchTerm.isEmpty) {
                           return true;
                         }
@@ -254,9 +273,16 @@ class _UsersScreenState extends State<UsersScreen> {
                   }
 
                   if (filteredMembers.isEmpty) {
-                    return const _EmptyState(
-                      title: 'Nenhum resultado',
-                      message: 'Tente pesquisar usando outro nome ou e-mail.',
+                    final showingTeachers =
+                        widget.roleFilter == UserRole.teacher;
+
+                    return _EmptyState(
+                      title: showingTeachers && searchTerm.isEmpty
+                          ? 'Nenhum professor encontrado'
+                          : 'Nenhum resultado',
+                      message: showingTeachers && searchTerm.isEmpty
+                          ? 'Os professores cadastrados aparecerão aqui.'
+                          : 'Tente pesquisar usando outro nome ou e-mail.',
                     );
                   }
 
