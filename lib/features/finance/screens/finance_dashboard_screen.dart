@@ -11,6 +11,7 @@ import '../models/financial_summary.dart';
 import '../models/payment_proof.dart';
 import '../repository/finance_repository.dart';
 import '../services/finance_calculator.dart';
+import 'financial_profiles_screen.dart';
 
 class FinanceDashboardScreen extends StatefulWidget {
   const FinanceDashboardScreen({super.key});
@@ -102,6 +103,19 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
     });
   }
 
+  Future<void> _openFinancialProfiles() async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(builder: (_) => const FinancialProfilesScreen()),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    await _reload();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -152,6 +166,25 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
                   period: period,
                   onPrevious: () => _movePeriod(-1),
                   onNext: () => _movePeriod(1),
+                ),
+                const SizedBox(height: 18),
+                Card(
+                  color: AppColors.white,
+                  child: ListTile(
+                    onTap: _openFinancialProfiles,
+                    leading: const Icon(
+                      Icons.manage_accounts_outlined,
+                      color: AppColors.brandPrimary,
+                    ),
+                    title: const Text(
+                      'Alunos e mensalidades',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: const Text(
+                      'Configure modalidade, valor e vencimento.',
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                  ),
                 ),
                 const SizedBox(height: 18),
                 if (summary.pendingProofsCount > 0) ...[
