@@ -1,0 +1,87 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function memberExists(academyId) {
+      return signedIn()
+        && firestore.exists(
+          /databases/(default)/documents/academies/$(academyId)/members/$(request.auth.uid)
+        );
+    }
+
+    function isAdminOrPartner(academyId) {
+      return memberExists(academyId)
+        && (
+          firestore.get(
+            /databases/(default)/documents/academies/$(academyId)/members/$(request.auth.uid)
+          ).data.roles.admin == true
+          ||
+          firestore.get(
+            /databases/(default)/documents/academies/$(academyId)/members/$(request.auth.uid)
+          ).data.roles.partner == true
+        );
+    }
+
+    function studentExists(academyId, studentId) {
+      return firestore.exists(
+        /databases/(default)/documents/academies/$(academyId)/students/$(studentId)
+      );
+    }
+
+    function ownsStudent(academyId, studentId) {
+      return signedIn()
+        && studentExists(academyId, studentId)
+        && firestore.get(
+          /databases/(default)/documents/academies/$(academyId)/students/$(studentId)
+        ).data.userId == request.auth.uid;
+    }
+
+    function guardsStudent(academyId, studentId) {
+      return memberExists(academyId)
+        && firestore.get(
+          /databases/(default)/documents/academies/$(academyId)/members/$(request.auth.uid)
+        ).data.roles.guardian == true
+        && studentExists(academyId, studentId)
+        && firestore.get(
+          /databases/(default)/documents/academies/$(academyId)/students/$(studentId)
+        ).data.guardianIds is list
+        && request.auth.uid in firestore.get(
+          /databases/(default)/documents/academies/$(academyId)/students/$(studentId)
+        ).data.guardianIds;
+    }
+
+    function canAccessStudent(academyId, studentId) {
+      return isAdminOrPartner(academyId)
+        || ownsStudent(academyId, studentId)
+        || guardsStudent(academyId, studentId);
+    }
+
+    match /academies/{academyId}/financeProofs/{studentId}/{fileName} {
+      allow read:
+        if canAccessStudent(academyId, studentId);
+
+      allow create:
+        if (
+          ownsStudent(academyId, studentId)
+          || guardsStudent(academyId, studentId)
+        )
+        && request.resource.size > 0
+        && request.resource.size <= 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+
+      allow update:
+        if false;
+
+      allow delete:
+        if canAccessStudent(academyId, studentId);
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -74,5 +74,8 @@
                                                     ]
                                     }
                                 ]
+                },
+    "storage":  {
+                    "rules":  "storage.rules"
                 }
 }

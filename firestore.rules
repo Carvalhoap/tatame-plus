@@ -375,6 +375,606 @@ service cloud.firestore {
           if false;
       }
 
+      match /financialSettings/{settingsId} {
+        allow get:
+          if isAdmin(academyId)
+            || isPartner(academyId);
+
+        allow list:
+          if false;
+
+        allow create, update:
+          if (
+            isAdmin(academyId)
+              || isPartner(academyId)
+          )
+          && settingsId == 'general'
+          && request.resource.data.keys().hasOnly([
+            'gympassCheckInValueCents',
+            'gympassMonthlyLimit',
+            'movingFitnessPercentage',
+            'instructorName',
+            'instructorFixedAmountCents',
+            'gracieBarraReservePercentage',
+            'remainingPartnersCount',
+            'updatedAt',
+            'updatedBy'
+          ])
+          && request.resource.data.gympassCheckInValueCents is int
+          && request.resource.data.gympassCheckInValueCents >= 0
+          && request.resource.data.gympassMonthlyLimit is int
+          && request.resource.data.gympassMonthlyLimit >= 1
+          && request.resource.data.movingFitnessPercentage is int
+          && request.resource.data.movingFitnessPercentage >= 0
+          && request.resource.data.movingFitnessPercentage <= 100
+          && request.resource.data.instructorName is string
+          && request.resource.data.instructorName.size() > 0
+          && request.resource.data.instructorName.size() <= 100
+          && request.resource.data.instructorFixedAmountCents is int
+          && request.resource.data.instructorFixedAmountCents >= 0
+          && request.resource.data.gracieBarraReservePercentage is int
+          && request.resource.data.gracieBarraReservePercentage >= 0
+          && request.resource.data.gracieBarraReservePercentage <= 100
+          && request.resource.data.remainingPartnersCount is int
+          && request.resource.data.remainingPartnersCount >= 1
+          && request.resource.data.updatedAt == request.time
+          && request.resource.data.updatedBy == request.auth.uid;
+
+        allow delete:
+          if false;
+      }
+
+      match /financialProfiles/{studentId} {
+        allow get:
+          if isAdmin(academyId)
+            || isPartner(academyId)
+            || ownsStudent(
+              academyId,
+              studentId
+            )
+            || guardsStudent(
+              academyId,
+              studentId
+            );
+
+        allow list:
+          if isAdmin(academyId)
+            || isPartner(academyId);
+
+        allow create, update:
+          if (
+            isAdmin(academyId)
+              || isPartner(academyId)
+          )
+          && exists(
+            studentPath(
+              academyId,
+              studentId
+            )
+          )
+          && request.resource.data.keys().hasOnly([
+            'studentId',
+            'billingMode',
+            'monthlyFeeCents',
+            'dueDay',
+            'isActive',
+            'updatedAt',
+            'updatedBy'
+          ])
+          && request.resource.data.studentId == studentId
+          && request.resource.data.billingMode is string
+          && request.resource.data.billingMode in [
+            'monthlyFee',
+            'gympass',
+            'exempt'
+          ]
+          && request.resource.data.monthlyFeeCents is int
+          && request.resource.data.monthlyFeeCents >= 0
+          && request.resource.data.dueDay is int
+          && request.resource.data.dueDay >= 1
+          && request.resource.data.dueDay <= 31
+          && request.resource.data.isActive is bool
+          && request.resource.data.updatedAt == request.time
+          && request.resource.data.updatedBy == request.auth.uid;
+
+        allow delete:
+          if false;
+      }
+
+      match /billingCycles/{billingCycleId} {
+        allow get, list:
+          if isAdmin(academyId)
+            || isPartner(academyId)
+            || ownsStudent(
+              academyId,
+              resource.data.studentId
+            )
+            || guardsStudent(
+              academyId,
+              resource.data.studentId
+            );
+
+        allow create:
+          if (
+            isAdmin(academyId)
+              || isPartner(academyId)
+          )
+          && request.resource.data.keys().hasOnly([
+            'studentId',
+            'periodKey',
+            'periodStart',
+            'periodEndExclusive',
+            'billingMode',
+            'expectedAmountCents',
+            'paidAmountCents',
+            'dueDate',
+            'status',
+            'paymentMethod',
+            'paymentProofId',
+            'paidAt',
+            'paidBy',
+            'createdAt',
+            'createdBy',
+            'updatedAt',
+            'updatedBy'
+          ])
+          && request.resource.data.studentId is string
+          && request.resource.data.studentId.size() > 0
+          && request.resource.data.periodKey is string
+          && request.resource.data.periodKey.matches(
+            '^[0-9]{4}-(0[1-9]|1[0-2])$'
+          )
+          && billingCycleId
+            == request.resource.data.periodKey
+              + '_'
+              + request.resource.data.studentId
+          && exists(
+            studentPath(
+              academyId,
+              request.resource.data.studentId
+            )
+          )
+          && exists(
+            /databases/$(database)/documents/academies/$(academyId)/financialProfiles/$(request.resource.data.studentId)
+          )
+          && get(
+            /databases/$(database)/documents/academies/$(academyId)/financialProfiles/$(request.resource.data.studentId)
+          ).data.isActive == true
+          && request.resource.data.billingMode
+            == get(
+              /databases/$(database)/documents/academies/$(academyId)/financialProfiles/$(request.resource.data.studentId)
+            ).data.billingMode
+          && request.resource.data.billingMode in [
+            'monthlyFee',
+            'gympass',
+            'exempt'
+          ]
+          && (
+            (
+              request.resource.data.billingMode == 'monthlyFee'
+              && request.resource.data.expectedAmountCents
+                == get(
+                  /databases/$(database)/documents/academies/$(academyId)/financialProfiles/$(request.resource.data.studentId)
+                ).data.monthlyFeeCents
+            )
+            ||
+            (
+              request.resource.data.billingMode in [
+                'gympass',
+                'exempt'
+              ]
+              && request.resource.data.expectedAmountCents == 0
+            )
+          )
+          && request.resource.data.paidAmountCents == 0
+          && request.resource.data.periodStart is timestamp
+          && request.resource.data.periodEndExclusive is timestamp
+          && request.resource.data.periodEndExclusive
+            > request.resource.data.periodStart
+          && request.resource.data.dueDate is timestamp
+          && request.resource.data.dueDate
+            >= request.resource.data.periodStart
+          && request.resource.data.dueDate
+            < request.resource.data.periodEndExclusive
+          && (
+            (
+              request.resource.data.billingMode == 'exempt'
+              && request.resource.data.status == 'waived'
+            )
+            ||
+            (
+              request.resource.data.billingMode != 'exempt'
+              && request.resource.data.status == 'pending'
+            )
+          )
+          && request.resource.data.paymentMethod == null
+          && request.resource.data.paymentProofId == null
+          && request.resource.data.paidAt == null
+          && request.resource.data.paidBy == null
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.updatedAt == request.time
+          && request.resource.data.updatedBy == request.auth.uid;
+
+        allow update:
+          if (
+            isAdmin(academyId)
+              || isPartner(academyId)
+          )
+          && resource.data.billingMode == 'monthlyFee'
+          && request.resource.data
+            .diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              'paidAmountCents',
+              'status',
+              'paymentMethod',
+              'paymentProofId',
+              'paidAt',
+              'paidBy',
+              'updatedAt',
+              'updatedBy'
+            ])
+          && request.resource.data.paidAmountCents is int
+          && request.resource.data.paidAmountCents > 0
+          && request.resource.data.status == 'paid'
+          && request.resource.data.paymentMethod in [
+            'pix',
+            'cash',
+            'card',
+            'bankTransfer',
+            'other'
+          ]
+          && (
+            request.resource.data.paymentProofId == null
+            || request.resource.data.paymentProofId is string
+          )
+          && request.resource.data.paidAt == request.time
+          && request.resource.data.paidBy == request.auth.uid
+          && request.resource.data.updatedAt == request.time
+          && request.resource.data.updatedBy == request.auth.uid;
+
+        allow delete:
+          if false;
+      }
+
+      match /paymentProofs/{proofId} {
+        function validMonthlyProof(data) {
+          return data.type == 'monthlyFee'
+            && data.billingCycleId is string
+            && data.billingCycleId.size() > 0
+            && data.attendanceId == null
+            && proofId == 'monthly_' + data.billingCycleId
+            && data.paymentMethod in [
+              'pix',
+              'card',
+              'bankTransfer',
+              'other'
+            ]
+            && exists(
+              /databases/$(database)/documents/academies/$(academyId)/billingCycles/$(data.billingCycleId)
+            )
+            && get(
+              /databases/$(database)/documents/academies/$(academyId)/billingCycles/$(data.billingCycleId)
+            ).data.studentId == data.studentId
+            && get(
+              /databases/$(database)/documents/academies/$(academyId)/billingCycles/$(data.billingCycleId)
+            ).data.billingMode == 'monthlyFee'
+            && data.periodKey
+              == get(
+                /databases/$(database)/documents/academies/$(academyId)/billingCycles/$(data.billingCycleId)
+              ).data.periodKey
+            && data.referenceDate
+              >= get(
+                /databases/$(database)/documents/academies/$(academyId)/billingCycles/$(data.billingCycleId)
+              ).data.periodStart
+            && data.referenceDate
+              < get(
+                /databases/$(database)/documents/academies/$(academyId)/billingCycles/$(data.billingCycleId)
+              ).data.periodEndExclusive;
+        }
+
+        function validGympassProof(data) {
+          return data.type == 'gympassCheckIn'
+            && data.billingCycleId == null
+            && data.attendanceId is string
+            && data.attendanceId.size() > 0
+            && proofId == 'gympass_' + data.attendanceId
+            && data.paymentMethod == 'gympass'
+            && exists(
+              /databases/$(database)/documents/academies/$(academyId)/attendances/$(data.attendanceId)
+            )
+            && get(
+              /databases/$(database)/documents/academies/$(academyId)/attendances/$(data.attendanceId)
+            ).data.studentId == data.studentId
+            && get(
+              /databases/$(database)/documents/academies/$(academyId)/attendances/$(data.attendanceId)
+            ).data.isValid == true
+            && data.referenceDate
+              == get(
+                /databases/$(database)/documents/academies/$(academyId)/attendances/$(data.attendanceId)
+              ).data.dateTime;
+        }
+
+        function validSubmittedProof(data) {
+          return data.keys().hasOnly([
+            'studentId',
+            'submittedBy',
+            'type',
+            'status',
+            'billingCycleId',
+            'attendanceId',
+            'storagePath',
+            'fileName',
+            'contentType',
+            'sizeBytes',
+            'paymentMethod',
+            'periodKey',
+            'referenceDate',
+            'submittedAt',
+            'reviewedAt',
+            'reviewedBy',
+            'rejectionReason',
+            'updatedAt'
+          ])
+          && data.studentId is string
+          && data.studentId.size() > 0
+          && data.submittedBy == request.auth.uid
+          && data.type in [
+            'gympassCheckIn',
+            'monthlyFee'
+          ]
+          && data.status == 'pending'
+          && data.storagePath is string
+          && data.storagePath.matches(
+            '^academies/'
+              + academyId
+              + '/financeProofs/'
+              + data.studentId
+              + '/[^/]+$'
+          )
+          && data.fileName is string
+          && data.fileName.size() > 0
+          && data.fileName.size() <= 255
+          && data.contentType in [
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/webp'
+          ]
+          && data.sizeBytes is int
+          && data.sizeBytes > 0
+          && data.sizeBytes <= 5 * 1024 * 1024
+          && data.paymentMethod is string
+          && data.periodKey is string
+          && data.periodKey.matches(
+            '^[0-9]{4}-(0[1-9]|1[0-2])$'
+          )
+          && data.referenceDate is timestamp
+          && data.submittedAt == request.time
+          && data.reviewedAt == null
+          && data.reviewedBy == null
+          && data.rejectionReason == null
+          && data.updatedAt == request.time
+          && (
+            validMonthlyProof(data)
+            || validGympassProof(data)
+          );
+        }
+
+        function validReview(data) {
+          return resource.data.status == 'pending'
+            && data
+              .diff(resource.data)
+              .affectedKeys()
+              .hasOnly([
+                'status',
+                'reviewedAt',
+                'reviewedBy',
+                'rejectionReason',
+                'updatedAt'
+              ])
+            && data.status in [
+              'approved',
+              'rejected'
+            ]
+            && data.reviewedAt == request.time
+            && data.reviewedBy == request.auth.uid
+            && data.updatedAt == request.time
+            && (
+              (
+                data.status == 'approved'
+                && data.rejectionReason == null
+              )
+              ||
+              (
+                data.status == 'rejected'
+                && data.rejectionReason is string
+                && data.rejectionReason.size() > 0
+                && data.rejectionReason.size() <= 500
+              )
+            );
+        }
+
+        allow get, list:
+          if isAdmin(academyId)
+            || isPartner(academyId)
+            || ownsStudent(
+              academyId,
+              resource.data.studentId
+            )
+            || guardsStudent(
+              academyId,
+              resource.data.studentId
+            );
+
+        allow create:
+          if (
+            ownsStudent(
+              academyId,
+              request.resource.data.studentId
+            )
+            || guardsStudent(
+              academyId,
+              request.resource.data.studentId
+            )
+          )
+          && validSubmittedProof(request.resource.data);
+
+        allow update:
+          if (
+            (
+              resource.data.status == 'rejected'
+              && (
+                ownsStudent(
+                  academyId,
+                  request.resource.data.studentId
+                )
+                || guardsStudent(
+                  academyId,
+                  request.resource.data.studentId
+                )
+              )
+              && request.resource.data.studentId
+                == resource.data.studentId
+              && request.resource.data.type
+                == resource.data.type
+              && request.resource.data.billingCycleId
+                == resource.data.billingCycleId
+              && request.resource.data.attendanceId
+                == resource.data.attendanceId
+              && request.resource.data.periodKey
+                == resource.data.periodKey
+              && request.resource.data.storagePath
+                != resource.data.storagePath
+              && validSubmittedProof(request.resource.data)
+            )
+            ||
+            (
+              (
+                isAdmin(academyId)
+                || isPartner(academyId)
+              )
+              && validReview(request.resource.data)
+            )
+          );
+
+        allow delete:
+          if false;
+      }
+
+      match /financialEntries/{entryId} {
+        allow get, list:
+          if isAdmin(academyId)
+            || isPartner(academyId)
+            || (
+              resource.data.studentId is string
+              && (
+                ownsStudent(
+                  academyId,
+                  resource.data.studentId
+                )
+                || guardsStudent(
+                  academyId,
+                  resource.data.studentId
+                )
+              )
+            );
+
+        allow create:
+          if (
+            isAdmin(academyId)
+              || isPartner(academyId)
+          )
+          && request.resource.data.keys().hasOnly([
+            'studentId',
+            'type',
+            'category',
+            'description',
+            'amountCents',
+            'paymentMethod',
+            'periodKey',
+            'occurredAt',
+            'createdBy',
+            'createdAt',
+            'updatedAt',
+            'isCancelled',
+            'cancelledBy',
+            'cancelledAt'
+          ])
+          && (
+            request.resource.data.studentId == null
+            ||
+            (
+              request.resource.data.studentId is string
+              && request.resource.data.studentId.size() > 0
+              && exists(
+                studentPath(
+                  academyId,
+                  request.resource.data.studentId
+                )
+              )
+            )
+          )
+          && request.resource.data.type in [
+            'income',
+            'expense'
+          ]
+          && request.resource.data.category is string
+          && request.resource.data.category.size() > 0
+          && request.resource.data.category.size() <= 100
+          && request.resource.data.description is string
+          && request.resource.data.description.size() > 0
+          && request.resource.data.description.size() <= 500
+          && request.resource.data.amountCents is int
+          && request.resource.data.amountCents > 0
+          && (
+            request.resource.data.paymentMethod == null
+            || request.resource.data.paymentMethod in [
+              'pix',
+              'cash',
+              'card',
+              'bankTransfer',
+              'gympass',
+              'other'
+            ]
+          )
+          && request.resource.data.periodKey is string
+          && request.resource.data.periodKey.matches(
+            '^[0-9]{4}-(0[1-9]|1[0-2])$'
+          )
+          && request.resource.data.occurredAt is timestamp
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.updatedAt == request.time
+          && request.resource.data.isCancelled == false
+          && request.resource.data.cancelledBy == null
+          && request.resource.data.cancelledAt == null;
+
+        allow update:
+          if (
+            isAdmin(academyId)
+              || isPartner(academyId)
+          )
+          && resource.data.isCancelled == false
+          && request.resource.data
+            .diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              'isCancelled',
+              'cancelledBy',
+              'cancelledAt',
+              'updatedAt'
+            ])
+          && request.resource.data.isCancelled == true
+          && request.resource.data.cancelledBy == request.auth.uid
+          && request.resource.data.cancelledAt == request.time
+          && request.resource.data.updatedAt == request.time;
+
+        allow delete:
+          if false;
+      }
+
       match /auditLogs/{documentId} {
         allow read, write: if false;
       }

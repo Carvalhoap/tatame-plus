@@ -10,6 +10,7 @@ import '../../classroom/screens/classrooms_screen.dart';
 import '../../training_type/screens/training_types_screen.dart';
 import '../../student/screens/students_screen.dart';
 import '../../graduation/screens/graduation_programs_screen.dart';
+import '../../finance/screens/finance_dashboard_screen.dart';
 import '../../users/screens/users_screen.dart';
 
 class AdminHomeScreen extends StatelessWidget {
@@ -130,10 +131,18 @@ class AdminHomeScreen extends StatelessWidget {
                     );
                   },
                 ),
-                const _AdminCard(
+                _AdminCard(
                   title: 'Financeiro',
-                  subtitle: 'Planos e pagamentos',
+                  subtitle: 'Cobranças e fechamento',
                   icon: Icons.payments_outlined,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const FinanceDashboardScreen(),
+                      ),
+                    );
+                  },
                 ),
                 _AdminCard(
                   title: 'Graduações',
