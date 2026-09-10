@@ -11,6 +11,7 @@ import '../models/financial_summary.dart';
 import '../models/payment_proof.dart';
 import '../repository/finance_repository.dart';
 import '../services/finance_calculator.dart';
+import 'billing_cycles_screen.dart';
 import 'financial_profiles_screen.dart';
 
 class FinanceDashboardScreen extends StatefulWidget {
@@ -116,6 +117,19 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
     await _reload();
   }
 
+  Future<void> _openBillingCycles() async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(builder: (_) => const BillingCyclesScreen()),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    await _reload();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -182,6 +196,25 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
                     ),
                     subtitle: const Text(
                       'Configure modalidade, valor e vencimento.',
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Card(
+                  color: AppColors.white,
+                  child: ListTile(
+                    onTap: _openBillingCycles,
+                    leading: const Icon(
+                      Icons.receipt_long_outlined,
+                      color: AppColors.brandPrimary,
+                    ),
+                    title: const Text(
+                      'Cobranças do período',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: const Text(
+                      'Gere cobranças e registre pagamentos em dinheiro.',
                     ),
                     trailing: const Icon(Icons.chevron_right),
                   ),
