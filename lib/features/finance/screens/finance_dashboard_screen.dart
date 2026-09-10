@@ -13,6 +13,7 @@ import '../repository/finance_repository.dart';
 import '../services/finance_calculator.dart';
 import 'billing_cycles_screen.dart';
 import 'financial_profiles_screen.dart';
+import 'payment_proofs_screen.dart';
 
 class FinanceDashboardScreen extends StatefulWidget {
   const FinanceDashboardScreen({super.key});
@@ -130,6 +131,19 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
     await _reload();
   }
 
+  Future<void> _openPaymentProofs() async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(builder: (_) => const PaymentProofsScreen()),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    await _reload();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -215,6 +229,25 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
                     ),
                     subtitle: const Text(
                       'Gere cobranças e registre pagamentos em dinheiro.',
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Card(
+                  color: AppColors.white,
+                  child: ListTile(
+                    onTap: _openPaymentProofs,
+                    leading: const Icon(
+                      Icons.fact_check_outlined,
+                      color: AppColors.brandPrimary,
+                    ),
+                    title: const Text(
+                      'Comprovantes',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: const Text(
+                      'Analise mensalidades e check-ins Gympass.',
                     ),
                     trailing: const Icon(Icons.chevron_right),
                   ),
