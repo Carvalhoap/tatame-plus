@@ -60,6 +60,7 @@ abstract class FinanceRepository {
     required DateTime referenceDate,
     String? billingCycleId,
     String? attendanceId,
+    String? previousStoragePath,
   });
 
   Future<List<PaymentProof>> getPaymentProofs({

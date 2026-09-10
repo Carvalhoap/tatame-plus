@@ -44,6 +44,7 @@ class FirestorePaymentProofDataSource {
     required DateTime referenceDate,
     String? billingCycleId,
     String? attendanceId,
+    String? previousStoragePath,
   }) async {
     _validateSubmission(
       type: type,
@@ -57,10 +58,6 @@ class FirestorePaymentProofDataSource {
         : 'monthly_$billingCycleId';
 
     final reference = _proofs(academyId).doc(proofId);
-    final existingDocument = await reference.get();
-    final previousStoragePath = FinanceFirestoreParser.optionalString(
-      existingDocument.data()?['storagePath'],
-    );
 
     final storagePath = await storageService.uploadProof(
       academyId: academyId,
@@ -72,7 +69,6 @@ class FirestorePaymentProofDataSource {
     );
 
     final period = FinancePeriod.containing(referenceDate);
-
     try {
       await reference.set({
         'studentId': studentId,

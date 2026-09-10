@@ -107,15 +107,19 @@ class FirestoreBillingDataSource {
     String? studentId,
   }) async {
     if (studentId != null && studentId.isNotEmpty) {
-      final document = await _billingCycles(
-        academyId,
-      ).doc('${period.key}_$studentId').get();
+      final snapshot = await _billingCycles(academyId)
+          .where('periodKey', isEqualTo: period.key)
+          .where('studentId', isEqualTo: studentId)
+          .limit(1)
+          .get();
 
-      if (!document.exists || document.data() == null) {
+      if (snapshot.docs.isEmpty) {
         return const [];
       }
 
-      return [_cycleFromDocument(academyId: academyId, document: document)];
+      return [
+        _cycleFromDocument(academyId: academyId, document: snapshot.docs.first),
+      ];
     }
 
     final snapshot = await _billingCycles(

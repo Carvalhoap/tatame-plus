@@ -274,6 +274,7 @@ class _PaymentProofReviewScreenState extends State<PaymentProofReviewScreen> {
                     snapshot.data!,
                     width: double.infinity,
                     fit: BoxFit.contain,
+                    webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                     loadingBuilder: (context, child, progress) {
                       if (progress == null) {
                         return child;

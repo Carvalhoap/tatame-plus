@@ -15,6 +15,7 @@ import '../graduation/models/stripe_progress.dart';
 import '../graduation/repository/graduation_program_repository.dart';
 import '../graduation/repository/student_graduation_progress_repository.dart';
 import '../attendance/repository/attendance_repository.dart';
+import '../finance/screens/student_finance_screen.dart';
 import '../classroom/repository/classroom_repository.dart';
 import 'models/student.dart';
 import 'repository/student_repository.dart';
@@ -646,6 +647,33 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.gracieRed,
                   foregroundColor: AppColors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push<void>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => StudentFinanceScreen(student: student),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.receipt_long_outlined),
+                label: const Text(
+                  'Pagamentos e comprovantes',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.brandPrimary,
+                  side: const BorderSide(color: AppColors.brandPrimary),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),

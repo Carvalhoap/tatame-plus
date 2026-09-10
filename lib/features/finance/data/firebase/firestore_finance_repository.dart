@@ -132,6 +132,7 @@ class FirestoreFinanceRepository implements FinanceRepository {
     required DateTime referenceDate,
     String? billingCycleId,
     String? attendanceId,
+    String? previousStoragePath,
   }) {
     return proofDataSource.submitPaymentProof(
       academyId: academyId,
@@ -145,6 +146,7 @@ class FirestoreFinanceRepository implements FinanceRepository {
       referenceDate: referenceDate,
       billingCycleId: billingCycleId,
       attendanceId: attendanceId,
+      previousStoragePath: previousStoragePath,
     );
   }
 
