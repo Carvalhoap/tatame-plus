@@ -14,6 +14,7 @@ import '../services/finance_calculator.dart';
 import 'billing_cycles_screen.dart';
 import 'financial_profiles_screen.dart';
 import 'payment_proofs_screen.dart';
+import 'financial_entries_screen.dart';
 
 class FinanceDashboardScreen extends StatefulWidget {
   const FinanceDashboardScreen({super.key});
@@ -144,6 +145,19 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
     await _reload();
   }
 
+  Future<void> _openFinancialEntries() async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(builder: (_) => const FinancialEntriesScreen()),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    await _reload();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -248,6 +262,25 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
                     ),
                     subtitle: const Text(
                       'Analise mensalidades e check-ins Gympass.',
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Card(
+                  color: AppColors.white,
+                  child: ListTile(
+                    onTap: _openFinancialEntries,
+                    leading: const Icon(
+                      Icons.account_balance_wallet_outlined,
+                      color: AppColors.brandPrimary,
+                    ),
+                    title: const Text(
+                      'Receitas e despesas',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: const Text(
+                      'Registre produtos, graduações, custos e outros lançamentos.',
                     ),
                     trailing: const Icon(Icons.chevron_right),
                   ),
