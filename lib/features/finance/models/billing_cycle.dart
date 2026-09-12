@@ -12,6 +12,7 @@ class BillingCycle {
   final DateTime dueDate;
   final BillingStatus status;
   final PaymentMethod? paymentMethod;
+  final RevenueDestination revenueDestination;
   final String? paymentProofId;
   final DateTime? paidAt;
   final DateTime? createdAt;
@@ -28,6 +29,7 @@ class BillingCycle {
     required this.dueDate,
     required this.status,
     required this.paymentMethod,
+    this.revenueDestination = RevenueDestination.movingFitness,
     required this.paymentProofId,
     required this.paidAt,
     required this.createdAt,
@@ -55,4 +57,8 @@ class BillingCycle {
   bool get isPaid => status == BillingStatus.paid;
 
   bool get isGympass => billingMode == BillingMode.gympass;
+
+  bool get isSharedWithMoving {
+    return revenueDestination == RevenueDestination.movingFitness;
+  }
 }

@@ -33,21 +33,11 @@ void main() {
     final settings = FinanceSettings.defaults(academyId: 'academy');
 
     test('calcula o fechamento na ordem definida pela academia', () {
-      final billingCycle = BillingCycle(
+      final billingCycle = _monthlyCycle(
         id: 'cycle',
-        academyId: 'academy',
-        studentId: 'student',
         period: period,
-        billingMode: BillingMode.monthlyFee,
-        expectedAmountCents: 1000000,
-        paidAmountCents: 1000000,
-        dueDate: DateTime(2026, 9, 20),
-        status: BillingStatus.paid,
-        paymentMethod: PaymentMethod.pix,
-        paymentProofId: null,
-        paidAt: DateTime(2026, 9, 20),
-        createdAt: null,
-        updatedAt: null,
+        amountCents: 1000000,
+        revenueDestination: RevenueDestination.movingFitness,
       );
 
       final expense = FinancialEntry(
@@ -76,6 +66,7 @@ void main() {
       );
 
       expect(summary.grossRevenueCents, 1000000);
+      expect(summary.movingSharedRevenueBaseCents, 1000000);
       expect(summary.movingFitnessShareCents, 500000);
       expect(summary.academyShareCents, 500000);
       expect(summary.instructorCostCents, 80000);
@@ -86,6 +77,62 @@ void main() {
       expect(summary.amountPerPartnerCents, 96000);
       expect(summary.deficitCents, 0);
     });
+
+    test(
+      'não divide mensalidades diretas nem outras receitas com a Moving',
+      () {
+        final sharedMonthlyFee = _monthlyCycle(
+          id: 'shared',
+          period: period,
+          amountCents: 400000,
+          revenueDestination: RevenueDestination.movingFitness,
+        );
+
+        final directMonthlyFee = _monthlyCycle(
+          id: 'direct',
+          period: period,
+          amountCents: 100000,
+          revenueDestination: RevenueDestination.team,
+        );
+
+        final otherIncome = FinancialEntry(
+          id: 'graduation',
+          academyId: 'academy',
+          studentId: 'student',
+          type: FinancialEntryType.income,
+          category: 'Graduação',
+          description: 'Faixa e certificado',
+          amountCents: 50000,
+          paymentMethod: PaymentMethod.pix,
+          occurredAt: DateTime(2026, 9, 25),
+          createdBy: 'admin',
+          createdAt: null,
+          isCancelled: false,
+          cancelledBy: null,
+          cancelledAt: null,
+        );
+
+        final summary = FinanceCalculator.calculate(
+          period: period,
+          settings: settings,
+          billingCycles: [sharedMonthlyFee, directMonthlyFee],
+          paymentProofs: const [],
+          entries: [otherIncome],
+        );
+
+        expect(summary.sharedMonthlyFeeRevenueCents, 400000);
+        expect(summary.directMonthlyFeeRevenueCents, 100000);
+        expect(summary.otherIncomeCents, 50000);
+        expect(summary.movingSharedRevenueBaseCents, 400000);
+        expect(summary.grossRevenueCents, 550000);
+        expect(summary.movingFitnessShareCents, 200000);
+        expect(summary.academyShareCents, 350000);
+        expect(summary.availableAfterDeductionsCents, 270000);
+        expect(summary.gracieBarraReserveCents, 108000);
+        expect(summary.partnersTotalCents, 162000);
+        expect(summary.amountPerPartnerCents, 81000);
+      },
+    );
 
     test('limita o Gympass a 12 aprovações por aluno', () {
       final approvedProofs = List.generate(
@@ -112,9 +159,36 @@ void main() {
       );
 
       expect(summary.gympassRevenueCents, 12 * 1349);
+      expect(summary.movingSharedRevenueBaseCents, 12 * 1349);
+      expect(summary.movingFitnessShareCents, 8094);
       expect(summary.pendingProofsCount, 1);
     });
   });
+}
+
+BillingCycle _monthlyCycle({
+  required String id,
+  required FinancePeriod period,
+  required int amountCents,
+  required RevenueDestination revenueDestination,
+}) {
+  return BillingCycle(
+    id: id,
+    academyId: 'academy',
+    studentId: 'student_$id',
+    period: period,
+    billingMode: BillingMode.monthlyFee,
+    expectedAmountCents: amountCents,
+    paidAmountCents: amountCents,
+    dueDate: DateTime(2026, 9, 20),
+    status: BillingStatus.paid,
+    paymentMethod: PaymentMethod.pix,
+    revenueDestination: revenueDestination,
+    paymentProofId: null,
+    paidAt: DateTime(2026, 9, 20),
+    createdAt: null,
+    updatedAt: null,
+  );
 }
 
 PaymentProof _gympassProof({

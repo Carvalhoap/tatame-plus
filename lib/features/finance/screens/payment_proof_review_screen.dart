@@ -35,7 +35,50 @@ class _PaymentProofReviewScreenState extends State<PaymentProofReviewScreen> {
         .getPaymentProofDownloadUrl(storagePath: widget.proof.storagePath);
   }
 
+  Future<RevenueDestination?> _selectRevenueDestination() {
+    return showDialog<RevenueDestination>(
+      context: context,
+      builder: (dialogContext) {
+        return SimpleDialog(
+          title: const Text('Quem recebeu a mensalidade?'),
+          children: [
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(
+                dialogContext,
+                RevenueDestination.movingFitness,
+              ),
+              child: const ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.handshake_outlined),
+                title: Text('Moving Fitness'),
+                subtitle: Text('O valor entrará na divisão com a Moving.'),
+              ),
+            ),
+            SimpleDialogOption(
+              onPressed: () =>
+                  Navigator.pop(dialogContext, RevenueDestination.team),
+              child: const ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.groups_outlined),
+                title: Text('Recebido diretamente pela equipe'),
+                subtitle: Text('O valor ficará integralmente com vocês.'),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> approve() async {
+    final revenueDestination = widget.proof.isGympassCheckIn
+        ? RevenueDestination.movingFitness
+        : await _selectRevenueDestination();
+
+    if (revenueDestination == null || !mounted) {
+      return;
+    }
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
@@ -64,7 +107,10 @@ class _PaymentProofReviewScreenState extends State<PaymentProofReviewScreen> {
       return;
     }
 
-    await review(status: PaymentProofStatus.approved);
+    await review(
+      status: PaymentProofStatus.approved,
+      revenueDestination: revenueDestination,
+    );
   }
 
   Future<void> reject() async {
@@ -82,6 +128,7 @@ class _PaymentProofReviewScreenState extends State<PaymentProofReviewScreen> {
 
   Future<void> review({
     required PaymentProofStatus status,
+    RevenueDestination? revenueDestination,
     String? rejectionReason,
   }) async {
     if (isReviewing) {
@@ -106,6 +153,7 @@ class _PaymentProofReviewScreenState extends State<PaymentProofReviewScreen> {
         proofId: widget.proof.id,
         status: status,
         reviewedBy: currentUser.id,
+        revenueDestination: revenueDestination,
         rejectionReason: rejectionReason,
       );
 

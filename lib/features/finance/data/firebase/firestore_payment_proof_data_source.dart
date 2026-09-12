@@ -173,6 +173,7 @@ class FirestorePaymentProofDataSource {
     required String proofId,
     required PaymentProofStatus status,
     required String reviewedBy,
+    RevenueDestination? revenueDestination,
     String? rejectionReason,
   }) async {
     if (status == PaymentProofStatus.pending) {
@@ -260,6 +261,8 @@ class FirestorePaymentProofDataSource {
           'paidAmountCents': expectedAmountCents,
           'status': BillingStatus.paid.name,
           'paymentMethod': paymentMethod.name,
+          'revenueDestination':
+              (revenueDestination ?? RevenueDestination.movingFitness).name,
           'paymentProofId': proofId,
           'paidAt': FieldValue.serverTimestamp(),
           'paidBy': reviewedBy,

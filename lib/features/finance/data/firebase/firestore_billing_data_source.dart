@@ -73,6 +73,7 @@ class FirestoreBillingDataSource {
         'dueDate': Timestamp.fromDate(dueDate),
         'status': initialStatus.name,
         'paymentMethod': null,
+        'revenueDestination': RevenueDestination.movingFitness.name,
         'paymentProofId': null,
         'paidAt': null,
         'paidBy': null,
@@ -143,6 +144,7 @@ class FirestoreBillingDataSource {
     required String billingCycleId,
     required int amountCents,
     required PaymentMethod paymentMethod,
+    RevenueDestination revenueDestination = RevenueDestination.movingFitness,
     required String paidBy,
   }) async {
     if (amountCents <= 0) {
@@ -175,6 +177,7 @@ class FirestoreBillingDataSource {
         'paidAmountCents': amountCents,
         'status': BillingStatus.paid.name,
         'paymentMethod': paymentMethod.name,
+        'revenueDestination': revenueDestination.name,
         'paidAt': FieldValue.serverTimestamp(),
         'paidBy': paidBy,
         'updatedAt': FieldValue.serverTimestamp(),
@@ -229,6 +232,11 @@ class FirestoreBillingDataSource {
       paymentMethod: FinanceFirestoreParser.optionalEnumValue(
         PaymentMethod.values,
         data['paymentMethod'],
+      ),
+      revenueDestination: FinanceFirestoreParser.enumValue(
+        RevenueDestination.values,
+        data['revenueDestination'],
+        RevenueDestination.movingFitness,
       ),
       paymentProofId: FinanceFirestoreParser.optionalString(
         data['paymentProofId'],

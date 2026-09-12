@@ -45,6 +45,7 @@ abstract class FinanceRepository {
     required String billingCycleId,
     required int amountCents,
     required PaymentMethod paymentMethod,
+    RevenueDestination revenueDestination = RevenueDestination.movingFitness,
     required String paidBy,
   });
 
@@ -77,6 +78,7 @@ abstract class FinanceRepository {
     required String proofId,
     required PaymentProofStatus status,
     required String reviewedBy,
+    RevenueDestination? revenueDestination,
     String? rejectionReason,
   });
 

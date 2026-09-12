@@ -3,8 +3,11 @@ import 'finance_period.dart';
 class FinancialSummary {
   final FinancePeriod period;
   final int monthlyFeeRevenueCents;
+  final int sharedMonthlyFeeRevenueCents;
+  final int directMonthlyFeeRevenueCents;
   final int gympassRevenueCents;
   final int otherIncomeCents;
+  final int movingSharedRevenueBaseCents;
   final int grossRevenueCents;
   final int movingFitnessShareCents;
   final int academyShareCents;
@@ -20,8 +23,11 @@ class FinancialSummary {
   const FinancialSummary({
     required this.period,
     required this.monthlyFeeRevenueCents,
+    required this.sharedMonthlyFeeRevenueCents,
+    required this.directMonthlyFeeRevenueCents,
     required this.gympassRevenueCents,
     required this.otherIncomeCents,
+    required this.movingSharedRevenueBaseCents,
     required this.grossRevenueCents,
     required this.movingFitnessShareCents,
     required this.academyShareCents,

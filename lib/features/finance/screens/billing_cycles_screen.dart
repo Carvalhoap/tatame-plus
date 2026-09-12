@@ -214,6 +214,41 @@ class _BillingCyclesScreenState extends State<BillingCyclesScreen> {
     }
   }
 
+  Future<RevenueDestination?> _selectRevenueDestination() {
+    return showDialog<RevenueDestination>(
+      context: context,
+      builder: (dialogContext) {
+        return SimpleDialog(
+          title: const Text('Quem recebeu a mensalidade?'),
+          children: [
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(
+                dialogContext,
+                RevenueDestination.movingFitness,
+              ),
+              child: const ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.handshake_outlined),
+                title: Text('Moving Fitness'),
+                subtitle: Text('O valor entrará na divisão com a Moving.'),
+              ),
+            ),
+            SimpleDialogOption(
+              onPressed: () =>
+                  Navigator.pop(dialogContext, RevenueDestination.team),
+              child: const ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.groups_outlined),
+                title: Text('Recebido diretamente pela equipe'),
+                subtitle: Text('O valor ficará integralmente com vocês.'),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> markCashPayment(BillingCycle cycle) async {
     if (payingCycleId != null) {
       return;
@@ -229,6 +264,12 @@ class _BillingCyclesScreenState extends State<BillingCyclesScreen> {
     );
 
     if (amountCents == null || !mounted) {
+      return;
+    }
+
+    final revenueDestination = await _selectRevenueDestination();
+
+    if (revenueDestination == null || !mounted) {
       return;
     }
 
@@ -248,6 +289,7 @@ class _BillingCyclesScreenState extends State<BillingCyclesScreen> {
         billingCycleId: cycle.id,
         amountCents: amountCents,
         paymentMethod: PaymentMethod.cash,
+        revenueDestination: revenueDestination,
         paidBy: currentUser.id,
       );
 

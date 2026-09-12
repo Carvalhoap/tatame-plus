@@ -1,38 +1,13 @@
-enum BillingMode {
-  monthlyFee,
-  gympass,
-  exempt,
-}
+enum BillingMode { monthlyFee, gympass, exempt }
 
-enum BillingStatus {
-  pending,
-  underReview,
-  paid,
-  overdue,
-  waived,
-}
+enum BillingStatus { pending, underReview, paid, overdue, waived }
 
-enum PaymentProofType {
-  gympassCheckIn,
-  monthlyFee,
-}
+enum PaymentProofType { gympassCheckIn, monthlyFee }
 
-enum PaymentProofStatus {
-  pending,
-  approved,
-  rejected,
-}
+enum PaymentProofStatus { pending, approved, rejected }
 
-enum FinancialEntryType {
-  income,
-  expense,
-}
+enum FinancialEntryType { income, expense }
 
-enum PaymentMethod {
-  pix,
-  cash,
-  card,
-  bankTransfer,
-  gympass,
-  other,
-}
+enum PaymentMethod { pix, cash, card, bankTransfer, gympass, other }
+
+enum RevenueDestination { movingFitness, team }

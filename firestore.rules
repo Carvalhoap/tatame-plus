@@ -510,6 +510,7 @@ service cloud.firestore {
             'dueDate',
             'status',
             'paymentMethod',
+            'revenueDestination',
             'paymentProofId',
             'paidAt',
             'paidBy',
@@ -588,6 +589,7 @@ service cloud.firestore {
             )
           )
           && request.resource.data.paymentMethod == null
+          && request.resource.data.revenueDestination == 'movingFitness'
           && request.resource.data.paymentProofId == null
           && request.resource.data.paidAt == null
           && request.resource.data.paidBy == null
@@ -609,6 +611,7 @@ service cloud.firestore {
               'paidAmountCents',
               'status',
               'paymentMethod',
+              'revenueDestination',
               'paymentProofId',
               'paidAt',
               'paidBy',
@@ -624,6 +627,10 @@ service cloud.firestore {
             'card',
             'bankTransfer',
             'other'
+          ]
+          && request.resource.data.revenueDestination in [
+            'movingFitness',
+            'team'
           ]
           && (
             request.resource.data.paymentProofId == null

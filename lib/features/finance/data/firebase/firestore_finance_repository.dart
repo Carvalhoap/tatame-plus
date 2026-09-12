@@ -108,6 +108,7 @@ class FirestoreFinanceRepository implements FinanceRepository {
     required String billingCycleId,
     required int amountCents,
     required PaymentMethod paymentMethod,
+    RevenueDestination revenueDestination = RevenueDestination.movingFitness,
     required String paidBy,
   }) {
     return billingDataSource.markBillingCyclePaid(
@@ -115,6 +116,7 @@ class FirestoreFinanceRepository implements FinanceRepository {
       billingCycleId: billingCycleId,
       amountCents: amountCents,
       paymentMethod: paymentMethod,
+      revenueDestination: revenueDestination,
       paidBy: paidBy,
     );
   }
@@ -176,6 +178,7 @@ class FirestoreFinanceRepository implements FinanceRepository {
     required String proofId,
     required PaymentProofStatus status,
     required String reviewedBy,
+    RevenueDestination? revenueDestination,
     String? rejectionReason,
   }) {
     return proofDataSource.reviewPaymentProof(
@@ -183,6 +186,7 @@ class FirestoreFinanceRepository implements FinanceRepository {
       proofId: proofId,
       status: status,
       reviewedBy: reviewedBy,
+      revenueDestination: revenueDestination,
       rejectionReason: rejectionReason,
     );
   }

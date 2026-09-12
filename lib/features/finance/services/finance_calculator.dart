@@ -22,13 +22,22 @@ class FinanceCalculator {
       throw StateError('A quantidade de sócios deve ser maior que zero.');
     }
 
-    final monthlyFeeRevenueCents = billingCycles
-        .where(
-          (cycle) =>
-              cycle.referenceKey == period.key &&
-              cycle.billingMode == BillingMode.monthlyFee,
-        )
+    final monthlyFeeCycles = billingCycles.where(
+      (cycle) =>
+          cycle.referenceKey == period.key &&
+          cycle.billingMode == BillingMode.monthlyFee,
+    );
+
+    final sharedMonthlyFeeRevenueCents = monthlyFeeCycles
+        .where((cycle) => cycle.isSharedWithMoving)
         .fold<int>(0, (total, cycle) => total + cycle.paidAmountCents);
+
+    final directMonthlyFeeRevenueCents = monthlyFeeCycles
+        .where((cycle) => !cycle.isSharedWithMoving)
+        .fold<int>(0, (total, cycle) => total + cycle.paidAmountCents);
+
+    final monthlyFeeRevenueCents =
+        sharedMonthlyFeeRevenueCents + directMonthlyFeeRevenueCents;
 
     final gympassAttendancesByStudent = <String, Set<String>>{};
 
@@ -69,11 +78,14 @@ class FinanceCalculator {
         .where((entry) => entry.isExpense)
         .fold<int>(0, (total, entry) => total + entry.amountCents);
 
+    final movingSharedRevenueBaseCents =
+        sharedMonthlyFeeRevenueCents + gympassRevenueCents;
+
     final grossRevenueCents =
         monthlyFeeRevenueCents + gympassRevenueCents + otherIncomeCents;
 
     final movingFitnessShareCents = _percentage(
-      grossRevenueCents,
+      movingSharedRevenueBaseCents,
       settings.movingFitnessPercentage,
     );
 
@@ -107,8 +119,11 @@ class FinanceCalculator {
     return FinancialSummary(
       period: period,
       monthlyFeeRevenueCents: monthlyFeeRevenueCents,
+      sharedMonthlyFeeRevenueCents: sharedMonthlyFeeRevenueCents,
+      directMonthlyFeeRevenueCents: directMonthlyFeeRevenueCents,
       gympassRevenueCents: gympassRevenueCents,
       otherIncomeCents: otherIncomeCents,
+      movingSharedRevenueBaseCents: movingSharedRevenueBaseCents,
       grossRevenueCents: grossRevenueCents,
       movingFitnessShareCents: movingFitnessShareCents,
       academyShareCents: academyShareCents,

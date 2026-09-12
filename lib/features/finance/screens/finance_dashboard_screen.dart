@@ -15,6 +15,7 @@ import 'billing_cycles_screen.dart';
 import 'financial_profiles_screen.dart';
 import 'payment_proofs_screen.dart';
 import 'financial_entries_screen.dart';
+import 'finance_report_screen.dart';
 
 class FinanceDashboardScreen extends StatefulWidget {
   const FinanceDashboardScreen({super.key});
@@ -158,6 +159,19 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
     await _reload();
   }
 
+  Future<void> _openFinanceReport() async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(builder: (_) => const FinanceReportScreen()),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    await _reload();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -286,6 +300,25 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
                   ),
                 ),
                 const SizedBox(height: 18),
+                Card(
+                  color: AppColors.white,
+                  child: ListTile(
+                    onTap: _openFinanceReport,
+                    leading: const Icon(
+                      Icons.picture_as_pdf_outlined,
+                      color: AppColors.brandPrimary,
+                    ),
+                    title: const Text(
+                      'Relatório de fechamento',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: const Text(
+                      'Confira a divisão e gere o PDF do período.',
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                  ),
+                ),
+                const SizedBox(height: 18),
                 if (summary.pendingProofsCount > 0) ...[
                   _PendingProofsAlert(count: summary.pendingProofsCount),
                   const SizedBox(height: 18),
@@ -297,16 +330,27 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
                   icon: Icons.trending_up,
                   rows: [
                     _AmountData(
-                      'Mensalidades recebidas',
-                      summary.monthlyFeeRevenueCents,
+                      'Mensalidades compartilhadas com a Moving',
+                      summary.sharedMonthlyFeeRevenueCents,
                     ),
                     _AmountData(
-                      'Gympass aprovado',
+                      'Mensalidades recebidas pela equipe',
+                      summary.directMonthlyFeeRevenueCents,
+                    ),
+                    _AmountData(
+                      'Gympass compartilhado',
                       summary.gympassRevenueCents,
                     ),
-                    _AmountData('Outras receitas', summary.otherIncomeCents),
                     _AmountData(
-                      'Receita bruta',
+                      'Outras receitas integrais',
+                      summary.otherIncomeCents,
+                    ),
+                    _AmountData(
+                      'Base da divisão com a Moving',
+                      summary.movingSharedRevenueBaseCents,
+                    ),
+                    _AmountData(
+                      'Receita bruta total',
                       summary.grossRevenueCents,
                       emphasized: true,
                     ),
@@ -319,10 +363,14 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
                   rows: [
                     _AmountData(
                       'Moving Fitness '
-                      '(${settings.movingFitnessPercentage}%)',
+                      '(${settings.movingFitnessPercentage}% '
+                      'da base compartilhada)',
                       summary.movingFitnessShareCents,
                     ),
-                    _AmountData('Parte da academia', summary.academyShareCents),
+                    _AmountData(
+                      'Total da equipe antes das despesas',
+                      summary.academyShareCents,
+                    ),
                     _AmountData(
                       settings.instructorName,
                       summary.instructorCostCents,
