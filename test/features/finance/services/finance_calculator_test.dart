@@ -1,10 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tatame_plus/features/finance/models/billing_cycle.dart';
+import 'package:tatame_plus/features/finance/models/check_in_provider.dart';
 import 'package:tatame_plus/features/finance/models/finance_enums.dart';
 import 'package:tatame_plus/features/finance/models/finance_period.dart';
 import 'package:tatame_plus/features/finance/models/finance_settings.dart';
 import 'package:tatame_plus/features/finance/models/financial_entry.dart';
 import 'package:tatame_plus/features/finance/models/payment_proof.dart';
+import 'package:tatame_plus/features/finance/models/recurring_expense.dart';
 import 'package:tatame_plus/features/finance/services/finance_calculator.dart';
 
 void main() {
@@ -162,6 +164,72 @@ void main() {
       expect(summary.movingSharedRevenueBaseCents, 12 * 1349);
       expect(summary.movingFitnessShareCents, 8094);
       expect(summary.pendingProofsCount, 1);
+    });
+    test('usa convênio e despesas fixas flexíveis', () {
+      final approvedProofs = List.generate(
+        3,
+        (index) => _gympassProof(
+          id: 'flexible_proof_$index',
+          attendanceId: 'flexible_attendance_$index',
+          status: PaymentProofStatus.approved,
+        ),
+      );
+
+      final gympassProvider = CheckInProvider(
+        id: 'gympass',
+        academyId: 'academy',
+        name: 'Gympass',
+        checkInValueCents: 2000,
+        monthlyLimit: 2,
+        sharesWithMoving: false,
+        isActive: true,
+        updatedAt: null,
+        updatedBy: 'admin',
+      );
+
+      final activeExpense = RecurringExpense(
+        id: 'active_expense',
+        academyId: 'academy',
+        category: 'Professores',
+        description: 'Professor adicional',
+        amountCents: 3000,
+        isActive: true,
+        updatedAt: null,
+        updatedBy: 'admin',
+      );
+
+      final inactiveExpense = RecurringExpense(
+        id: 'inactive_expense',
+        academyId: 'academy',
+        category: 'Aluguel',
+        description: 'Despesa desativada',
+        amountCents: 99999,
+        isActive: false,
+        updatedAt: null,
+        updatedBy: 'admin',
+      );
+
+      final summary = FinanceCalculator.calculate(
+        period: period,
+        settings: settings,
+        billingCycles: const [],
+        paymentProofs: approvedProofs,
+        entries: const [],
+        checkInProviders: [gympassProvider],
+        recurringExpenses: [activeExpense, inactiveExpense],
+      );
+
+      expect(summary.gympassRevenueCents, 4000);
+      expect(summary.movingSharedRevenueBaseCents, 0);
+      expect(summary.movingFitnessShareCents, 0);
+      expect(summary.academyShareCents, 4000);
+      expect(summary.instructorCostCents, 3000);
+      expect(summary.otherExpensesCents, 0);
+      expect(summary.availableAfterDeductionsCents, 1000);
+      expect(summary.gracieBarraReserveCents, 400);
+      expect(summary.partnersTotalCents, 600);
+      expect(summary.amountPerPartnerCents, 300);
+      expect(summary.deficitCents, 0);
     });
   });
 }

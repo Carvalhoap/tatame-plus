@@ -6,6 +6,7 @@ import 'package:pdf/widgets.dart' as pw;
 import '../models/finance_settings.dart';
 import '../models/financial_entry.dart';
 import '../models/financial_summary.dart';
+import '../models/recurring_expense.dart';
 
 class FinanceReportPdfService {
   const FinanceReportPdfService._();
@@ -13,6 +14,7 @@ class FinanceReportPdfService {
   static Future<Uint8List> build({
     required FinancialSummary summary,
     required FinanceSettings settings,
+    required List<RecurringExpense> recurringExpenses,
     required List<FinancialEntry> entries,
     required Map<String, String> studentNames,
   }) async {
@@ -20,6 +22,10 @@ class FinanceReportPdfService {
 
     final activeEntries = entries
         .where((entry) => entry.isActive)
+        .toList(growable: false);
+
+    final activeRecurringExpenses = recurringExpenses
+        .where((expense) => expense.isActive)
         .toList(growable: false);
 
     final incomeByCategory = _totalsByCategory(
@@ -151,9 +157,16 @@ class FinanceReportPdfService {
                 amountCents: summary.academyShareCents,
                 isStrong: true,
               ),
+              ...activeRecurringExpenses.map(
+                (expense) => _MoneyRow(
+                  label: '${expense.category}: ${expense.description}',
+                  amountCents: expense.amountCents,
+                ),
+              ),
               _MoneyRow(
-                label: settings.instructorName,
+                label: 'Total das despesas fixas',
                 amountCents: summary.instructorCostCents,
+                isStrong: true,
               ),
               _MoneyRow(
                 label: 'Outras despesas',

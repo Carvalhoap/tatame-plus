@@ -1,14 +1,17 @@
 import 'dart:typed_data';
 
 import '../../models/billing_cycle.dart';
+import '../../models/check_in_provider.dart';
 import '../../models/finance_enums.dart';
 import '../../models/finance_period.dart';
 import '../../models/finance_settings.dart';
 import '../../models/financial_entry.dart';
 import '../../models/financial_profile.dart';
 import '../../models/payment_proof.dart';
+import '../../models/recurring_expense.dart';
 import '../../repository/finance_repository.dart';
 import 'firestore_billing_data_source.dart';
+import 'firestore_finance_configuration_data_source.dart';
 import 'firestore_finance_profile_data_source.dart';
 import 'firestore_financial_entry_data_source.dart';
 import 'firestore_payment_proof_data_source.dart';
@@ -18,12 +21,14 @@ class FirestoreFinanceRepository implements FinanceRepository {
   final FirestoreBillingDataSource billingDataSource;
   final FirestorePaymentProofDataSource proofDataSource;
   final FirestoreFinancialEntryDataSource entryDataSource;
+  final FirestoreFinanceConfigurationDataSource configurationDataSource;
 
   FirestoreFinanceRepository({
     FirestoreFinanceProfileDataSource? profileDataSource,
     FirestoreBillingDataSource? billingDataSource,
     FirestorePaymentProofDataSource? proofDataSource,
     FirestoreFinancialEntryDataSource? entryDataSource,
+    FirestoreFinanceConfigurationDataSource? configurationDataSource,
   }) : profileDataSource =
            profileDataSource ?? FirestoreFinanceProfileDataSource(),
        billingDataSource =
@@ -33,7 +38,13 @@ class FirestoreFinanceRepository implements FinanceRepository {
                  profileDataSource ?? FirestoreFinanceProfileDataSource(),
            ),
        proofDataSource = proofDataSource ?? FirestorePaymentProofDataSource(),
-       entryDataSource = entryDataSource ?? FirestoreFinancialEntryDataSource();
+       entryDataSource = entryDataSource ?? FirestoreFinancialEntryDataSource(),
+       configurationDataSource =
+           configurationDataSource ??
+           FirestoreFinanceConfigurationDataSource(
+             profileDataSource:
+                 profileDataSource ?? FirestoreFinanceProfileDataSource(),
+           );
 
   @override
   Future<FinanceSettings> getSettings({required String academyId}) {
@@ -47,6 +58,42 @@ class FirestoreFinanceRepository implements FinanceRepository {
   }) {
     return profileDataSource.saveSettings(
       settings: settings,
+      updatedBy: updatedBy,
+    );
+  }
+
+  @override
+  Future<List<CheckInProvider>> getCheckInProviders({
+    required String academyId,
+  }) {
+    return configurationDataSource.getCheckInProviders(academyId: academyId);
+  }
+
+  @override
+  Future<String> saveCheckInProvider({
+    required CheckInProvider provider,
+    required String updatedBy,
+  }) {
+    return configurationDataSource.saveCheckInProvider(
+      provider: provider,
+      updatedBy: updatedBy,
+    );
+  }
+
+  @override
+  Future<List<RecurringExpense>> getRecurringExpenses({
+    required String academyId,
+  }) {
+    return configurationDataSource.getRecurringExpenses(academyId: academyId);
+  }
+
+  @override
+  Future<String> saveRecurringExpense({
+    required RecurringExpense expense,
+    required String updatedBy,
+  }) {
+    return configurationDataSource.saveRecurringExpense(
+      expense: expense,
       updatedBy: updatedBy,
     );
   }

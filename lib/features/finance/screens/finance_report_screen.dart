@@ -7,11 +7,13 @@ import '../../auth/services/session_service.dart';
 import '../../student/models/student.dart';
 import '../../student/repository/student_repository.dart';
 import '../models/billing_cycle.dart';
+import '../models/check_in_provider.dart';
 import '../models/finance_period.dart';
 import '../models/finance_settings.dart';
 import '../models/financial_entry.dart';
 import '../models/financial_summary.dart';
 import '../models/payment_proof.dart';
+import '../models/recurring_expense.dart';
 import '../repository/finance_repository.dart';
 import '../services/finance_calculator.dart';
 import '../services/finance_report_pdf_service.dart';
@@ -63,6 +65,8 @@ class _FinanceReportScreenState extends State<FinanceReportScreen> {
         academyId: currentUser.academyId,
         period: period,
       ),
+      repository.getCheckInProviders(academyId: currentUser.academyId),
+      repository.getRecurringExpenses(academyId: currentUser.academyId),
       context.read<StudentRepository>().getStudentsByAcademy(
         currentUser.academyId,
       ),
@@ -72,7 +76,9 @@ class _FinanceReportScreenState extends State<FinanceReportScreen> {
     final billingCycles = results[1] as List<BillingCycle>;
     final paymentProofs = results[2] as List<PaymentProof>;
     final entries = results[3] as List<FinancialEntry>;
-    final students = results[4] as List<Student>;
+    final checkInProviders = results[4] as List<CheckInProvider>;
+    final recurringExpenses = results[5] as List<RecurringExpense>;
+    final students = results[6] as List<Student>;
 
     final summary = FinanceCalculator.calculate(
       period: period,
@@ -80,11 +86,16 @@ class _FinanceReportScreenState extends State<FinanceReportScreen> {
       billingCycles: billingCycles,
       paymentProofs: paymentProofs,
       entries: entries,
+      checkInProviders: checkInProviders,
+      recurringExpenses: recurringExpenses,
     );
 
     return _FinanceReportData(
       settings: settings,
       summary: summary,
+      recurringExpenses: recurringExpenses
+          .where((expense) => expense.isActive)
+          .toList(growable: false),
       entries: entries,
       studentNames: {
         for (final student in students) student.id: student.fullName,
@@ -133,6 +144,7 @@ class _FinanceReportScreenState extends State<FinanceReportScreen> {
       final bytes = await FinanceReportPdfService.build(
         summary: data.summary,
         settings: data.settings,
+        recurringExpenses: data.recurringExpenses,
         entries: data.entries,
         studentNames: data.studentNames,
       );
@@ -237,6 +249,7 @@ class _FinanceReportScreenState extends State<FinanceReportScreen> {
                 final data = snapshot.data!;
                 final summary = data.summary;
                 final settings = data.settings;
+                final recurringExpenses = data.recurringExpenses;
 
                 final incomeByCategory = totalsByCategory(
                   data.entries.where((entry) => entry.isIncome),
@@ -312,9 +325,18 @@ class _FinanceReportScreenState extends State<FinanceReportScreen> {
                             value: formatCurrency(summary.academyShareCents),
                             isStrong: true,
                           ),
+                          ...recurringExpenses.map(
+                            (expense) => _ReportRow(
+                              label:
+                                  '${expense.category}: '
+                                  '${expense.description}',
+                              value: formatCurrency(expense.amountCents),
+                            ),
+                          ),
                           _ReportRow(
-                            label: settings.instructorName,
+                            label: 'Total das despesas fixas',
                             value: formatCurrency(summary.instructorCostCents),
+                            isStrong: true,
                           ),
                           _ReportRow(
                             label: 'Outras despesas',
@@ -414,12 +436,14 @@ class _FinanceReportScreenState extends State<FinanceReportScreen> {
 class _FinanceReportData {
   final FinanceSettings settings;
   final FinancialSummary summary;
+  final List<RecurringExpense> recurringExpenses;
   final List<FinancialEntry> entries;
   final Map<String, String> studentNames;
 
   const _FinanceReportData({
     required this.settings,
     required this.summary,
+    required this.recurringExpenses,
     required this.entries,
     required this.studentNames,
   });

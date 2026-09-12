@@ -424,6 +424,74 @@ service cloud.firestore {
           if false;
       }
 
+      match /checkInProviders/{providerId} {
+        allow get, list:
+          if isAdmin(academyId)
+            || isPartner(academyId);
+
+        allow create, update:
+          if (
+            isAdmin(academyId)
+              || isPartner(academyId)
+          )
+          && request.resource.data.keys().hasOnly([
+            'name',
+            'checkInValueCents',
+            'monthlyLimit',
+            'sharesWithMoving',
+            'isActive',
+            'updatedAt',
+            'updatedBy'
+          ])
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 100
+          && request.resource.data.checkInValueCents is int
+          && request.resource.data.checkInValueCents >= 0
+          && request.resource.data.monthlyLimit is int
+          && request.resource.data.monthlyLimit >= 1
+          && request.resource.data.sharesWithMoving is bool
+          && request.resource.data.isActive is bool
+          && request.resource.data.updatedAt == request.time
+          && request.resource.data.updatedBy == request.auth.uid;
+
+        allow delete:
+          if false;
+      }
+
+      match /recurringExpenses/{expenseId} {
+        allow get, list:
+          if isAdmin(academyId)
+            || isPartner(academyId);
+
+        allow create, update:
+          if (
+            isAdmin(academyId)
+              || isPartner(academyId)
+          )
+          && request.resource.data.keys().hasOnly([
+            'category',
+            'description',
+            'amountCents',
+            'isActive',
+            'updatedAt',
+            'updatedBy'
+          ])
+          && request.resource.data.category is string
+          && request.resource.data.category.size() > 0
+          && request.resource.data.category.size() <= 100
+          && request.resource.data.description is string
+          && request.resource.data.description.size() > 0
+          && request.resource.data.description.size() <= 200
+          && request.resource.data.amountCents is int
+          && request.resource.data.amountCents >= 0
+          && request.resource.data.isActive is bool
+          && request.resource.data.updatedAt == request.time
+          && request.resource.data.updatedBy == request.auth.uid;
+
+        allow delete:
+          if false;
+      }
       match /financialProfiles/{studentId} {
         allow get:
           if isAdmin(academyId)

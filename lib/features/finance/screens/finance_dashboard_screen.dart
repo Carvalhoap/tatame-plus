@@ -4,11 +4,13 @@ import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../auth/services/session_service.dart';
 import '../models/billing_cycle.dart';
+import '../models/check_in_provider.dart';
 import '../models/finance_period.dart';
 import '../models/finance_settings.dart';
 import '../models/financial_entry.dart';
 import '../models/financial_summary.dart';
 import '../models/payment_proof.dart';
+import '../models/recurring_expense.dart';
 import '../repository/finance_repository.dart';
 import '../services/finance_calculator.dart';
 import 'billing_cycles_screen.dart';
@@ -16,6 +18,7 @@ import 'financial_profiles_screen.dart';
 import 'payment_proofs_screen.dart';
 import 'financial_entries_screen.dart';
 import 'finance_report_screen.dart';
+import 'finance_settings_screen.dart';
 
 class FinanceDashboardScreen extends StatefulWidget {
   const FinanceDashboardScreen({super.key});
@@ -63,12 +66,16 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
         academyId: currentUser.academyId,
         period: period,
       ),
+      repository.getCheckInProviders(academyId: currentUser.academyId),
+      repository.getRecurringExpenses(academyId: currentUser.academyId),
     ]);
 
     final settings = results[0] as FinanceSettings;
     final billingCycles = results[1] as List<BillingCycle>;
     final paymentProofs = results[2] as List<PaymentProof>;
     final entries = results[3] as List<FinancialEntry>;
+    final checkInProviders = results[4] as List<CheckInProvider>;
+    final recurringExpenses = results[5] as List<RecurringExpense>;
 
     final summary = FinanceCalculator.calculate(
       period: period,
@@ -76,9 +83,17 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
       billingCycles: billingCycles,
       paymentProofs: paymentProofs,
       entries: entries,
+      checkInProviders: checkInProviders,
+      recurringExpenses: recurringExpenses,
     );
 
-    return _FinanceDashboardData(settings: settings, summary: summary);
+    return _FinanceDashboardData(
+      settings: settings,
+      summary: summary,
+      recurringExpenses: recurringExpenses
+          .where((expense) => expense.isActive)
+          .toList(growable: false),
+    );
   }
 
   Future<void> _reload() async {
@@ -172,6 +187,19 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
     await _reload();
   }
 
+  Future<void> _openFinanceSettings() async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(builder: (_) => const FinanceSettingsScreen()),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    await _reload();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -211,6 +239,7 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
 
           final summary = data.summary;
           final settings = data.settings;
+          final recurringExpenses = data.recurringExpenses;
 
           return RefreshIndicator(
             onRefresh: _reload,
@@ -222,6 +251,25 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
                   period: period,
                   onPrevious: () => _movePeriod(-1),
                   onNext: () => _movePeriod(1),
+                ),
+                const SizedBox(height: 18),
+                Card(
+                  color: AppColors.white,
+                  child: ListTile(
+                    onTap: _openFinanceSettings,
+                    leading: const Icon(
+                      Icons.tune_outlined,
+                      color: AppColors.brandPrimary,
+                    ),
+                    title: const Text(
+                      'Configurações financeiras',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: const Text(
+                      'Ajuste Gympass, percentuais, professor e sócios.',
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                  ),
                 ),
                 const SizedBox(height: 18),
                 Card(
@@ -371,9 +419,16 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
                       'Total da equipe antes das despesas',
                       summary.academyShareCents,
                     ),
+                    ...recurringExpenses.map(
+                      (expense) => _AmountData(
+                        '${expense.category}: ${expense.description}',
+                        expense.amountCents,
+                      ),
+                    ),
                     _AmountData(
-                      settings.instructorName,
+                      'Total das despesas fixas',
                       summary.instructorCostCents,
+                      emphasized: true,
                     ),
                     _AmountData('Outras despesas', summary.otherExpensesCents),
                     _AmountData(
@@ -409,8 +464,13 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
 class _FinanceDashboardData {
   final FinanceSettings settings;
   final FinancialSummary summary;
+  final List<RecurringExpense> recurringExpenses;
 
-  const _FinanceDashboardData({required this.settings, required this.summary});
+  const _FinanceDashboardData({
+    required this.settings,
+    required this.summary,
+    required this.recurringExpenses,
+  });
 }
 
 class _PeriodSelector extends StatelessWidget {

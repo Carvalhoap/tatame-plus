@@ -1,12 +1,14 @@
 import 'dart:typed_data';
 
 import '../models/billing_cycle.dart';
+import '../models/check_in_provider.dart';
 import '../models/finance_enums.dart';
 import '../models/finance_period.dart';
 import '../models/finance_settings.dart';
 import '../models/financial_entry.dart';
 import '../models/financial_profile.dart';
 import '../models/payment_proof.dart';
+import '../models/recurring_expense.dart';
 
 abstract class FinanceRepository {
   Future<FinanceSettings> getSettings({required String academyId});
@@ -16,6 +18,23 @@ abstract class FinanceRepository {
     required String updatedBy,
   });
 
+  Future<List<CheckInProvider>> getCheckInProviders({
+    required String academyId,
+  });
+
+  Future<String> saveCheckInProvider({
+    required CheckInProvider provider,
+    required String updatedBy,
+  });
+
+  Future<List<RecurringExpense>> getRecurringExpenses({
+    required String academyId,
+  });
+
+  Future<String> saveRecurringExpense({
+    required RecurringExpense expense,
+    required String updatedBy,
+  });
   Future<FinancialProfile?> getFinancialProfile({
     required String academyId,
     required String studentId,
