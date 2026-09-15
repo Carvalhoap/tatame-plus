@@ -1135,6 +1135,12 @@ service cloud.firestore {
           if false;
       }
 
+      match /registrationInvites/{inviteId} {
+        // Convites contêm dados de segurança e só podem ser acessados
+        // pelas Cloud Functions usando o Firebase Admin SDK.
+        allow read, write: if false;
+      }
+
       match /auditLogs/{documentId} {
         allow read, write: if false;
       }

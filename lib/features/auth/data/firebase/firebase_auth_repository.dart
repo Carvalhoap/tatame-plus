@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 
 import '../../../../core/enums/user_role.dart';
 import '../../models/tatame_user.dart';
@@ -38,12 +37,6 @@ class FirebaseAuthRepository implements AuthRepository {
       return null;
     }
 
-    debugPrint('==========================');
-    debugPrint('LOGIN FIREBASE REALIZADO');
-    debugPrint('UID: ${firebaseUser.uid}');
-    debugPrint('E-MAIL: ${firebaseUser.email}');
-    debugPrint('==========================');
-
     return _loadTatameUser(firebaseUser.uid);
   }
 
@@ -54,11 +47,6 @@ class FirebaseAuthRepository implements AuthRepository {
     if (firebaseUser == null) {
       return null;
     }
-
-    debugPrint('==========================');
-    debugPrint('RESTAURANDO SESSÃO');
-    debugPrint('UID: ${firebaseUser.uid}');
-    debugPrint('==========================');
 
     try {
       return await _loadTatameUser(firebaseUser.uid);
@@ -179,6 +167,7 @@ class FirebaseAuthRepository implements AuthRepository {
 
   @override
   Future<void> register({
+    required String invitationCode,
     required String displayName,
     required String email,
     required String password,
@@ -188,6 +177,7 @@ class FirebaseAuthRepository implements AuthRepository {
 
     try {
       await callable.call<Map<String, dynamic>>({
+        'invitationCode': invitationCode.trim(),
         'displayName': displayName.trim(),
         'email': email.trim().toLowerCase(),
         'password': password,
@@ -203,6 +193,12 @@ class FirebaseAuthRepository implements AuthRepository {
         case 'invalid-argument':
           throw RegistrationException(
             error.message ?? 'Os dados informados são inválidos.',
+          );
+
+        case 'failed-precondition':
+          throw RegistrationException(
+            error.message ??
+                'O convite é inválido, expirou ou já foi utilizado.',
           );
 
         case 'unavailable':

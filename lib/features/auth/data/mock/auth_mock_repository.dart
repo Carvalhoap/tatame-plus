@@ -30,6 +30,7 @@ class AuthMockRepository implements AuthRepository {
 
   @override
   Future<void> register({
+    required String invitationCode,
     required String displayName,
     required String email,
     required String password,

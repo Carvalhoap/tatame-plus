@@ -19,3 +19,7 @@ export {
 export {
   selfRegisterUser,
 } from "./self_register_user";
+
+export {
+  createRegistrationInvite,
+} from "./create_registration_invite";

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
 import '../../models/academy_member.dart';
+import '../../models/registration_invite.dart';
 import '../../repository/user_repository.dart';
 
 class FirestoreUserRepository implements UserRepository {
@@ -114,6 +115,39 @@ class FirestoreUserRepository implements UserRepository {
   }
 
   @override
+  Future<RegistrationInvite> createRegistrationInvite({
+    required String academyId,
+  }) async {
+    final callable = functions.httpsCallable('createRegistrationInvite');
+
+    try {
+      final result = await callable.call<Map<String, dynamic>>({
+        'academyId': academyId,
+      });
+
+      final data = result.data;
+      final code = data['code'];
+      final expiresAtMillis = data['expiresAtMillis'];
+
+      if (code is! String || code.isEmpty || expiresAtMillis is! num) {
+        throw StateError('O servidor não retornou um convite válido.');
+      }
+
+      return RegistrationInvite(
+        code: code,
+        expiresAt: DateTime.fromMillisecondsSinceEpoch(
+          expiresAtMillis.toInt(),
+        ).toLocal(),
+      );
+    } on FirebaseFunctionsException catch (error) {
+      throw RegistrationInvitationException(
+        code: error.code,
+        message: _functionErrorMessage(error),
+      );
+    }
+  }
+
+  @override
   Future<String> createAcademyUser({
     required String academyId,
     required String displayName,
@@ -214,6 +248,19 @@ class FirestoreUserRepository implements UserRepository {
         return error.message ?? 'Não foi possível concluir a operação.';
     }
   }
+}
+
+class RegistrationInvitationException implements Exception {
+  final String code;
+  final String message;
+
+  const RegistrationInvitationException({
+    required this.code,
+    required this.message,
+  });
+
+  @override
+  String toString() => message;
 }
 
 class UserCreationException implements Exception {

@@ -55,42 +55,52 @@ class _LoginScreenState extends State<LoginScreen> {
         isLoading = false;
       });
     } on FirebaseAuthException catch (error) {
-      debugPrint('==========================');
-      debugPrint('FirebaseAuthException');
-      debugPrint('Code: ${error.code}');
-      debugPrint('Message: ${error.message}');
-      debugPrint('==========================');
-
       if (!mounted) return;
+
+      final String message;
+
+      switch (error.code) {
+        case 'user-disabled':
+          message = 'Seu cadastro está aguardando aprovação da academia.';
+          break;
+
+        case 'invalid-credential':
+        case 'wrong-password':
+        case 'user-not-found':
+          message = 'E-mail ou senha incorretos.';
+          break;
+
+        case 'too-many-requests':
+          message =
+              'Muitas tentativas foram realizadas. Aguarde alguns minutos.';
+          break;
+
+        case 'network-request-failed':
+          message = 'Não foi possível conectar. Verifique sua internet.';
+          break;
+
+        default:
+          message = 'Não foi possível entrar. Tente novamente.';
+          break;
+      }
 
       setState(() {
         isLoading = false;
-        errorMessage = '${error.code}\n${error.message ?? ''}';
+        errorMessage = message;
       });
     } on StateError catch (error) {
-      debugPrint('==========================');
-      debugPrint('StateError');
-      debugPrint('Message: ${error.message}');
-      debugPrint('==========================');
-
       if (!mounted) return;
 
       setState(() {
         isLoading = false;
-        errorMessage = error.message;
+        errorMessage = error.message.toString();
       });
-    } catch (error, stackTrace) {
-      debugPrint('==========================');
-      debugPrint('Erro inesperado no login');
-      debugPrint('Error: $error');
-      debugPrintStack(stackTrace: stackTrace);
-      debugPrint('==========================');
-
+    } catch (_) {
       if (!mounted) return;
 
       setState(() {
         isLoading = false;
-        errorMessage = 'Erro inesperado: $error';
+        errorMessage = 'Não foi possível entrar. Tente novamente.';
       });
     }
   }

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/enums/user_role.dart';
@@ -29,6 +30,7 @@ class _UsersScreenState extends State<UsersScreen> {
   final searchController = TextEditingController();
 
   Future<List<AcademyMember>>? membersFuture;
+  bool isGeneratingInvitation = false;
   String searchTerm = '';
 
   @override
@@ -56,6 +58,154 @@ class _UsersScreenState extends State<UsersScreen> {
     setState(() {
       membersFuture = _loadMembers();
     });
+  }
+
+  String formatInvitationExpiration(DateTime value) {
+    String twoDigits(int number) => number.toString().padLeft(2, '0');
+
+    return '${twoDigits(value.day)}/'
+        '${twoDigits(value.month)}/'
+        '${value.year} às '
+        '${twoDigits(value.hour)}:'
+        '${twoDigits(value.minute)}';
+  }
+
+  Future<void> generateRegistrationInvitation() async {
+    if (isGeneratingInvitation) {
+      return;
+    }
+
+    final currentUser = context.read<SessionService>().currentUser;
+
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sua sessão não está disponível.'),
+          backgroundColor: AppColors.gracieRed,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      isGeneratingInvitation = true;
+    });
+
+    try {
+      final invitation = await context
+          .read<UserRepository>()
+          .createRegistrationInvite(academyId: currentUser.academyId);
+
+      if (!mounted) {
+        return;
+      }
+
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            icon: const Icon(
+              Icons.key_outlined,
+              color: AppColors.brandPrimary,
+              size: 42,
+            ),
+            title: const Text('Convite para cadastro'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Envie este código para a pessoa que deseja se cadastrar:',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 18),
+                SelectableText(
+                  invitation.code,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                    color: AppColors.brandPrimary,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Válido até '
+                  '${formatInvitationExpiration(invitation.expiresAt)}.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'O convite só pode ser usado uma vez. Após o cadastro, '
+                  'o usuário continuará aguardando aprovação.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.grey),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Fechar'),
+              ),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  await Clipboard.setData(ClipboardData(text: invitation.code));
+
+                  if (!dialogContext.mounted) {
+                    return;
+                  }
+
+                  Navigator.pop(dialogContext);
+
+                  if (!mounted) {
+                    return;
+                  }
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Código do convite copiado.'),
+                      backgroundColor: AppColors.success,
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.copy_outlined),
+                label: const Text('Copiar'),
+              ),
+            ],
+          );
+        },
+      );
+    } on RegistrationInvitationException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.message),
+          backgroundColor: AppColors.gracieRed,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível gerar o convite.'),
+          backgroundColor: AppColors.gracieRed,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isGeneratingInvitation = false;
+        });
+      }
+    }
   }
 
   Future<void> openCreateUser() async {
@@ -177,6 +327,20 @@ class _UsersScreenState extends State<UsersScreen> {
         foregroundColor: AppColors.brandPrimary,
         elevation: 0,
         actions: [
+          if (widget.roleFilter == null)
+            IconButton(
+              onPressed: isGeneratingInvitation
+                  ? null
+                  : generateRegistrationInvitation,
+              tooltip: 'Gerar convite',
+              icon: isGeneratingInvitation
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.key_outlined),
+            ),
           IconButton(
             onPressed: reload,
             tooltip: 'Atualizar',

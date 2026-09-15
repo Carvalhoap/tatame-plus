@@ -40,11 +40,7 @@ class _SessionRouterState extends State<SessionRouter> {
       if (mounted && user != null) {
         sessionService.startSession(user);
       }
-    } catch (error, stackTrace) {
-      debugPrint('Não foi possível restaurar a sessão.');
-      debugPrint('Erro: $error');
-      debugPrintStack(stackTrace: stackTrace);
-    }
+    } catch (_) {}
 
     if (mounted) {
       setState(() {

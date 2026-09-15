@@ -14,6 +14,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final formKey = GlobalKey<FormState>();
 
+  final invitationCodeController = TextEditingController();
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final phoneController = TextEditingController();
@@ -37,6 +38,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     try {
       await context.read<AuthRepository>().register(
+        invitationCode: invitationCodeController.text.trim(),
         displayName: nameController.text.trim(),
         email: emailController.text.trim(),
         password: passwordController.text,
@@ -100,6 +102,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   void dispose() {
+    invitationCodeController.dispose();
     nameController.dispose();
     emailController.dispose();
     phoneController.dispose();
@@ -159,11 +162,41 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Após o cadastro, aguarde a aprovação da academia.',
+                      'Use o convite da academia. Após o cadastro, '
+                      'aguarde a aprovação.',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: AppColors.grey),
                     ),
                     const SizedBox(height: 26),
+                    TextFormField(
+                      controller: invitationCodeController,
+                      textCapitalization: TextCapitalization.characters,
+                      textInputAction: TextInputAction.next,
+                      autocorrect: false,
+                      enableSuggestions: false,
+                      maxLength: 40,
+                      decoration: const InputDecoration(
+                        labelText: 'Código do convite',
+                        helperText:
+                            'Solicite o código ao administrador da academia.',
+                        prefixIcon: Icon(Icons.key_outlined),
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        final normalizedCode = (value ?? '')
+                            .replaceAll(RegExp(r'[\s-]'), '')
+                            .toUpperCase();
+
+                        if (!RegExp(
+                          r'^[A-F0-9]{24}$',
+                        ).hasMatch(normalizedCode)) {
+                          return 'Informe um código de convite válido.';
+                        }
+
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
                     TextFormField(
                       controller: nameController,
                       textCapitalization: TextCapitalization.words,

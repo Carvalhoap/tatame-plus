@@ -9,6 +9,7 @@ abstract class AuthRepository {
 
   /// Solicita o cadastro de um novo usuário
   Future<void> register({
+    required String invitationCode,
     required String displayName,
     required String email,
     required String password,

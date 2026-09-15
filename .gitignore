@@ -51,3 +51,21 @@ skills-lock.json
 /release/
 
 .firebase/
+
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+.secret.local
+**/key.properties
+**/*.jks
+**/*.keystore
+**/*service-account*.json
+**/*serviceAccount*.json
+**/serviceAccountKey.json
+**/*.pem
+**/*.p12
+**/*.pfx
+
+# Local security audit reports
+/auditoria_*.txt
