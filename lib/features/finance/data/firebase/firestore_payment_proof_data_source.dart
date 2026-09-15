@@ -44,17 +44,23 @@ class FirestorePaymentProofDataSource {
     required DateTime referenceDate,
     String? billingCycleId,
     String? attendanceId,
+    String? checkInProviderId,
     String? previousStoragePath,
   }) async {
+    final resolvedCheckInProviderId = type == PaymentProofType.gympassCheckIn
+        ? _normalizeCheckInProviderId(checkInProviderId)
+        : null;
+
     _validateSubmission(
       type: type,
       paymentMethod: paymentMethod,
       billingCycleId: billingCycleId,
       attendanceId: attendanceId,
+      checkInProviderId: resolvedCheckInProviderId,
     );
 
     final proofId = type == PaymentProofType.gympassCheckIn
-        ? 'gympass_$attendanceId'
+        ? '${resolvedCheckInProviderId!}_$attendanceId'
         : 'monthly_$billingCycleId';
 
     final reference = _proofs(academyId).doc(proofId);
@@ -77,6 +83,7 @@ class FirestorePaymentProofDataSource {
         'status': PaymentProofStatus.pending.name,
         'billingCycleId': billingCycleId,
         'attendanceId': attendanceId,
+        'checkInProviderId': resolvedCheckInProviderId,
         'storagePath': storagePath,
         'fileName': fileName,
         'contentType': contentType,
@@ -308,6 +315,9 @@ class FirestorePaymentProofDataSource {
         data['billingCycleId'],
       ),
       attendanceId: FinanceFirestoreParser.optionalString(data['attendanceId']),
+      checkInProviderId: FinanceFirestoreParser.optionalString(
+        data['checkInProviderId'],
+      ),
       storagePath: FinanceFirestoreParser.string(data['storagePath']),
       fileName: FinanceFirestoreParser.string(data['fileName']),
       contentType: FinanceFirestoreParser.string(data['contentType']),
@@ -326,22 +336,39 @@ class FirestorePaymentProofDataSource {
     );
   }
 
+  String _normalizeCheckInProviderId(String? providerId) {
+    final normalizedId = (providerId ?? 'gympass').trim();
+
+    if (!RegExp(r'^[A-Za-z0-9_-]{1,100}$').hasMatch(normalizedId)) {
+      throw ArgumentError('O convênio de check-in é inválido.');
+    }
+
+    return normalizedId;
+  }
+
   void _validateSubmission({
     required PaymentProofType type,
     required PaymentMethod paymentMethod,
     required String? billingCycleId,
     required String? attendanceId,
+    required String? checkInProviderId,
   }) {
     if (type == PaymentProofType.gympassCheckIn) {
+      if (checkInProviderId == null || checkInProviderId.isEmpty) {
+        throw ArgumentError(
+          'O comprovante de check-in precisa de um convênio válido.',
+        );
+      }
+
       if (attendanceId == null || attendanceId.trim().isEmpty) {
         throw ArgumentError(
-          'O comprovante Gympass precisa de uma presença vinculada.',
+          'O comprovante de check-in precisa de uma presença vinculada.',
         );
       }
 
       if (paymentMethod != PaymentMethod.gympass) {
         throw ArgumentError(
-          'O comprovante de check-in deve usar a modalidade Gympass.',
+          'O comprovante deve usar a modalidade de convênio.',
         );
       }
 

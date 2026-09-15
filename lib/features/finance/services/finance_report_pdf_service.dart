@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
+import '../models/check_in_provider.dart';
 import '../models/finance_settings.dart';
 import '../models/financial_entry.dart';
 import '../models/financial_summary.dart';
@@ -14,6 +15,7 @@ class FinanceReportPdfService {
   static Future<Uint8List> build({
     required FinancialSummary summary,
     required FinanceSettings settings,
+    required List<CheckInProvider> checkInProviders,
     required List<RecurringExpense> recurringExpenses,
     required List<FinancialEntry> entries,
     required Map<String, String> studentNames,
@@ -126,9 +128,19 @@ class FinanceReportPdfService {
                 label: 'Mensalidades recebidas diretamente pela equipe',
                 amountCents: summary.directMonthlyFeeRevenueCents,
               ),
+              ...checkInProviders.map(
+                (provider) => _MoneyRow(
+                  label:
+                      '${provider.name} - '
+                      '${provider.sharesWithMoving ? 'compartilhado com a Moving' : 'integral da equipe'}',
+                  amountCents:
+                      summary.checkInRevenueByProviderId[provider.id] ?? 0,
+                ),
+              ),
               _MoneyRow(
-                label: 'Gympass compartilhado com a Moving',
-                amountCents: summary.gympassRevenueCents,
+                label: 'Total dos convênios de check-in',
+                amountCents: summary.checkInRevenueCents,
+                isStrong: true,
               ),
               _MoneyRow(
                 label: 'Outras receitas integrais da equipe',

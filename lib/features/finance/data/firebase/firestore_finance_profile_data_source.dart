@@ -132,6 +132,7 @@ class FirestoreFinanceProfileDataSource {
     return _profiles(profile.academyId).doc(profile.studentId).set({
       'studentId': profile.studentId,
       'billingMode': profile.billingMode.name,
+      'checkInProviderId': profile.effectiveCheckInProviderId,
       'monthlyFeeCents': profile.monthlyFeeCents,
       'dueDay': profile.dueDay,
       'isActive': profile.isActive,
@@ -153,6 +154,9 @@ class FirestoreFinanceProfileDataSource {
         BillingMode.values,
         data['billingMode'],
         BillingMode.monthlyFee,
+      ),
+      checkInProviderId: FinanceFirestoreParser.optionalString(
+        data['checkInProviderId'],
       ),
       monthlyFeeCents: FinanceFirestoreParser.integer(data['monthlyFeeCents']),
       dueDay: FinanceFirestoreParser.integer(data['dueDay'], fallback: 1),

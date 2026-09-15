@@ -6,6 +6,8 @@ class FinancialSummary {
   final int sharedMonthlyFeeRevenueCents;
   final int directMonthlyFeeRevenueCents;
   final int gympassRevenueCents;
+  final int checkInRevenueCents;
+  final Map<String, int> checkInRevenueByProviderId;
   final int otherIncomeCents;
   final int movingSharedRevenueBaseCents;
   final int grossRevenueCents;
@@ -26,6 +28,8 @@ class FinancialSummary {
     required this.sharedMonthlyFeeRevenueCents,
     required this.directMonthlyFeeRevenueCents,
     required this.gympassRevenueCents,
+    required this.checkInRevenueCents,
+    required this.checkInRevenueByProviderId,
     required this.otherIncomeCents,
     required this.movingSharedRevenueBaseCents,
     required this.grossRevenueCents,

@@ -198,24 +198,6 @@ class _FinanceSettingsScreenState extends State<FinanceSettingsScreen> {
     return null;
   }
 
-  String? _money(String? value) {
-    final requiredError = _requiredText(value);
-
-    if (requiredError != null) {
-      return requiredError;
-    }
-
-    try {
-      if (_currencyToCents(value!) < 0) {
-        return 'O valor não pode ser negativo.';
-      }
-    } catch (_) {
-      return 'Informe um valor válido.';
-    }
-
-    return null;
-  }
-
   int _currencyToCents(String value) {
     var normalized = value.trim().replaceAll('R\$', '').replaceAll(' ', '');
 
@@ -322,40 +304,7 @@ class _FinanceSettingsScreenState extends State<FinanceSettingsScreen> {
                     trailing: const Icon(Icons.chevron_right),
                   ),
                 ),
-                const SizedBox(height: 16),
-                _SettingsCard(
-                  title: 'Gympass',
-                  icon: Icons.qr_code_scanner_outlined,
-                  children: [
-                    TextFormField(
-                      controller: gympassValueController,
-                      decoration: const InputDecoration(
-                        labelText: 'Valor por check-in',
-                        prefixText: 'R\$ ',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
-                      ],
-                      validator: _money,
-                    ),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      controller: gympassLimitController,
-                      decoration: const InputDecoration(
-                        labelText: 'Limite de check-ins por aluno',
-                        helperText: 'Limite considerado em cada período.',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      validator: _positiveInteger,
-                    ),
-                  ],
-                ),
+
                 const SizedBox(height: 16),
                 _SettingsCard(
                   title: 'Divisão com a Moving',
@@ -367,8 +316,8 @@ class _FinanceSettingsScreenState extends State<FinanceSettingsScreen> {
                         labelText: 'Percentual da Moving',
                         suffixText: '%',
                         helperText:
-                            'Aplicado somente às mensalidades '
-                            'compartilhadas e ao Gympass.',
+                            'Aplicado às mensalidades e aos convênios '
+                            'configurados como compartilhados.',
                         border: OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.number,
@@ -377,39 +326,7 @@ class _FinanceSettingsScreenState extends State<FinanceSettingsScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                _SettingsCard(
-                  title: 'Professor',
-                  icon: Icons.school_outlined,
-                  children: [
-                    TextFormField(
-                      controller: instructorNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Nome do professor',
-                        border: OutlineInputBorder(),
-                      ),
-                      textCapitalization: TextCapitalization.words,
-                      maxLength: 100,
-                      validator: _requiredText,
-                    ),
-                    const SizedBox(height: 10),
-                    TextFormField(
-                      controller: instructorAmountController,
-                      decoration: const InputDecoration(
-                        labelText: 'Valor fixo do professor',
-                        prefixText: 'R\$ ',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
-                      ],
-                      validator: _money,
-                    ),
-                  ],
-                ),
+
                 const SizedBox(height: 16),
                 _SettingsCard(
                   title: 'Reserva e sócios',

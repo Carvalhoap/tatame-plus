@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../auth/services/session_service.dart';
 import '../../student/models/student.dart';
 import '../../student/repository/student_repository.dart';
+import '../models/check_in_provider.dart';
 import '../models/finance_enums.dart';
 import '../models/financial_profile.dart';
 import '../repository/finance_repository.dart';
@@ -50,10 +51,14 @@ class _FinancialProfilesScreenState extends State<FinancialProfilesScreen> {
       context.read<FinanceRepository>().getFinancialProfiles(
         academyId: currentUser.academyId,
       ),
+      context.read<FinanceRepository>().getCheckInProviders(
+        academyId: currentUser.academyId,
+      ),
     ]);
 
     final students = results[0] as List<Student>;
     final profiles = results[1] as List<FinancialProfile>;
+    final providers = results[2] as List<CheckInProvider>;
 
     students.sort((first, second) {
       if (first.isActive != second.isActive) {
@@ -69,6 +74,9 @@ class _FinancialProfilesScreenState extends State<FinancialProfilesScreen> {
       students: students,
       profilesByStudentId: {
         for (final profile in profiles) profile.studentId: profile,
+      },
+      providerNamesById: {
+        for (final provider in providers) provider.id: provider.name,
       },
     );
   }
@@ -220,6 +228,9 @@ class _FinancialProfilesScreenState extends State<FinancialProfilesScreen> {
                         return _FinancialProfileCard(
                           student: student,
                           profile: profile,
+                          checkInProviderName: data.checkInProviderNameFor(
+                            profile,
+                          ),
                           onTap: () =>
                               openProfile(student: student, profile: profile),
                         );
@@ -239,21 +250,40 @@ class _FinancialProfilesScreenState extends State<FinancialProfilesScreen> {
 class _FinancialProfilesData {
   final List<Student> students;
   final Map<String, FinancialProfile> profilesByStudentId;
+  final Map<String, String> providerNamesById;
 
   const _FinancialProfilesData({
     required this.students,
     required this.profilesByStudentId,
+    required this.providerNamesById,
   });
+
+  String? checkInProviderNameFor(FinancialProfile? profile) {
+    if (profile == null) {
+      return null;
+    }
+
+    final providerId = profile.effectiveCheckInProviderId;
+
+    if (providerId == null) {
+      return null;
+    }
+
+    return providerNamesById[providerId] ??
+        (providerId == 'gympass' ? 'Gympass' : 'Convênio de check-in');
+  }
 }
 
 class _FinancialProfileCard extends StatelessWidget {
   final Student student;
   final FinancialProfile? profile;
+  final String? checkInProviderName;
   final VoidCallback onTap;
 
   const _FinancialProfileCard({
     required this.student,
     required this.profile,
+    required this.checkInProviderName,
     required this.onTap,
   });
 
@@ -296,7 +326,7 @@ class _FinancialProfileCard extends StatelessWidget {
                     const SizedBox(height: 5),
                     Text(
                       configured
-                          ? _profileDescription(profile!)
+                          ? _profileDescription(profile!, checkInProviderName)
                           : 'Configuração financeira pendente',
                       style: TextStyle(
                         color: configured
@@ -450,13 +480,16 @@ class _ErrorState extends StatelessWidget {
   }
 }
 
-String _profileDescription(FinancialProfile profile) {
+String _profileDescription(
+  FinancialProfile profile,
+  String? checkInProviderName,
+) {
   switch (profile.billingMode) {
     case BillingMode.monthlyFee:
       return '${_currency(profile.monthlyFeeCents)} '
           '• vence dia ${profile.dueDay}';
     case BillingMode.gympass:
-      return 'Gympass • fechamento de 15 a 14';
+      return '${checkInProviderName ?? 'Convênio de check-in'} • fechamento de 15 a 14';
     case BillingMode.exempt:
       return 'Isento • sem cobrança mensal';
   }

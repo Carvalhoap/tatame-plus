@@ -43,58 +43,80 @@ class FinanceCalculator {
     final monthlyFeeRevenueCents =
         sharedMonthlyFeeRevenueCents + directMonthlyFeeRevenueCents;
 
-    final providers = checkInProviders.toList(growable: false);
+    final providersById = <String, CheckInProvider>{};
 
-    CheckInProvider? gympassProvider;
+    for (final provider in checkInProviders) {
+      final providerId = provider.id.trim();
 
-    for (final provider in providers) {
-      final normalizedId = provider.id.trim().toLowerCase();
-      final normalizedName = provider.name.trim().toLowerCase();
-
-      if (normalizedId == 'gympass' || normalizedName == 'gympass') {
-        gympassProvider = provider;
-        break;
+      if (providerId.isNotEmpty) {
+        providersById[providerId] = provider;
       }
     }
 
-    final gympassIsActive = gympassProvider?.isActive ?? true;
-
-    final gympassMonthlyLimit =
-        gympassProvider?.monthlyLimit ?? settings.gympassMonthlyLimit;
-
-    final gympassCheckInValueCents =
-        gympassProvider?.checkInValueCents ?? settings.gympassCheckInValueCents;
-
-    final gympassSharesWithMoving = gympassProvider?.sharesWithMoving ?? true;
-
-    final gympassAttendancesByStudent = <String, Set<String>>{};
-
-    if (gympassIsActive) {
-      for (final proof in paymentProofs) {
-        final attendanceId = proof.attendanceId;
-
-        if (!proof.isApproved ||
-            !proof.isGympassCheckIn ||
-            !period.contains(proof.referenceDate) ||
-            attendanceId == null ||
-            attendanceId.isEmpty) {
-          continue;
-        }
-
-        gympassAttendancesByStudent
-            .putIfAbsent(proof.studentId, () => <String>{})
-            .add(attendanceId);
-      }
-    }
-
-    final payableGympassCheckIns = gympassAttendancesByStudent.values.fold<int>(
-      0,
-      (total, attendanceIds) =>
-          total + math.min(attendanceIds.length, gympassMonthlyLimit),
+    providersById.putIfAbsent(
+      'gympass',
+      () => CheckInProvider(
+        id: 'gympass',
+        academyId: settings.academyId,
+        name: 'Gympass',
+        checkInValueCents: settings.gympassCheckInValueCents,
+        monthlyLimit: settings.gympassMonthlyLimit,
+        sharesWithMoving: true,
+        isActive: true,
+        updatedAt: settings.updatedAt,
+        updatedBy: settings.updatedBy,
+      ),
     );
 
-    final gympassRevenueCents =
-        payableGympassCheckIns * gympassCheckInValueCents;
+    final checkInAttendancesByProviderAndStudent =
+        <String, Map<String, Set<String>>>{};
+
+    for (final proof in paymentProofs) {
+      final attendanceId = proof.attendanceId;
+      final providerId = proof.effectiveCheckInProviderId;
+      final provider = providerId == null ? null : providersById[providerId];
+
+      if (!proof.isApproved ||
+          !proof.isCheckInProof ||
+          !period.contains(proof.referenceDate) ||
+          attendanceId == null ||
+          attendanceId.isEmpty ||
+          providerId == null ||
+          provider == null) {
+        continue;
+      }
+
+      checkInAttendancesByProviderAndStudent
+          .putIfAbsent(providerId, () => <String, Set<String>>{})
+          .putIfAbsent(proof.studentId, () => <String>{})
+          .add(attendanceId);
+    }
+
+    final checkInRevenueByProviderId = <String, int>{};
+    var checkInRevenueCents = 0;
+    var sharedCheckInRevenueCents = 0;
+
+    for (final providerEntry
+        in checkInAttendancesByProviderAndStudent.entries) {
+      final provider = providersById[providerEntry.key]!;
+
+      final payableCheckIns = providerEntry.value.values.fold<int>(
+        0,
+        (total, attendanceIds) =>
+            total + math.min(attendanceIds.length, provider.monthlyLimit),
+      );
+
+      final providerRevenueCents = payableCheckIns * provider.checkInValueCents;
+
+      checkInRevenueByProviderId[provider.id] = providerRevenueCents;
+      checkInRevenueCents += providerRevenueCents;
+
+      if (provider.sharesWithMoving) {
+        sharedCheckInRevenueCents += providerRevenueCents;
+      }
+    }
+
+    final gympassRevenueCents = checkInRevenueByProviderId['gympass'] ?? 0;
 
     final periodEntries = entries.where(
       (entry) => entry.isActive && period.contains(entry.occurredAt),
@@ -119,11 +141,10 @@ class FinanceCalculator {
               .fold<int>(0, (total, expense) => total + expense.amountCents);
 
     final movingSharedRevenueBaseCents =
-        sharedMonthlyFeeRevenueCents +
-        (gympassSharesWithMoving ? gympassRevenueCents : 0);
+        sharedMonthlyFeeRevenueCents + sharedCheckInRevenueCents;
 
     final grossRevenueCents =
-        monthlyFeeRevenueCents + gympassRevenueCents + otherIncomeCents;
+        monthlyFeeRevenueCents + checkInRevenueCents + otherIncomeCents;
 
     final movingFitnessShareCents = _percentage(
       movingSharedRevenueBaseCents,
@@ -161,6 +182,8 @@ class FinanceCalculator {
       sharedMonthlyFeeRevenueCents: sharedMonthlyFeeRevenueCents,
       directMonthlyFeeRevenueCents: directMonthlyFeeRevenueCents,
       gympassRevenueCents: gympassRevenueCents,
+      checkInRevenueCents: checkInRevenueCents,
+      checkInRevenueByProviderId: Map.unmodifiable(checkInRevenueByProviderId),
       otherIncomeCents: otherIncomeCents,
       movingSharedRevenueBaseCents: movingSharedRevenueBaseCents,
       grossRevenueCents: grossRevenueCents,

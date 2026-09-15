@@ -426,8 +426,7 @@ service cloud.firestore {
 
       match /checkInProviders/{providerId} {
         allow get, list:
-          if isAdmin(academyId)
-            || isPartner(academyId);
+          if isAcademyMember(academyId);
 
         allow create, update:
           if (
@@ -523,6 +522,7 @@ service cloud.firestore {
           && request.resource.data.keys().hasOnly([
             'studentId',
             'billingMode',
+            'checkInProviderId',
             'monthlyFeeCents',
             'dueDay',
             'isActive',
@@ -536,6 +536,40 @@ service cloud.firestore {
             'gympass',
             'exempt'
           ]
+          && (
+            (
+              request.resource.data.billingMode == 'gympass'
+              && (
+                request.resource.data.get(
+                  'checkInProviderId',
+                  null
+                ) == null
+                ||
+                (
+                  request.resource.data.get(
+                    'checkInProviderId',
+                    null
+                  ) is string
+                  && request.resource.data.get(
+                    'checkInProviderId',
+                    ''
+                  ).size() > 0
+                  && request.resource.data.get(
+                    'checkInProviderId',
+                    ''
+                  ).size() <= 100
+                )
+              )
+            )
+            ||
+            (
+              request.resource.data.billingMode != 'gympass'
+              && request.resource.data.get(
+                'checkInProviderId',
+                null
+              ) == null
+            )
+          )
           && request.resource.data.monthlyFeeCents is int
           && request.resource.data.monthlyFeeCents >= 0
           && request.resource.data.dueDay is int
@@ -719,6 +753,7 @@ service cloud.firestore {
             && data.billingCycleId is string
             && data.billingCycleId.size() > 0
             && data.attendanceId == null
+            && data.get('checkInProviderId', null) == null
             && proofId == 'monthly_' + data.billingCycleId
             && data.paymentMethod in [
               'pix',
@@ -754,8 +789,57 @@ service cloud.firestore {
             && data.billingCycleId == null
             && data.attendanceId is string
             && data.attendanceId.size() > 0
-            && proofId == 'gympass_' + data.attendanceId
+            && (
+              data.get('checkInProviderId', null) == null
+              ||
+              (
+                data.get('checkInProviderId', null) is string
+                && data.get('checkInProviderId', '').matches(
+                  '^[A-Za-z0-9_-]{1,100}$'
+                )
+              )
+            )
+            && proofId
+              == data.get(
+                'checkInProviderId',
+                'gympass'
+              ) + '_' + data.attendanceId
             && data.paymentMethod == 'gympass'
+            && (
+              (
+                data.get(
+                  'checkInProviderId',
+                  'gympass'
+                ) == 'gympass'
+                && !exists(
+                  /databases/$(database)/documents/academies/$(academyId)/checkInProviders/gympass
+                )
+              )
+              ||
+              (
+                exists(
+                  /databases/$(database)/documents/academies/$(academyId)/checkInProviders/$(data.get('checkInProviderId', 'gympass'))
+                )
+                && get(
+                  /databases/$(database)/documents/academies/$(academyId)/checkInProviders/$(data.get('checkInProviderId', 'gympass'))
+                ).data.isActive == true
+              )
+            )
+            && exists(
+              /databases/$(database)/documents/academies/$(academyId)/financialProfiles/$(data.studentId)
+            )
+            && get(
+              /databases/$(database)/documents/academies/$(academyId)/financialProfiles/$(data.studentId)
+            ).data.billingMode == 'gympass'
+            && get(
+              /databases/$(database)/documents/academies/$(academyId)/financialProfiles/$(data.studentId)
+            ).data.get(
+              'checkInProviderId',
+              'gympass'
+            ) == data.get(
+              'checkInProviderId',
+              'gympass'
+            )
             && exists(
               /databases/$(database)/documents/academies/$(academyId)/attendances/$(data.attendanceId)
             )
@@ -779,6 +863,7 @@ service cloud.firestore {
             'status',
             'billingCycleId',
             'attendanceId',
+            'checkInProviderId',
             'storagePath',
             'fileName',
             'contentType',

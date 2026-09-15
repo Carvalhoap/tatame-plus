@@ -90,6 +90,13 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
     return _FinanceDashboardData(
       settings: settings,
       summary: summary,
+      checkInProviders: checkInProviders
+          .where(
+            (provider) =>
+                provider.isActive ||
+                summary.checkInRevenueByProviderId.containsKey(provider.id),
+          )
+          .toList(growable: false),
       recurringExpenses: recurringExpenses
           .where((expense) => expense.isActive)
           .toList(growable: false),
@@ -266,7 +273,7 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     subtitle: const Text(
-                      'Ajuste Gympass, percentuais, professor e sócios.',
+                      'Ajuste convênios, despesas, percentuais e sócios.',
                     ),
                     trailing: const Icon(Icons.chevron_right),
                   ),
@@ -323,7 +330,7 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     subtitle: const Text(
-                      'Analise mensalidades e check-ins Gympass.',
+                      'Analise mensalidades e comprovantes de check-in.',
                     ),
                     trailing: const Icon(Icons.chevron_right),
                   ),
@@ -385,9 +392,17 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
                       'Mensalidades recebidas pela equipe',
                       summary.directMonthlyFeeRevenueCents,
                     ),
+                    ...data.checkInProviders.map(
+                      (provider) => _AmountData(
+                        '${provider.name} - '
+                        '${provider.sharesWithMoving ? 'compartilhado com a Moving' : 'integral da equipe'}',
+                        summary.checkInRevenueByProviderId[provider.id] ?? 0,
+                      ),
+                    ),
                     _AmountData(
-                      'Gympass compartilhado',
-                      summary.gympassRevenueCents,
+                      'Total dos convênios de check-in',
+                      summary.checkInRevenueCents,
+                      emphasized: true,
                     ),
                     _AmountData(
                       'Outras receitas integrais',
@@ -464,11 +479,13 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
 class _FinanceDashboardData {
   final FinanceSettings settings;
   final FinancialSummary summary;
+  final List<CheckInProvider> checkInProviders;
   final List<RecurringExpense> recurringExpenses;
 
   const _FinanceDashboardData({
     required this.settings,
     required this.summary,
+    required this.checkInProviders,
     required this.recurringExpenses,
   });
 }

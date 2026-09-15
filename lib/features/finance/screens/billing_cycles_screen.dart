@@ -810,7 +810,7 @@ String _billingModeLabel(BillingMode mode) {
     case BillingMode.monthlyFee:
       return 'Mensalidade';
     case BillingMode.gympass:
-      return 'Gympass';
+      return 'Convênio de check-in';
     case BillingMode.exempt:
       return 'Isento';
   }

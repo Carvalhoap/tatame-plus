@@ -93,6 +93,13 @@ class _FinanceReportScreenState extends State<FinanceReportScreen> {
     return _FinanceReportData(
       settings: settings,
       summary: summary,
+      checkInProviders: checkInProviders
+          .where(
+            (provider) =>
+                provider.isActive ||
+                summary.checkInRevenueByProviderId.containsKey(provider.id),
+          )
+          .toList(growable: false),
       recurringExpenses: recurringExpenses
           .where((expense) => expense.isActive)
           .toList(growable: false),
@@ -144,6 +151,7 @@ class _FinanceReportScreenState extends State<FinanceReportScreen> {
       final bytes = await FinanceReportPdfService.build(
         summary: data.summary,
         settings: data.settings,
+        checkInProviders: data.checkInProviders,
         recurringExpenses: data.recurringExpenses,
         entries: data.entries,
         studentNames: data.studentNames,
@@ -285,9 +293,22 @@ class _FinanceReportScreenState extends State<FinanceReportScreen> {
                               summary.directMonthlyFeeRevenueCents,
                             ),
                           ),
+                          ...data.checkInProviders.map(
+                            (provider) => _ReportRow(
+                              label:
+                                  '${provider.name} - '
+                                  '${provider.sharesWithMoving ? 'compartilhado com a Moving' : 'integral da equipe'}',
+                              value: formatCurrency(
+                                summary.checkInRevenueByProviderId[provider
+                                        .id] ??
+                                    0,
+                              ),
+                            ),
+                          ),
                           _ReportRow(
-                            label: 'Gympass compartilhado',
-                            value: formatCurrency(summary.gympassRevenueCents),
+                            label: 'Total dos convênios de check-in',
+                            value: formatCurrency(summary.checkInRevenueCents),
+                            isStrong: true,
                           ),
                           _ReportRow(
                             label: 'Outras receitas integrais da equipe',
@@ -436,6 +457,7 @@ class _FinanceReportScreenState extends State<FinanceReportScreen> {
 class _FinanceReportData {
   final FinanceSettings settings;
   final FinancialSummary summary;
+  final List<CheckInProvider> checkInProviders;
   final List<RecurringExpense> recurringExpenses;
   final List<FinancialEntry> entries;
   final Map<String, String> studentNames;
@@ -443,6 +465,7 @@ class _FinanceReportData {
   const _FinanceReportData({
     required this.settings,
     required this.summary,
+    required this.checkInProviders,
     required this.recurringExpenses,
     required this.entries,
     required this.studentNames,

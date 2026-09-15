@@ -8,6 +8,7 @@ import '../../attendance/repository/attendance_repository.dart';
 import '../../auth/services/session_service.dart';
 import '../../student/models/student.dart';
 import '../models/billing_cycle.dart';
+import '../models/check_in_provider.dart';
 import '../models/finance_enums.dart';
 import '../models/finance_period.dart';
 import '../models/financial_profile.dart';
@@ -29,6 +30,7 @@ class _StudentFinanceScreenState extends State<StudentFinanceScreen> {
   late final FinancePeriod period;
 
   FinancialProfile? profile;
+  CheckInProvider? checkInProvider;
   BillingCycle? billingCycle;
   List<Attendance> attendances = const [];
   List<PaymentProof> proofs = const [];
@@ -86,16 +88,30 @@ class _StudentFinanceScreenState extends State<StudentFinanceScreen> {
           start: period.start,
           end: period.endExclusive,
         ),
+        financeRepository.getCheckInProviders(academyId: currentUser.academyId),
       ]);
 
       if (!mounted) {
         return;
       }
 
+      final loadedProfile = results[0] as FinancialProfile?;
       final loadedCycles = results[1] as List<BillingCycle>;
+      final loadedProviders = results[4] as List<CheckInProvider>;
+      final selectedProviderId = loadedProfile?.effectiveCheckInProviderId;
+
+      CheckInProvider? loadedProvider;
+
+      for (final provider in loadedProviders) {
+        if (provider.id == selectedProviderId) {
+          loadedProvider = provider;
+          break;
+        }
+      }
 
       setState(() {
-        profile = results[0] as FinancialProfile?;
+        profile = loadedProfile;
+        checkInProvider = loadedProvider;
         billingCycle = loadedCycles.isEmpty ? null : loadedCycles.first;
         proofs = results[2] as List<PaymentProof>;
         attendances = results[3] as List<Attendance>;
@@ -114,9 +130,12 @@ class _StudentFinanceScreenState extends State<StudentFinanceScreen> {
   }
 
   PaymentProof? _proofForAttendance(String attendanceId) {
+    final providerId = profile?.effectiveCheckInProviderId;
+
     for (final proof in proofs) {
-      if (proof.type == PaymentProofType.gympassCheckIn &&
-          proof.attendanceId == attendanceId) {
+      if (proof.isCheckInProof &&
+          proof.attendanceId == attendanceId &&
+          proof.effectiveCheckInProviderId == providerId) {
         return proof;
       }
     }
@@ -208,7 +227,8 @@ class _StudentFinanceScreenState extends State<StudentFinanceScreen> {
     final currentUser = context.read<SessionService>().currentUser;
     final financeRepository = context.read<FinanceRepository>();
     final cycle = billingCycle;
-    final isGympass = attendance != null;
+    final isCheckIn = attendance != null;
+    final providerId = profile?.effectiveCheckInProviderId;
     final existingProof = attendance == null
         ? _monthlyProof
         : _proofForAttendance(attendance.id);
@@ -217,12 +237,22 @@ class _StudentFinanceScreenState extends State<StudentFinanceScreen> {
       return;
     }
 
-    if (!isGympass && cycle == null) {
+    if (isCheckIn && (providerId == null || checkInProvider == null)) {
+      _showMessage('O convênio deste aluno não está disponível.');
+      return;
+    }
+
+    if (isCheckIn && !checkInProvider!.isActive) {
+      _showMessage('Este convênio está inativo.');
+      return;
+    }
+
+    if (!isCheckIn && cycle == null) {
       _showMessage('A cobrança deste período ainda não foi gerada.');
       return;
     }
 
-    final paymentMethod = isGympass
+    final paymentMethod = isCheckIn
         ? PaymentMethod.gympass
         : await _selectPaymentMethod();
 
@@ -265,7 +295,7 @@ class _StudentFinanceScreenState extends State<StudentFinanceScreen> {
         academyId: currentUser.academyId,
         studentId: widget.student.id,
         submittedBy: currentUser.id,
-        type: isGympass
+        type: isCheckIn
             ? PaymentProofType.gympassCheckIn
             : PaymentProofType.monthlyFee,
         bytes: bytes,
@@ -273,8 +303,9 @@ class _StudentFinanceScreenState extends State<StudentFinanceScreen> {
         contentType: contentType,
         paymentMethod: paymentMethod,
         referenceDate: attendance?.dateTime ?? DateTime.now(),
-        billingCycleId: isGympass ? null : cycle!.id,
+        billingCycleId: isCheckIn ? null : cycle!.id,
         attendanceId: attendance?.id,
+        checkInProviderId: isCheckIn ? providerId : null,
         previousStoragePath: existingProof?.storagePath,
       );
 
@@ -431,14 +462,30 @@ class _StudentFinanceScreenState extends State<StudentFinanceScreen> {
     );
   }
 
-  Widget _gympassSection() {
-    if (attendances.isEmpty) {
+  Widget _checkInSection() {
+    final provider = checkInProvider;
+    final providerName = provider?.name ?? 'Convênio de check-in';
+
+    if (provider == null) {
       return const Card(
         child: ListTile(
-          leading: Icon(Icons.qr_code),
-          title: Text('Nenhuma presença no período'),
+          leading: Icon(Icons.warning_amber_outlined),
+          title: Text('Convênio indisponível'),
           subtitle: Text(
-            'Após registrar uma presença, anexe o check-in do Gympass aqui.',
+            'Peça à administração para revisar o perfil financeiro.',
+          ),
+        ),
+      );
+    }
+
+    if (attendances.isEmpty) {
+      return Card(
+        child: ListTile(
+          leading: const Icon(Icons.qr_code),
+          title: const Text('Nenhuma presença no período'),
+          subtitle: Text(
+            'Após registrar uma presença, anexe o check-in do '
+            '$providerName aqui.',
           ),
         ),
       );
@@ -460,7 +507,7 @@ class _StudentFinanceScreenState extends State<StudentFinanceScreen> {
             ),
             title: Text(_date(attendance.dateTime, includeTime: true)),
             subtitle: proof == null
-                ? const Text('Comprovante Gympass não enviado')
+                ? Text('Comprovante $providerName não enviado')
                 : Text(
                     _proofStatus(proof),
                     style: TextStyle(color: _proofColor(proof)),
@@ -491,7 +538,7 @@ class _StudentFinanceScreenState extends State<StudentFinanceScreen> {
       case BillingMode.monthlyFee:
         return _monthlySection();
       case BillingMode.gympass:
-        return _gympassSection();
+        return _checkInSection();
       case BillingMode.exempt:
         return const Card(
           child: ListTile(

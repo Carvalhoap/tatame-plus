@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../auth/services/session_service.dart';
 import '../../student/models/student.dart';
 import '../../student/repository/student_repository.dart';
+import '../models/check_in_provider.dart';
 import '../models/finance_enums.dart';
 import '../models/finance_period.dart';
 import '../models/payment_proof.dart';
@@ -51,14 +52,21 @@ class _PaymentProofsScreenState extends State<PaymentProofsScreen> {
         period: period,
         status: statusFilter,
       ),
+      context.read<FinanceRepository>().getCheckInProviders(
+        academyId: currentUser.academyId,
+      ),
     ]);
 
     final students = results[0] as List<Student>;
     final proofs = results[1] as List<PaymentProof>;
+    final providers = results[2] as List<CheckInProvider>;
 
     return _PaymentProofsData(
       studentsById: {for (final student in students) student.id: student},
       proofs: proofs,
+      providerNamesById: {
+        for (final provider in providers) provider.id: provider.name,
+      },
     );
   }
 
@@ -98,12 +106,16 @@ class _PaymentProofsScreenState extends State<PaymentProofsScreen> {
   Future<void> openProof({
     required PaymentProof proof,
     required String studentName,
+    required String checkInProviderName,
   }) async {
     final reviewed = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
-        builder: (_) =>
-            PaymentProofReviewScreen(proof: proof, studentName: studentName),
+        builder: (_) => PaymentProofReviewScreen(
+          proof: proof,
+          studentName: studentName,
+          checkInProviderName: checkInProviderName,
+        ),
       ),
     );
 
@@ -237,8 +249,14 @@ class _PaymentProofsScreenState extends State<PaymentProofsScreen> {
                       child: _ProofCard(
                         proof: proof,
                         studentName: studentName,
-                        onTap: () =>
-                            openProof(proof: proof, studentName: studentName),
+                        checkInProviderName: data.checkInProviderNameFor(proof),
+                        onTap: () => openProof(
+                          proof: proof,
+                          studentName: studentName,
+                          checkInProviderName: data.checkInProviderNameFor(
+                            proof,
+                          ),
+                        ),
                       ),
                     );
                   }),
@@ -254,8 +272,24 @@ class _PaymentProofsScreenState extends State<PaymentProofsScreen> {
 class _PaymentProofsData {
   final Map<String, Student> studentsById;
   final List<PaymentProof> proofs;
+  final Map<String, String> providerNamesById;
 
-  const _PaymentProofsData({required this.studentsById, required this.proofs});
+  const _PaymentProofsData({
+    required this.studentsById,
+    required this.proofs,
+    required this.providerNamesById,
+  });
+
+  String checkInProviderNameFor(PaymentProof proof) {
+    final providerId = proof.effectiveCheckInProviderId;
+
+    if (providerId == null) {
+      return 'Convênio de check-in';
+    }
+
+    return providerNamesById[providerId] ??
+        (providerId == 'gympass' ? 'Gympass' : 'Convênio de check-in');
+  }
 }
 
 class _PeriodSelector extends StatelessWidget {
@@ -312,11 +346,13 @@ class _PeriodSelector extends StatelessWidget {
 class _ProofCard extends StatelessWidget {
   final PaymentProof proof;
   final String studentName;
+  final String checkInProviderName;
   final VoidCallback onTap;
 
   const _ProofCard({
     required this.proof,
     required this.studentName,
+    required this.checkInProviderName,
     required this.onTap,
   });
 
@@ -338,7 +374,7 @@ class _ProofCard extends StatelessWidget {
                 backgroundColor: statusColor.withValues(alpha: 0.12),
                 foregroundColor: statusColor,
                 child: Icon(
-                  proof.isGympassCheckIn
+                  proof.isCheckInProof
                       ? Icons.qr_code_scanner
                       : Icons.receipt_outlined,
                 ),
@@ -357,8 +393,8 @@ class _ProofCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 5),
                     Text(
-                      proof.isGympassCheckIn
-                          ? 'Check-in Gympass'
+                      proof.isCheckInProof
+                          ? 'Check-in $checkInProviderName'
                           : 'Mensalidade • '
                                 '${_paymentMethodLabel(proof.paymentMethod)}',
                       style: const TextStyle(color: AppColors.grey),

@@ -9,6 +9,7 @@ class PaymentProof {
   final PaymentProofStatus status;
   final String? billingCycleId;
   final String? attendanceId;
+  final String? checkInProviderId;
   final String storagePath;
   final String fileName;
   final String contentType;
@@ -29,6 +30,7 @@ class PaymentProof {
     required this.status,
     required this.billingCycleId,
     required this.attendanceId,
+    this.checkInProviderId,
     required this.storagePath,
     required this.fileName,
     required this.contentType,
@@ -48,4 +50,16 @@ class PaymentProof {
   bool get isRejected => status == PaymentProofStatus.rejected;
 
   bool get isGympassCheckIn => type == PaymentProofType.gympassCheckIn;
+
+  bool get isCheckInProof => isGympassCheckIn;
+
+  String? get effectiveCheckInProviderId {
+    if (!isCheckInProof) {
+      return null;
+    }
+
+    final normalizedId = checkInProviderId?.trim() ?? '';
+
+    return normalizedId.isEmpty ? 'gympass' : normalizedId;
+  }
 }

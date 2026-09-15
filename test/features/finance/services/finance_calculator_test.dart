@@ -231,6 +231,82 @@ void main() {
       expect(summary.amountPerPartnerCents, 300);
       expect(summary.deficitCents, 0);
     });
+
+    test('calcula Gympass e TotalPass separadamente', () {
+      final gympassProvider = CheckInProvider(
+        id: 'gympass',
+        academyId: 'academy',
+        name: 'Gympass',
+        checkInValueCents: 1349,
+        monthlyLimit: 12,
+        sharesWithMoving: true,
+        isActive: true,
+        updatedAt: null,
+        updatedBy: 'admin',
+      );
+
+      final totalPassProvider = CheckInProvider(
+        id: 'totalpass',
+        academyId: 'academy',
+        name: 'TotalPass',
+        checkInValueCents: 1533,
+        monthlyLimit: 12,
+        sharesWithMoving: false,
+        isActive: true,
+        updatedAt: null,
+        updatedBy: 'admin',
+      );
+
+      final proofs = [
+        _gympassProof(
+          id: 'gympass_1',
+          attendanceId: 'gympass_attendance_1',
+          status: PaymentProofStatus.approved,
+          checkInProviderId: 'gympass',
+        ),
+        _gympassProof(
+          id: 'gympass_2',
+          attendanceId: 'gympass_attendance_2',
+          status: PaymentProofStatus.approved,
+          checkInProviderId: 'gympass',
+        ),
+        _gympassProof(
+          id: 'totalpass_1',
+          attendanceId: 'totalpass_attendance_1',
+          status: PaymentProofStatus.approved,
+          checkInProviderId: 'totalpass',
+        ),
+        _gympassProof(
+          id: 'totalpass_2',
+          attendanceId: 'totalpass_attendance_2',
+          status: PaymentProofStatus.approved,
+          checkInProviderId: 'totalpass',
+        ),
+        _gympassProof(
+          id: 'totalpass_3',
+          attendanceId: 'totalpass_attendance_3',
+          status: PaymentProofStatus.approved,
+          checkInProviderId: 'totalpass',
+        ),
+      ];
+
+      final summary = FinanceCalculator.calculate(
+        period: period,
+        settings: settings,
+        billingCycles: const [],
+        paymentProofs: proofs,
+        entries: const [],
+        checkInProviders: [gympassProvider, totalPassProvider],
+      );
+
+      expect(summary.gympassRevenueCents, 2 * 1349);
+      expect(summary.checkInRevenueByProviderId['gympass'], 2 * 1349);
+      expect(summary.checkInRevenueByProviderId['totalpass'], 3 * 1533);
+      expect(summary.checkInRevenueCents, (2 * 1349) + (3 * 1533));
+      expect(summary.movingSharedRevenueBaseCents, 2 * 1349);
+      expect(summary.grossRevenueCents, (2 * 1349) + (3 * 1533));
+      expect(summary.movingFitnessShareCents, 1349);
+    });
   });
 }
 
@@ -263,6 +339,7 @@ PaymentProof _gympassProof({
   required String id,
   required String attendanceId,
   required PaymentProofStatus status,
+  String? checkInProviderId,
 }) {
   return PaymentProof(
     id: id,
@@ -273,6 +350,7 @@ PaymentProof _gympassProof({
     status: status,
     billingCycleId: null,
     attendanceId: attendanceId,
+    checkInProviderId: checkInProviderId,
     storagePath: 'proofs/$id.jpg',
     fileName: '$id.jpg',
     contentType: 'image/jpeg',

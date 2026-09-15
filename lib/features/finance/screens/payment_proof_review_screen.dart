@@ -10,11 +10,13 @@ import '../repository/finance_repository.dart';
 class PaymentProofReviewScreen extends StatefulWidget {
   final PaymentProof proof;
   final String studentName;
+  final String checkInProviderName;
 
   const PaymentProofReviewScreen({
     super.key,
     required this.proof,
     required this.studentName,
+    required this.checkInProviderName,
   });
 
   @override
@@ -71,7 +73,7 @@ class _PaymentProofReviewScreenState extends State<PaymentProofReviewScreen> {
   }
 
   Future<void> approve() async {
-    final revenueDestination = widget.proof.isGympassCheckIn
+    final revenueDestination = widget.proof.isCheckInProof
         ? RevenueDestination.movingFitness
         : await _selectRevenueDestination();
 
@@ -85,8 +87,8 @@ class _PaymentProofReviewScreenState extends State<PaymentProofReviewScreen> {
         return AlertDialog(
           title: const Text('Aprovar comprovante?'),
           content: Text(
-            widget.proof.isGympassCheckIn
-                ? 'Este check-in Gympass será incluído na receita.'
+            widget.proof.isCheckInProof
+                ? 'Este check-in ${widget.checkInProviderName} será incluído na receita.'
                 : 'A cobrança vinculada será marcada como paga.',
           ),
           actions: [
@@ -242,8 +244,8 @@ class _PaymentProofReviewScreenState extends State<PaymentProofReviewScreen> {
                   const Divider(height: 22),
                   _InformationRow(
                     label: 'Tipo',
-                    value: proof.isGympassCheckIn
-                        ? 'Check-in Gympass'
+                    value: proof.isCheckInProof
+                        ? 'Check-in ${widget.checkInProviderName}'
                         : 'Mensalidade',
                   ),
                   const Divider(height: 22),
@@ -254,7 +256,9 @@ class _PaymentProofReviewScreenState extends State<PaymentProofReviewScreen> {
                   const Divider(height: 22),
                   _InformationRow(
                     label: 'Forma de pagamento',
-                    value: _paymentMethodLabel(proof.paymentMethod),
+                    value: proof.isCheckInProof
+                        ? widget.checkInProviderName
+                        : _paymentMethodLabel(proof.paymentMethod),
                   ),
                   const Divider(height: 22),
                   _InformationRow(

@@ -80,6 +80,7 @@ abstract class FinanceRepository {
     required DateTime referenceDate,
     String? billingCycleId,
     String? attendanceId,
+    String? checkInProviderId,
     String? previousStoragePath,
   });
 
