@@ -38,13 +38,14 @@ dependencies:
   qr_flutter: ^4.1.0
   mobile_scanner: 7.2.0
   firebase_core: ^4.12.1
-  firebase_auth: ^6.5.6
+  firebase_auth: 6.7.0
   cloud_firestore: ^6.7.1
   cloud_functions: ^6.3.6
   firebase_storage: ^13.5.0
   image_picker: ^1.2.3
   pdf: ^3.13.0
   printing: ^5.15.0
+  firebase_app_check: ^0.4.8
 
 dev_dependencies:
   flutter_test:
