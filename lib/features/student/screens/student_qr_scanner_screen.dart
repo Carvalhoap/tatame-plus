@@ -84,23 +84,14 @@ class _StudentQrScannerScreenState extends State<StudentQrScannerScreen> {
     isProcessing = true;
 
     final currentUser = context.read<SessionService>().currentUser;
-
     final studentRepository = context.read<StudentRepository>();
-
     final checkInRepository = context.read<CheckInSessionRepository>();
 
     await scannerController.stop();
 
     try {
-      final sessionId = rawValue.trim();
-
-      if (sessionId.isEmpty) {
-        throw const FormatException('Sess\u00E3o inv\u00E1lida.');
-      }
       if (currentUser == null) {
-        throw StateError(
-          'Sua sess\u00E3o no Tatame+ n\u00E3o est\u00E1 dispon\u00EDvel.',
-        );
+        throw StateError('Sua sessão no Tatame+ não está disponível.');
       }
 
       final student =
@@ -121,35 +112,8 @@ class _StudentQrScannerScreenState extends State<StudentQrScannerScreen> {
         );
       }
 
-      final session = await checkInRepository.findSessionById(
-        academyId: currentUser.academyId,
-        sessionId: sessionId,
-      );
-
-      if (session == null) {
-        throw const FormatException('Sess\u00E3o n\u00E3o encontrada.');
-      }
-
-      if (session.academyId != currentUser.academyId) {
-        throw const FormatException(
-          'Esta sess\u00E3o pertence a outra academia.',
-        );
-      }
-
-      if (!session.isActive) {
-        throw StateError(
-          'Esta sess\u00E3o de check-in n\u00E3o est\u00E1 mais ativa.',
-        );
-      }
-
       if (!student.isActive) {
         throw StateError('Este aluno não está ativo na academia.');
-      }
-
-      if (!student.classroomIds.contains(session.classroomId)) {
-        throw StateError(
-          'Este aluno não pertence à turma desta chamada. Volte e selecione o aluno correto.',
-        );
       }
 
       if (widget.student != null) {
@@ -166,26 +130,14 @@ class _StudentQrScannerScreenState extends State<StudentQrScannerScreen> {
         }
       }
 
-      final alreadyCheckedIn = await checkInRepository.isStudentCheckedIn(
+      final attendance = await checkInRepository.registerQrAttendance(
         academyId: currentUser.academyId,
-        sessionId: sessionId,
-        studentId: student.id,
-      );
-
-      if (alreadyCheckedIn) {
-        throw StateError('Sua presença já foi registrada nesta aula.');
-      }
-
-      final attendance = await checkInRepository.registerAttendance(
-        academyId: currentUser.academyId,
-        sessionId: sessionId,
+        qrPayload: rawValue.trim(),
         studentId: student.id,
       );
 
       if (attendance == null) {
-        throw StateError(
-          'N\u00E3o foi poss\u00EDvel registrar sua presen\u00E7a.',
-        );
+        throw StateError('Não foi possível registrar sua presença.');
       }
 
       await showResultDialog(
@@ -197,19 +149,18 @@ class _StudentQrScannerScreenState extends State<StudentQrScannerScreen> {
       await showResultDialog(
         success: false,
         title: 'QR Code inválido',
-        message:
-            'Este c\u00F3digo n\u00E3o pertence a uma sess\u00E3o v\u00E1lida do Tatame+.',
+        message: 'Este código não pertence a uma sessão válida do Tatame+.',
       );
     } on StateError catch (error) {
       await showResultDialog(
         success: false,
-        title: 'Check-in n\u00E3o realizado',
+        title: 'Check-in não realizado',
         message: error.message.toString(),
       );
     } catch (_) {
       await showResultDialog(
         success: false,
-        title: 'N\u00E3o foi poss\u00EDvel registrar',
+        title: 'Não foi possível registrar',
         message: 'Ocorreu um problema ao realizar o check-in. Tente novamente.',
       );
     }

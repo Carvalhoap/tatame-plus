@@ -23,3 +23,7 @@ export {
 export {
   createRegistrationInvite,
 } from "./create_registration_invite";
+
+export {
+  registerQrAttendance,
+} from "./register_qr_attendance";

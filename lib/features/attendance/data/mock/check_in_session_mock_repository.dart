@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../../models/attendance.dart';
 import '../../models/check_in_session.dart';
 import '../../repository/check_in_session_repository.dart';
@@ -15,12 +17,14 @@ class CheckInSessionMockRepository extends CheckInSessionRepository {
   }) async {
     final now = DateTime.now();
     final sessionId = 'session_${now.microsecondsSinceEpoch}';
+    final qrToken = 'mock_qr_${now.microsecondsSinceEpoch}_secure';
 
     final session = CheckInSession(
       id: sessionId,
       academyId: academyId,
       classroomId: classroomId,
       teacherId: teacherId,
+      qrToken: qrToken,
       createdAt: now,
       expiresAt: now.add(validity),
     );
@@ -69,12 +73,14 @@ class CheckInSessionMockRepository extends CheckInSessionRepository {
     }
 
     final now = DateTime.now();
+    final qrToken = 'mock_qr_${now.microsecondsSinceEpoch}_reopened';
 
     final reopenedSession = CheckInSession(
       id: currentSession.id,
       academyId: currentSession.academyId,
       classroomId: currentSession.classroomId,
       teacherId: currentSession.teacherId,
+      qrToken: qrToken,
       createdAt: currentSession.createdAt,
       expiresAt: now.add(validity),
     );
@@ -151,6 +157,51 @@ class CheckInSessionMockRepository extends CheckInSessionRepository {
 
     return attendances.any(
       (attendance) => attendance.studentId == studentId && attendance.isValid,
+    );
+  }
+
+  @override
+  Future<Attendance?> registerQrAttendance({
+    required String academyId,
+    required String qrPayload,
+    required String studentId,
+  }) async {
+    dynamic decoded;
+
+    try {
+      decoded = jsonDecode(qrPayload);
+    } catch (_) {
+      throw const FormatException('QR Code inválido.');
+    }
+
+    if (decoded is! Map) {
+      throw const FormatException('QR Code inválido.');
+    }
+
+    final payload = Map<String, dynamic>.from(decoded);
+    final sessionId = payload['sessionId'];
+    final qrToken = payload['qrToken'];
+
+    if (payload['version'] != 1 ||
+        payload['academyId'] != academyId ||
+        sessionId is! String ||
+        qrToken is! String) {
+      throw const FormatException('QR Code inválido.');
+    }
+
+    final session = await findSessionById(
+      academyId: academyId,
+      sessionId: sessionId,
+    );
+
+    if (session == null || !session.isActive || session.qrToken != qrToken) {
+      throw StateError('O QR Code é inválido ou expirou.');
+    }
+
+    return registerAttendance(
+      academyId: academyId,
+      sessionId: sessionId,
+      studentId: studentId,
     );
   }
 

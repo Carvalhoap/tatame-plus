@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 class CheckInSession {
   final String id;
   final String academyId;
   final String classroomId;
   final String teacherId;
+  final String qrToken;
 
   final DateTime createdAt;
   final DateTime expiresAt;
@@ -13,9 +16,17 @@ class CheckInSession {
     required this.academyId,
     required this.classroomId,
     required this.teacherId,
+    required this.qrToken,
     required this.createdAt,
     required this.expiresAt,
     this.closedAt,
+  });
+
+  String get qrPayload => jsonEncode({
+    'version': 1,
+    'academyId': academyId,
+    'sessionId': id,
+    'qrToken': qrToken,
   });
 
   bool get isExpired => DateTime.now().isAfter(expiresAt);
@@ -32,12 +43,13 @@ class CheckInSession {
     return expiresAt.difference(DateTime.now());
   }
 
-  CheckInSession copyWith({DateTime? closedAt}) {
+  CheckInSession copyWith({String? qrToken, DateTime? closedAt}) {
     return CheckInSession(
       id: id,
       academyId: academyId,
       classroomId: classroomId,
       teacherId: teacherId,
+      qrToken: qrToken ?? this.qrToken,
       createdAt: createdAt,
       expiresAt: expiresAt,
       closedAt: closedAt ?? this.closedAt,

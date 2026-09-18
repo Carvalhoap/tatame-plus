@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 import '../../models/attendance.dart';
 import '../../models/check_in_session.dart';
@@ -6,9 +10,15 @@ import '../../repository/check_in_session_repository.dart';
 
 class FirestoreCheckInSessionRepository extends CheckInSessionRepository {
   final FirebaseFirestore firestore;
+  final FirebaseFunctions functions;
 
-  FirestoreCheckInSessionRepository({FirebaseFirestore? firestore})
-    : firestore = firestore ?? FirebaseFirestore.instance;
+  FirestoreCheckInSessionRepository({
+    FirebaseFirestore? firestore,
+    FirebaseFunctions? functions,
+  }) : firestore = firestore ?? FirebaseFirestore.instance,
+       functions =
+           functions ??
+           FirebaseFunctions.instanceFor(region: 'southamerica-east1');
 
   CollectionReference<Map<String, dynamic>> _sessions(String academyId) {
     return firestore
@@ -32,6 +42,7 @@ class FirestoreCheckInSessionRepository extends CheckInSessionRepository {
     Duration validity = const Duration(minutes: 5),
   }) async {
     final now = DateTime.now();
+    final qrToken = _generateQrToken();
 
     final reference = _sessions(academyId).doc();
 
@@ -40,6 +51,7 @@ class FirestoreCheckInSessionRepository extends CheckInSessionRepository {
       academyId: academyId,
       classroomId: classroomId,
       teacherId: teacherId,
+      qrToken: qrToken,
       createdAt: now,
       expiresAt: now.add(validity),
     );
@@ -48,6 +60,7 @@ class FirestoreCheckInSessionRepository extends CheckInSessionRepository {
       'academyId': academyId,
       'classroomId': classroomId,
       'teacherId': teacherId,
+      'qrToken': qrToken,
       'createdAt': Timestamp.fromDate(session.createdAt),
       'expiresAt': Timestamp.fromDate(session.expiresAt),
       'closedAt': null,
@@ -98,11 +111,13 @@ class FirestoreCheckInSessionRepository extends CheckInSessionRepository {
 
     final now = DateTime.now();
     final newExpiresAt = now.add(validity);
+    final qrToken = _generateQrToken();
 
     await _sessions(academyId).doc(sessionId).update({
       'expiresAt': Timestamp.fromDate(newExpiresAt),
       'closedAt': null,
       'reopenedAt': Timestamp.fromDate(now),
+      'qrToken': qrToken,
     });
 
     final reopenedSession = CheckInSession(
@@ -110,6 +125,7 @@ class FirestoreCheckInSessionRepository extends CheckInSessionRepository {
       academyId: currentSession.academyId,
       classroomId: currentSession.classroomId,
       teacherId: currentSession.teacherId,
+      qrToken: qrToken,
       createdAt: currentSession.createdAt,
       expiresAt: newExpiresAt,
     );
@@ -195,6 +211,97 @@ class FirestoreCheckInSessionRepository extends CheckInSessionRepository {
   }
 
   @override
+  Future<Attendance?> registerQrAttendance({
+    required String academyId,
+    required String qrPayload,
+    required String studentId,
+  }) async {
+    Map<String, dynamic> payload;
+
+    try {
+      final decoded = jsonDecode(qrPayload);
+
+      if (decoded is! Map) {
+        throw const FormatException();
+      }
+
+      payload = Map<String, dynamic>.from(decoded);
+    } catch (_) {
+      throw const FormatException('QR Code inválido.');
+    }
+
+    final version = payload['version'];
+    final payloadAcademyId = payload['academyId'];
+    final sessionId = payload['sessionId'];
+    final qrToken = payload['qrToken'];
+
+    if (version != 1 ||
+        payloadAcademyId is! String ||
+        payloadAcademyId != academyId ||
+        sessionId is! String ||
+        sessionId.isEmpty ||
+        qrToken is! String ||
+        qrToken.isEmpty) {
+      throw const FormatException('QR Code inválido.');
+    }
+
+    final callable = functions.httpsCallable('registerQrAttendance');
+
+    try {
+      final result = await callable.call<Map<String, dynamic>>({
+        'academyId': academyId,
+        'sessionId': sessionId,
+        'studentId': studentId,
+        'qrToken': qrToken,
+      });
+
+      final data = result.data;
+      final attendanceId = data['attendanceId'];
+      final classroomId = data['classroomId'];
+      final teacherId = data['teacherId'];
+      final returnedSessionId = data['checkInSessionId'];
+
+      if (attendanceId is! String ||
+          classroomId is! String ||
+          teacherId is! String ||
+          returnedSessionId is! String) {
+        throw StateError('O servidor não retornou uma presença válida.');
+      }
+
+      return Attendance(
+        id: attendanceId,
+        academyId: academyId,
+        studentId: studentId,
+        classroomId: classroomId,
+        teacherId: teacherId,
+        checkInSessionId: returnedSessionId,
+        dateTime: DateTime.now(),
+        source: AttendanceSource.qrCode,
+        isValid: true,
+      );
+    } on FirebaseFunctionsException catch (error) {
+      final message =
+          error.message ?? 'Não foi possível registrar sua presença.';
+
+      switch (error.code) {
+        case 'invalid-argument':
+          throw FormatException(message);
+
+        case 'already-exists':
+        case 'failed-precondition':
+        case 'permission-denied':
+        case 'unauthenticated':
+          throw StateError(message);
+
+        default:
+          throw StateError(
+            'O serviço de check-in está indisponível. Tente novamente.',
+          );
+      }
+    }
+  }
+
+  @override
   Future<Attendance?> registerAttendance({
     required String academyId,
     required String sessionId,
@@ -258,6 +365,18 @@ class FirestoreCheckInSessionRepository extends CheckInSessionRepository {
     return attendance;
   }
 
+  String _generateQrToken() {
+    final random = Random.secure();
+
+    final bytes = List<int>.generate(
+      32,
+      (_) => random.nextInt(256),
+      growable: false,
+    );
+
+    return base64UrlEncode(bytes).replaceAll('=', '');
+  }
+
   CheckInSession _sessionFromDocument({
     required String academyId,
     required DocumentSnapshot<Map<String, dynamic>> document,
@@ -269,6 +388,7 @@ class FirestoreCheckInSessionRepository extends CheckInSessionRepository {
       academyId: academyId,
       classroomId: data['classroomId'] as String? ?? '',
       teacherId: data['teacherId'] as String? ?? '',
+      qrToken: data['qrToken'] as String? ?? '',
       createdAt: _parseDate(data['createdAt']),
       expiresAt: _parseDate(data['expiresAt']),
       closedAt: _parseOptionalDate(data['closedAt']),

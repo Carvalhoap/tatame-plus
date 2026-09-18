@@ -38,6 +38,12 @@ abstract class CheckInSessionRepository extends ChangeNotifier {
     required String sessionId,
   });
 
+  Future<Attendance?> registerQrAttendance({
+    required String academyId,
+    required String qrPayload,
+    required String studentId,
+  });
+
   Future<Attendance?> registerAttendance({
     required String academyId,
     required String sessionId,

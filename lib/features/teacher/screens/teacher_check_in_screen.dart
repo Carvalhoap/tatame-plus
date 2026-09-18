@@ -589,7 +589,7 @@ class _TeacherCheckInScreenState extends State<TeacherCheckInScreen> {
                 child: Column(
                   children: [
                     QrImageView(
-                      data: session.id,
+                      data: session.qrPayload,
                       version: QrVersions.auto,
                       size: 220,
                       backgroundColor: AppColors.white,

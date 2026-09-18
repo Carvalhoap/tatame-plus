@@ -253,7 +253,9 @@ service cloud.firestore {
 
       match /checkInSessions/{sessionId} {
         allow get, list:
-          if isAcademyMember(academyId);
+          if isAdmin(academyId)
+            || isTeacher(academyId)
+            || isPartner(academyId);
 
         allow create:
           if isAdmin(academyId)
@@ -281,7 +283,13 @@ service cloud.firestore {
             );
 
         allow create:
-          if request.resource.data.keys().hasOnly([
+          if (
+            isAdmin(academyId)
+            || isTeacher(academyId)
+            || isPartner(academyId)
+          )
+          && request.resource.data.source == 'manual'
+          && request.resource.data.keys().hasOnly([
             'studentId',
             'classroomId',
             'teacherId',
