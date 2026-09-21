@@ -3,7 +3,10 @@ import '../models/student.dart';
 abstract class StudentRepository {
   Future<List<Student>> getStudentsByAcademy(String academyId);
 
-  Future<Student?> getStudentById(String studentId);
+  Future<Student?> getStudentById({
+    required String academyId,
+    required String studentId,
+  });
 
   Future<Student?> getStudentByUserId({
     required String academyId,

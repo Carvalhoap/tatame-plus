@@ -194,8 +194,34 @@ service cloud.firestore {
       }
 
       match /students/{studentId} {
+        function canReadStudent() {
+          return isAdmin(academyId)
+            || isTeacher(academyId)
+            || isPartner(academyId)
+            || (
+              isAcademyMember(academyId)
+              && resource.data.get(
+                'userId',
+                null
+              ) == request.auth.uid
+            )
+            || (
+              isAcademyMember(academyId)
+              && get(
+                memberPath(
+                  academyId,
+                  request.auth.uid
+                )
+              ).data.roles.guardian == true
+              && request.auth.uid in resource.data.get(
+                'guardianIds',
+                []
+              )
+            );
+        }
+
         allow get, list:
-          if isAcademyMember(academyId);
+          if canReadStudent();
 
         allow create, update:
           if isAdmin(academyId);

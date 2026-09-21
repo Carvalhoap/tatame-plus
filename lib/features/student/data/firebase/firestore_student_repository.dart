@@ -34,21 +34,17 @@ class FirestoreStudentRepository implements StudentRepository {
   }
 
   @override
-  Future<Student?> getStudentById(String studentId) async {
-    final academiesSnapshot = await firestore.collection('academies').get();
+  Future<Student?> getStudentById({
+    required String academyId,
+    required String studentId,
+  }) async {
+    final document = await _students(academyId).doc(studentId).get();
 
-    for (final academy in academiesSnapshot.docs) {
-      final document = await academy.reference
-          .collection('students')
-          .doc(studentId)
-          .get();
-
-      if (document.exists) {
-        return _fromSnapshot(academyId: academy.id, document: document);
-      }
+    if (!document.exists) {
+      return null;
     }
 
-    return null;
+    return _fromSnapshot(academyId: academyId, document: document);
   }
 
   @override
