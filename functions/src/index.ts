@@ -27,3 +27,7 @@ export {
 export {
   registerQrAttendance,
 } from "./register_qr_attendance";
+
+export {
+  deletePaymentProofFile,
+} from "./delete_payment_proof_file";

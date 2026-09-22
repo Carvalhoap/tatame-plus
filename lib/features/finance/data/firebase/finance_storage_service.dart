@@ -1,14 +1,21 @@
 import 'dart:typed_data';
 
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 class FinanceStorageService {
   static const int maxFileSizeBytes = 5 * 1024 * 1024;
 
   final FirebaseStorage storage;
+  final FirebaseFunctions functions;
 
-  FinanceStorageService({FirebaseStorage? storage})
-    : storage = storage ?? FirebaseStorage.instance;
+  FinanceStorageService({
+    FirebaseStorage? storage,
+    FirebaseFunctions? functions,
+  }) : storage = storage ?? FirebaseStorage.instance,
+       functions =
+           functions ??
+           FirebaseFunctions.instanceFor(region: 'southamerica-east1');
 
   Future<String> uploadProof({
     required String academyId,
@@ -56,8 +63,10 @@ class FinanceStorageService {
     return storage.ref(storagePath).getDownloadURL();
   }
 
-  Future<void> deleteProof(String storagePath) {
-    return storage.ref(storagePath).delete();
+  Future<void> deleteProof(String storagePath) async {
+    await functions.httpsCallable('deletePaymentProofFile').call<void>({
+      'storagePath': storagePath,
+    });
   }
 
   String _extensionForContentType(String contentType) {
