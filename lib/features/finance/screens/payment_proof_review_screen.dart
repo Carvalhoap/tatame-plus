@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -25,16 +27,16 @@ class PaymentProofReviewScreen extends StatefulWidget {
 }
 
 class _PaymentProofReviewScreenState extends State<PaymentProofReviewScreen> {
-  Future<String>? downloadUrlFuture;
+  Future<Uint8List>? proofBytesFuture;
   bool isReviewing = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    downloadUrlFuture ??= context
-        .read<FinanceRepository>()
-        .getPaymentProofDownloadUrl(storagePath: widget.proof.storagePath);
+    proofBytesFuture ??= context.read<FinanceRepository>().getPaymentProofBytes(
+      storagePath: widget.proof.storagePath,
+    );
   }
 
   Future<RevenueDestination?> _selectRevenueDestination() {
@@ -288,8 +290,8 @@ class _PaymentProofReviewScreenState extends State<PaymentProofReviewScreen> {
             ),
           ),
           const SizedBox(height: 10),
-          FutureBuilder<String>(
-            future: downloadUrlFuture,
+          FutureBuilder<Uint8List>(
+            future: proofBytesFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const SizedBox(
@@ -302,11 +304,9 @@ class _PaymentProofReviewScreenState extends State<PaymentProofReviewScreen> {
                 return _ImageError(
                   onRetry: () {
                     setState(() {
-                      downloadUrlFuture = context
+                      proofBytesFuture = context
                           .read<FinanceRepository>()
-                          .getPaymentProofDownloadUrl(
-                            storagePath: proof.storagePath,
-                          );
+                          .getPaymentProofBytes(storagePath: proof.storagePath);
                     });
                   },
                 );
@@ -322,21 +322,11 @@ class _PaymentProofReviewScreenState extends State<PaymentProofReviewScreen> {
                 child: InteractiveViewer(
                   minScale: 0.8,
                   maxScale: 5,
-                  child: Image.network(
+                  child: Image.memory(
                     snapshot.data!,
                     width: double.infinity,
                     fit: BoxFit.contain,
-                    webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
-                    loadingBuilder: (context, child, progress) {
-                      if (progress == null) {
-                        return child;
-                      }
-
-                      return const SizedBox(
-                        height: 300,
-                        child: Center(child: CircularProgressIndicator()),
-                      );
-                    },
+                    gaplessPlayback: true,
                     errorBuilder: (_, _, _) {
                       return const SizedBox(
                         height: 300,

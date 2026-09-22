@@ -91,7 +91,7 @@ abstract class FinanceRepository {
     PaymentProofStatus? status,
   });
 
-  Future<String> getPaymentProofDownloadUrl({required String storagePath});
+  Future<Uint8List> getPaymentProofBytes({required String storagePath});
 
   Future<void> reviewPaymentProof({
     required String academyId,

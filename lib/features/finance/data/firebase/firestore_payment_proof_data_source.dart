@@ -171,8 +171,8 @@ class FirestorePaymentProofDataSource {
     return proofs;
   }
 
-  Future<String> getPaymentProofDownloadUrl({required String storagePath}) {
-    return storageService.getDownloadUrl(storagePath);
+  Future<Uint8List> getPaymentProofBytes({required String storagePath}) {
+    return storageService.getProofBytes(storagePath);
   }
 
   Future<void> reviewPaymentProof({

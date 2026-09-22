@@ -217,8 +217,8 @@ class FirestoreFinanceRepository implements FinanceRepository {
   }
 
   @override
-  Future<String> getPaymentProofDownloadUrl({required String storagePath}) {
-    return proofDataSource.getPaymentProofDownloadUrl(storagePath: storagePath);
+  Future<Uint8List> getPaymentProofBytes({required String storagePath}) {
+    return proofDataSource.getPaymentProofBytes(storagePath: storagePath);
   }
 
   @override

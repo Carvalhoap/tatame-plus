@@ -59,8 +59,14 @@ class FinanceStorageService {
     return storagePath;
   }
 
-  Future<String> getDownloadUrl(String storagePath) {
-    return storage.ref(storagePath).getDownloadURL();
+  Future<Uint8List> getProofBytes(String storagePath) async {
+    final bytes = await storage.ref(storagePath).getData(maxFileSizeBytes);
+
+    if (bytes == null || bytes.isEmpty) {
+      throw StateError('O arquivo do comprovante está vazio.');
+    }
+
+    return bytes;
   }
 
   Future<void> deleteProof(String storagePath) async {
