@@ -1,5 +1,6 @@
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -25,10 +26,37 @@ Future<void> main() async {
 
   await Firebase.initializeApp(options: firebaseOptions);
   await _activateFirebaseAppCheck();
+  await _configureCrashReporting();
 
   final isDevelopment = firebaseEnvironment == 'development';
 
   runApp(TatamePlusApp(isDevelopment: isDevelopment));
+}
+
+Future<void> _configureCrashReporting() async {
+  final supportedPlatform =
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.macOS);
+
+  if (!supportedPlatform) {
+    return;
+  }
+
+  final crashlytics = FirebaseCrashlytics.instance;
+
+  await crashlytics.setCrashlyticsCollectionEnabled(!kDebugMode);
+
+  await crashlytics.setCustomKey('firebase_environment', firebaseEnvironment);
+
+  FlutterError.onError = crashlytics.recordFlutterFatalError;
+
+  PlatformDispatcher.instance.onError = (error, stackTrace) {
+    crashlytics.recordError(error, stackTrace, fatal: true);
+
+    return true;
+  };
 }
 
 Future<void> _activateFirebaseAppCheck() async {
