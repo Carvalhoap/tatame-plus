@@ -61,7 +61,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyC0WUYiEYEmBxwqABoKj8YG5k2whndIVM8',
-    appId: '1:14520324998:android:eccfb97a205b84ddf55207',
+    appId: '1:14520324998:android:f9b780bd534c4fe1f55207',
     messagingSenderId: '14520324998',
     projectId: 'tatame-plus',
     storageBucket: 'tatame-plus.firebasestorage.app',
