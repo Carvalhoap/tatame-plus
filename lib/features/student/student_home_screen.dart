@@ -15,6 +15,12 @@ import '../graduation/models/stripe_progress.dart';
 import '../graduation/repository/graduation_program_repository.dart';
 import '../graduation/repository/student_graduation_progress_repository.dart';
 import '../attendance/repository/attendance_repository.dart';
+import '../finance/models/billing_cycle.dart';
+import '../finance/models/check_in_provider.dart';
+import '../finance/models/finance_enums.dart';
+import '../finance/models/finance_period.dart';
+import '../finance/models/financial_profile.dart';
+import '../finance/repository/finance_repository.dart';
 import '../finance/screens/student_finance_screen.dart';
 import '../classroom/repository/classroom_repository.dart';
 import 'models/student.dart';
@@ -50,6 +56,10 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   int trainingsInCurrentGraduation = 0;
   String nextTrainingText = 'Nenhum treino agendado';
   String nextTeacherName = '';
+  BillingCycle? currentBillingCycle;
+  FinancialProfile? currentFinancialProfile;
+  CheckInProvider? currentCheckInProvider;
+  int currentPeriodCheckIns = 0;
 
   @override
   void initState() {
@@ -83,6 +93,8 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
 
       final classroomRepository = context.read<ClassroomRepository>();
 
+      final financeRepository = context.read<FinanceRepository>();
+
       final student =
           widget.selectedStudent ??
           await studentRepository.getStudentByUserId(
@@ -98,9 +110,57 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
       int loadedTrainingsInCurrentGraduation = 0;
       String loadedNextTrainingText = 'Nenhum treino agendado';
       String loadedNextTeacherName = '';
+      BillingCycle? loadedBillingCycle;
+      FinancialProfile? loadedFinancialProfile;
+      CheckInProvider? loadedCheckInProvider;
+      int loadedCurrentPeriodCheckIns = 0;
 
       if (student != null) {
         final now = DateTime.now();
+
+        loadedFinancialProfile = await financeRepository.getFinancialProfile(
+          academyId: currentUser.academyId,
+          studentId: student.id,
+        );
+
+        final financePeriod = FinancePeriod.containing(now);
+
+        if (loadedFinancialProfile?.billingMode == BillingMode.gympass) {
+          final periodAttendances = await attendanceRepository
+              .getAttendancesByStudent(
+                academyId: currentUser.academyId,
+                studentId: student.id,
+                start: financePeriod.start,
+                end: financePeriod.endExclusive,
+              );
+
+          loadedCurrentPeriodCheckIns = periodAttendances
+              .where((attendance) => attendance.isValid)
+              .length;
+
+          final providers = await financeRepository.getCheckInProviders(
+            academyId: currentUser.academyId,
+          );
+
+          final providerId = loadedFinancialProfile?.effectiveCheckInProviderId;
+
+          for (final provider in providers) {
+            if (provider.id == providerId) {
+              loadedCheckInProvider = provider;
+              break;
+            }
+          }
+        }
+
+        final billingCycles = await financeRepository.getBillingCycles(
+          academyId: currentUser.academyId,
+          period: financePeriod,
+          studentId: student.id,
+        );
+
+        if (billingCycles.isNotEmpty) {
+          loadedBillingCycle = billingCycles.first;
+        }
 
         final monthStart = DateTime(now.year, now.month, 1);
 
@@ -369,6 +429,10 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         nextTeacherName = loadedNextTeacherName;
         graduationProgress = progress;
         graduationProgram = program;
+        currentBillingCycle = loadedBillingCycle;
+        currentFinancialProfile = loadedFinancialProfile;
+        currentCheckInProvider = loadedCheckInProvider;
+        currentPeriodCheckIns = loadedCurrentPeriodCheckIns;
         isLoading = false;
 
         if (student == null) {
@@ -386,6 +450,185 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         errorMessage = 'Não foi possível carregar seus dados: $error';
       });
     }
+  }
+
+  Future<void> _openFinance(Student student) async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(builder: (_) => StudentFinanceScreen(student: student)),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    await loadStudent();
+  }
+
+  Widget _buildFinancialStatusCard(Student student) {
+    final profile = currentFinancialProfile;
+    final cycle = currentBillingCycle;
+
+    if (profile == null || !profile.isActive) {
+      return const SizedBox.shrink();
+    }
+
+    late final Color backgroundColor;
+    late final Color foregroundColor;
+    late final Color borderColor;
+    late final IconData icon;
+    late final String title;
+    late final String subtitle;
+
+    if (profile.billingMode == BillingMode.exempt) {
+      backgroundColor = Colors.green.shade50;
+      foregroundColor = Colors.green.shade800;
+      borderColor = Colors.green.shade300;
+      icon = Icons.verified_rounded;
+      title = 'Situação financeira regular';
+      subtitle = 'Aluno isento de mensalidade.';
+    } else if (profile.billingMode == BillingMode.gympass) {
+      final providerName = currentCheckInProvider?.name ?? 'Convênio';
+
+      final configuredLimit = currentCheckInProvider?.monthlyLimit ?? 12;
+
+      final limit = configuredLimit > 0 ? configuredLimit : 12;
+
+      final remaining = currentPeriodCheckIns < limit
+          ? limit - currentPeriodCheckIns
+          : 0;
+
+      if (remaining == 0) {
+        backgroundColor = Colors.green.shade50;
+        foregroundColor = Colors.green.shade800;
+        borderColor = Colors.green.shade300;
+        icon = Icons.verified_rounded;
+        title = 'Meta de check-ins concluída';
+        subtitle =
+            '$providerName: $currentPeriodCheckIns de '
+            '$limit check-ins no período.';
+      } else {
+        backgroundColor = Colors.blue.shade50;
+        foregroundColor = Colors.blue.shade800;
+        borderColor = Colors.blue.shade300;
+        icon = Icons.qr_code_rounded;
+        title =
+            '$providerName: $currentPeriodCheckIns de '
+            '$limit check-ins';
+        subtitle =
+            'Faltam $remaining check-ins até '
+            '${_formatDate(FinancePeriod.containing(DateTime.now()).displayEnd)}.';
+      }
+    } else if (cycle == null) {
+      backgroundColor = Colors.amber.shade50;
+      foregroundColor = Colors.orange.shade900;
+      borderColor = Colors.amber.shade400;
+      icon = Icons.info_outline_rounded;
+      title = 'Mensalidade não lançada';
+      subtitle = 'A cobrança deste período ainda não está disponível.';
+    } else {
+      switch (cycle.status) {
+        case BillingStatus.overdue:
+          backgroundColor = Colors.red.shade50;
+          foregroundColor = Colors.red.shade800;
+          borderColor = Colors.red.shade300;
+          icon = Icons.warning_amber_rounded;
+          title = 'Mensalidade vencida';
+          subtitle =
+              'Venceu em ${_formatDate(cycle.dueDate)}. '
+              'Toque para regularizar.';
+
+        case BillingStatus.underReview:
+          backgroundColor = Colors.amber.shade50;
+          foregroundColor = Colors.orange.shade900;
+          borderColor = Colors.amber.shade400;
+          icon = Icons.hourglass_top_rounded;
+          title = 'Comprovante em análise';
+          subtitle =
+              'Seu comprovante foi enviado e aguarda '
+              'a validação da academia.';
+
+        case BillingStatus.pending:
+          backgroundColor = Colors.green.shade50;
+          foregroundColor = Colors.green.shade800;
+          borderColor = Colors.green.shade300;
+          icon = Icons.verified_rounded;
+          title = 'Mensalidade em dia';
+          subtitle = 'Próximo vencimento: ${_formatDate(cycle.dueDate)}.';
+
+        case BillingStatus.paid:
+          backgroundColor = Colors.green.shade50;
+          foregroundColor = Colors.green.shade800;
+          borderColor = Colors.green.shade300;
+          icon = Icons.verified_rounded;
+          title = 'Mensalidade em dia';
+          subtitle = 'Pagamento confirmado para este período.';
+
+        case BillingStatus.waived:
+          backgroundColor = Colors.green.shade50;
+          foregroundColor = Colors.green.shade800;
+          borderColor = Colors.green.shade300;
+          icon = Icons.verified_rounded;
+          title = 'Mensalidade em dia';
+          subtitle = 'Situação financeira regular neste período.';
+      }
+    }
+
+    return Material(
+      color: backgroundColor,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: () => _openFinance(student),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            border: Border.all(color: borderColor),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: foregroundColor, size: 32),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: foregroundColor,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: foregroundColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(Icons.chevron_right_rounded, color: foregroundColor),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+
+    return '$day/$month/${date.year}';
   }
 
   GraduationStage? get currentGraduationStage {
@@ -615,6 +858,10 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               style: TextStyle(fontSize: 18, color: AppColors.grey),
             ),
             const SizedBox(height: 22),
+            if (currentFinancialProfile?.isActive == true) ...[
+              _buildFinancialStatusCard(student),
+              const SizedBox(height: 16),
+            ],
             SizedBox(
               width: double.infinity,
               height: 58,
@@ -658,14 +905,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               width: double.infinity,
               height: 56,
               child: OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.push<void>(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => StudentFinanceScreen(student: student),
-                    ),
-                  );
-                },
+                onPressed: () => _openFinance(student),
                 icon: const Icon(Icons.receipt_long_outlined),
                 label: const Text(
                   'Pagamentos e comprovantes',
