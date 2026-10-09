@@ -571,7 +571,7 @@ class _StageCard extends StatelessWidget {
               controller: stage.idController,
               decoration: const InputDecoration(
                 labelText: 'ID técnico (opcional)',
-                helperText: 'Se vazio, o Tatame+ gera automaticamente.',
+                helperText: 'Se vazio, o NexTatame gera automaticamente.',
                 border: OutlineInputBorder(),
               ),
             ),

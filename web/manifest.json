@@ -1,37 +1,37 @@
 {
-    "name":  "Tatame+",
-    "short_name":  "Tatame+",
-    "start_url":  "/",
-    "display":  "standalone",
-    "background_color":  "#080B0F",
-    "theme_color":  "#E31B23",
-    "description":  "Presença, jornada e evolução no Jiu-Jitsu.",
-    "orientation":  "portrait-primary",
-    "prefer_related_applications":  false,
-    "icons":  [
-                  {
-                      "src":  "icons/Icon-192.png",
-                      "sizes":  "192x192",
-                      "type":  "image/png"
-                  },
-                  {
-                      "src":  "icons/Icon-512.png",
-                      "sizes":  "512x512",
-                      "type":  "image/png"
-                  },
-                  {
-                      "src":  "icons/Icon-maskable-192.png",
-                      "sizes":  "192x192",
-                      "type":  "image/png",
-                      "purpose":  "maskable"
-                  },
-                  {
-                      "src":  "icons/Icon-maskable-512.png",
-                      "sizes":  "512x512",
-                      "type":  "image/png",
-                      "purpose":  "maskable"
-                  }
-              ],
-    "id":  "/",
-    "scope":  "/"
+    "name": "NexTatame",
+    "short_name": "NexTatame",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0D0C0C",
+    "theme_color": "#B3261E",
+    "description": "Presença, jornada e evolução no Jiu-Jitsu.",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false,
+    "id": "/",
+    "scope": "/",
+    "icons": [
+        {
+            "src": "icons/Icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/Icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
 }

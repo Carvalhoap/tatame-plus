@@ -57,7 +57,7 @@ class RoleSelectionScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Como você deseja acessar o Tatame+ agora?',
+                  'Como você deseja acessar o NexTatame agora?',
                   style: TextStyle(fontSize: 17, color: AppColors.grey),
                 ),
                 const SizedBox(height: 28),

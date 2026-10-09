@@ -1,5 +1,5 @@
 class AppInfo {
-  static const String appName = 'Tatame+';
+  static const String appName = 'NexTatame';
   static const String codename = 'Projeto Kodachi';
   static const String version = '0.2.0-alpha';
   static const String releaseDate = '10/07/2026';

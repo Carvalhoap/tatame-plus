@@ -8,6 +8,9 @@ import '../features/auth/repository/auth_repository.dart';
 import '../features/auth/screens/session_router.dart';
 import '../features/auth/services/session_service.dart';
 
+import '../features/academy/data/firebase/firestore_academy_repository.dart';
+import '../features/academy/repository/academy_repository.dart';
+
 import '../features/student/data/firebase/firestore_student_repository.dart';
 import '../features/student/repository/student_repository.dart';
 
@@ -57,6 +60,10 @@ class TatamePlusApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SessionService()),
 
         Provider<UserRepository>(create: (_) => FirestoreUserRepository()),
+
+        Provider<AcademyRepository>(
+          create: (_) => FirestoreAcademyRepository(),
+        ),
 
         Provider<ClassroomRepository>(
           create: (_) => FirestoreClassroomRepository(),
@@ -117,7 +124,7 @@ class TatamePlusApp extends StatelessWidget {
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: isDevelopment ? 'Tatame+ Desenvolvimento' : 'Tatame+',
+        title: isDevelopment ? 'NexTatame Desenvolvimento' : 'NexTatame',
         theme: AppTheme.light,
         builder: (context, child) {
           final content = child ?? const SizedBox.shrink();

@@ -99,7 +99,7 @@ class _SessionLoadingScreen extends StatelessWidget {
           children: [
             CircularProgressIndicator(),
             SizedBox(height: 18),
-            Text('Carregando Tatame+...', style: TextStyle(fontSize: 16)),
+            Text('Carregando NexTatame...', style: TextStyle(fontSize: 16)),
           ],
         ),
       ),

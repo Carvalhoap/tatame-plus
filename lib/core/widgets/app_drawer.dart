@@ -6,6 +6,7 @@ import '../enums/user_role.dart';
 import '../theme/app_colors.dart';
 import '../../features/auth/repository/auth_repository.dart';
 import '../../features/auth/screens/change_password_screen.dart';
+import 'nex_tatame_wordmark.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -32,6 +33,8 @@ class AppDrawer extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const NexTatameWordmark(height: 58, inverse: true),
+                  const SizedBox(height: 18),
                   CircleAvatar(
                     radius: 34,
                     backgroundColor: AppColors.white,
@@ -158,7 +161,7 @@ class AppDrawer extends StatelessWidget {
                       Icons.info_outline,
                       color: AppColors.grey,
                     ),
-                    title: const Text('Sobre o Tatame+'),
+                    title: const Text('Sobre o NexTatame'),
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.pushNamed(context, '/about');

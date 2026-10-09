@@ -743,7 +743,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                   const SizedBox(height: 28),
 
                   const _SectionTitle(
-                    title: 'Acesso ao Tatame+',
+                    title: 'Acesso ao NexTatame',
                     subtitle:
                         'Vincule uma conta existente, se o aluno tiver login próprio.',
                   ),

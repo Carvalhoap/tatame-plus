@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/nex_tatame_wordmark.dart';
 import '../student/student_home_screen.dart';
 import '../teacher/teacher_home_screen.dart';
 import 'widgets/botao_perfil.dart';
@@ -19,27 +20,12 @@ class HomeScreen extends StatelessWidget {
             children: [
               const SizedBox(height: 60),
 
-              const Icon(
-                Icons.sports_martial_arts,
-                size: 100,
-                color: AppColors.brandPrimary,
-              ),
-
-              const SizedBox(height: 25),
-
-              const Text(
-                'Tatame+',
-                style: TextStyle(
-                  fontSize: 42,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.brandPrimary,
-                ),
-              ),
+              const NexTatameWordmark(height: 118),
 
               const SizedBox(height: 12),
 
               const Text(
-                'Evolução começa aqui',
+                'Sua academia. Sua evolução.',
                 style: TextStyle(fontSize: 18, color: AppColors.grey),
               ),
 
@@ -83,7 +69,7 @@ class HomeScreen extends StatelessWidget {
                 },
                 icon: const Icon(Icons.info_outline, color: AppColors.grey),
                 label: const Text(
-                  'Sobre o Tatame+',
+                  'Sobre o NexTatame',
                   style: TextStyle(
                     color: AppColors.grey,
                     fontWeight: FontWeight.w600,

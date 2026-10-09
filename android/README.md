@@ -1,4 +1,4 @@
-# 🥋 Tatame+
+# 🥋 NexTatame
 
 > Inspire pessoas a treinarem com constância e evoluírem todos os dias.
 
@@ -6,7 +6,7 @@
 
 ## 📖 Sobre o projeto
 
-Tatame+ é um aplicativo desenvolvido para academias de artes marciais.
+NexTatame é um aplicativo desenvolvido para academias de artes marciais.
 
 Mais do que controlar presença, o objetivo é aumentar o engajamento dos alunos através de metas, evolução e gamificação.
 

@@ -45,14 +45,14 @@ android {
     productFlavors {
         create("production") {
             dimension = "environment"
-            resValue("string", "app_name", "Tatame+")
+            resValue("string", "app_name", "NexTatame")
         }
 
         create("development") {
             dimension = "environment"
             applicationIdSuffix = ".dev"
             versionNameSuffix = "-dev"
-            resValue("string", "app_name", "Tatame+ Desenvolvimento")
+            resValue("string", "app_name", "NexTatame Desenvolvimento")
         }
     }
 

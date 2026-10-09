@@ -222,7 +222,7 @@ class _EditUserScreenState extends State<EditUserScreen> {
                 value: isActive,
                 title: Text(isActive ? 'Usuário ativo' : 'Usuário inativo'),
                 subtitle: const Text(
-                  'Usuários inativos não podem entrar no Tatame+.',
+                  'Usuários inativos não podem entrar no NexTatame.',
                 ),
                 onChanged: (value) {
                   setState(() {

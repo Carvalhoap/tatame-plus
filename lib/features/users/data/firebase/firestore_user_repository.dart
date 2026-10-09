@@ -236,7 +236,7 @@ class FirestoreUserRepository implements UserRepository {
         return 'Você não possui permissão para executar esta operação.';
 
       case 'unauthenticated':
-        return 'Sua sessão expirou. Entre novamente no Tatame+.';
+        return 'Sua sessão expirou. Entre novamente no NexTatame.';
 
       case 'unavailable':
         return 'O serviço está temporariamente indisponível. Tente novamente.';

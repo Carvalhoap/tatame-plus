@@ -91,7 +91,7 @@ class _StudentQrScannerScreenState extends State<StudentQrScannerScreen> {
 
     try {
       if (currentUser == null) {
-        throw StateError('Sua sessão no Tatame+ não está disponível.');
+        throw StateError('Sua sessão no NexTatame não está disponível.');
       }
 
       final student =
@@ -149,7 +149,7 @@ class _StudentQrScannerScreenState extends State<StudentQrScannerScreen> {
       await showResultDialog(
         success: false,
         title: 'QR Code inválido',
-        message: 'Este código não pertence a uma sessão válida do Tatame+.',
+        message: 'Este código não pertence a uma sessão válida do NexTatame.',
       );
     } on StateError catch (error) {
       await showResultDialog(

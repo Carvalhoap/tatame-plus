@@ -14,6 +14,7 @@ import '../graduation/models/student_graduation_progress.dart';
 import '../graduation/models/stripe_progress.dart';
 import '../graduation/repository/graduation_program_repository.dart';
 import '../graduation/repository/student_graduation_progress_repository.dart';
+import '../academy/repository/academy_repository.dart';
 import '../attendance/repository/attendance_repository.dart';
 import '../finance/models/billing_cycle.dart';
 import '../finance/models/check_in_provider.dart';
@@ -60,6 +61,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   FinancialProfile? currentFinancialProfile;
   CheckInProvider? currentCheckInProvider;
   int currentPeriodCheckIns = 0;
+  String academyName = '';
 
   @override
   void initState() {
@@ -95,6 +97,8 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
 
       final financeRepository = context.read<FinanceRepository>();
 
+      final academyRepository = context.read<AcademyRepository>();
+
       final student =
           widget.selectedStudent ??
           await studentRepository.getStudentByUserId(
@@ -114,6 +118,29 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
       FinancialProfile? loadedFinancialProfile;
       CheckInProvider? loadedCheckInProvider;
       int loadedCurrentPeriodCheckIns = 0;
+
+      var loadedAcademyName = currentUser.academyId
+          .split('-')
+          .where((part) => part.isNotEmpty)
+          .map(
+            (part) =>
+                '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}',
+          )
+          .join(' ');
+
+      try {
+        final academy = await academyRepository.getAcademyById(
+          academyId: currentUser.academyId,
+        );
+
+        final registeredName = academy?.name.trim() ?? '';
+
+        if (registeredName.isNotEmpty) {
+          loadedAcademyName = registeredName;
+        }
+      } catch (_) {
+        // O nome derivado do ID mantém a identificação disponível.
+      }
 
       if (student != null) {
         final now = DateTime.now();
@@ -433,6 +460,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         currentFinancialProfile = loadedFinancialProfile;
         currentCheckInProvider = loadedCheckInProvider;
         currentPeriodCheckIns = loadedCurrentPeriodCheckIns;
+        academyName = loadedAcademyName;
         isLoading = false;
 
         if (student == null) {
@@ -629,6 +657,20 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     final month = date.month.toString().padLeft(2, '0');
 
     return '$day/$month/${date.year}';
+  }
+
+  String get _timeGreeting {
+    final hour = DateTime.now().hour;
+
+    if (hour < 12) {
+      return 'Bom dia';
+    }
+
+    if (hour < 18) {
+      return 'Boa tarde';
+    }
+
+    return 'Boa noite';
   }
 
   GraduationStage? get currentGraduationStage {
@@ -845,14 +887,65 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Bom dia, ${student.fullName} 👋',
+              '$_timeGreeting, ${student.fullName} 👋',
               style: const TextStyle(
                 fontSize: 30,
                 fontWeight: FontWeight.bold,
                 color: AppColors.brandPrimary,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
+            if (academyName.isNotEmpty) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 13,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.brandGold.withValues(alpha: 0.10),
+                  border: Border.all(
+                    color: AppColors.brandGold.withValues(alpha: 0.65),
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.location_on_outlined,
+                      color: AppColors.brandRed,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'SUA ACADEMIA',
+                            style: TextStyle(
+                              color: AppColors.brandGold,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            academyName,
+                            style: const TextStyle(
+                              color: AppColors.brandPrimary,
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+            ],
             const Text(
               'Cada treino aproxima você da sua próxima evolução.',
               style: TextStyle(fontSize: 18, color: AppColors.grey),

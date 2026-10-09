@@ -1,4 +1,4 @@
-// File generated for the Tatame+ development environment.
+// File generated for the NexTatame development environment.
 // ignore_for_file: type=lint
 
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;

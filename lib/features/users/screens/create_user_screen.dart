@@ -55,7 +55,7 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
     final currentUser = session.currentUser;
 
     if (currentUser == null) {
-      _showError('Sua sessão não está disponível. Entre novamente no Tatame+.');
+      _showError('Sua sessão não está disponível. Entre novamente no NexTatame.');
       return;
     }
 
@@ -299,7 +299,7 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
               const SizedBox(height: 30),
               const _SectionHeader(
                 title: 'Situação',
-                subtitle: 'Usuários inativos não poderão acessar o Tatame+.',
+                subtitle: 'Usuários inativos não poderão acessar o NexTatame.',
               ),
               const SizedBox(height: 12),
               Card(

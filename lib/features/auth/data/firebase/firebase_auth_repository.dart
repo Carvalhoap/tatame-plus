@@ -63,7 +63,7 @@ class FirebaseAuthRepository implements AuthRepository {
       await firebaseAuth.signOut();
 
       throw StateError(
-        'O usuário está autenticado, mas não possui cadastro no Tatame+.',
+        'O usuário está autenticado, mas não possui cadastro no NexTatame.',
       );
     }
 
@@ -82,7 +82,7 @@ class FirebaseAuthRepository implements AuthRepository {
         throw StateError('Seu cadastro está aguardando aprovação da academia.');
       }
 
-      throw StateError('Este usuário não está ativo no Tatame+.');
+      throw StateError('Este usuário não está ativo no NexTatame.');
     }
 
     final academyId = await _findUserAcademy(uid);
@@ -131,9 +131,28 @@ class FirebaseAuthRepository implements AuthRepository {
   }
 
   Future<String?> _findUserAcademy(String uid) async {
-    const knownAcademies = ['gracie-barra-neves'];
+    final userSnapshot = await firestore.collection('users').doc(uid).get();
 
-    for (final academyId in knownAcademies) {
+    final registeredAcademyId =
+        (userSnapshot.data()?['academyId'] as String? ?? '').trim();
+
+    if (registeredAcademyId.isNotEmpty) {
+      final registeredMember = await firestore
+          .collection('academies')
+          .doc(registeredAcademyId)
+          .collection('members')
+          .doc(uid)
+          .get();
+
+      if (registeredMember.exists) {
+        return registeredAcademyId;
+      }
+    }
+
+    // Compatibilidade com usuários antigos ainda sem academyId em /users.
+    const legacyAcademies = ['gracie-barra-neves'];
+
+    for (final academyId in legacyAcademies) {
       final memberSnapshot = await firestore
           .collection('academies')
           .doc(academyId)

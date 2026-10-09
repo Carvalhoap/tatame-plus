@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('Tatame+ smoke test', (WidgetTester tester) async {
+  testWidgets('NexTatame smoke test', (WidgetTester tester) async {
     await tester.pumpWidget(
       const MaterialApp(
-        home: Scaffold(body: Center(child: Text('Tatame+'))),
+        home: Scaffold(body: Center(child: Text('NexTatame'))),
       ),
     );
 
-    expect(find.text('Tatame+'), findsOneWidget);
+    expect(find.text('NexTatame'), findsOneWidget);
   });
 }

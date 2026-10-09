@@ -118,6 +118,14 @@ export const registerQrAttendance = onCall(
       .collection("students")
       .doc(studentId);
 
+    const financialProfileReference = academyReference
+      .collection("financialProfiles")
+      .doc(studentId);
+
+    const billingCyclesQuery = academyReference
+      .collection("billingCycles")
+      .where("studentId", "==", studentId);
+
     const sessionReference = academyReference
       .collection("checkInSessions")
       .doc(sessionId);
@@ -134,17 +142,23 @@ export const registerQrAttendance = onCall(
         const [
           memberSnapshot,
           studentSnapshot,
+          financialProfileSnapshot,
+          billingCyclesSnapshot,
           sessionSnapshot,
           attendanceSnapshot,
         ] = await Promise.all([
           transaction.get(memberReference),
           transaction.get(studentReference),
+          transaction.get(financialProfileReference),
+          transaction.get(billingCyclesQuery),
           transaction.get(sessionReference),
           transaction.get(attendanceReference),
         ]);
 
         const memberData = memberSnapshot.data();
         const studentData = studentSnapshot.data();
+        const financialProfileData =
+          financialProfileSnapshot.data();
         const sessionData = sessionSnapshot.data();
 
         if (
@@ -181,6 +195,53 @@ export const registerQrAttendance = onCall(
           throw new HttpsError(
             "permission-denied",
             "Este aluno não está vinculado à sua conta.",
+          );
+        }
+
+        const currentTime = Date.now();
+        const millisecondsPerDay =
+          24 * 60 * 60 * 1000;
+
+        const hasOverdueMonthlyFee =
+          financialProfileSnapshot.exists &&
+          financialProfileData?.isActive !== false &&
+          financialProfileData?.billingMode ===
+            "monthlyFee" &&
+          billingCyclesSnapshot.docs.some(
+            (document) => {
+              const billingData = document.data();
+
+              if (
+                billingData.billingMode !==
+                "monthlyFee"
+              ) {
+                return false;
+              }
+
+              if (billingData.status === "overdue") {
+                return true;
+              }
+
+              const dueDate = billingData.dueDate;
+
+              const isPastDue =
+                dueDate instanceof Timestamp &&
+                currentTime >=
+                  dueDate.toMillis() +
+                    millisecondsPerDay;
+
+              return (
+                billingData.status === "pending" &&
+                isPastDue
+              );
+            },
+          );
+
+        if (hasOverdueMonthlyFee) {
+          throw new HttpsError(
+            "failed-precondition",
+            "Check-in bloqueado: existe uma mensalidade vencida. " +
+              "Acesse Pagamentos e comprovantes para regularizar.",
           );
         }
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/nex_tatame_wordmark.dart';
 import '../repository/auth_repository.dart';
 import '../services/session_service.dart';
 import 'forgot_password_screen.dart';
@@ -138,24 +139,10 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(
-                    Icons.sports_martial_arts,
-                    size: 82,
-                    color: AppColors.brandPrimary,
-                  ),
-                  const SizedBox(height: 16),
+                  const NexTatameWordmark(height: 96),
+                  const SizedBox(height: 10),
                   const Text(
-                    'Tatame+',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 38,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.brandPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Cada treino conta.',
+                    'Sua academia. Sua evolução.',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 17, color: AppColors.grey),
                   ),
