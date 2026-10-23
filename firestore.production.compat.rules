@@ -1085,6 +1085,240 @@ service cloud.firestore {
         allow read, write: if false;
       }
 
+      match /legalDocuments/{documentId} {
+        function hasValidDocumentData() {
+          return request.resource.data.keys().hasAll([
+              'type',
+              'title',
+              'description',
+              'version',
+              'fileName',
+              'storagePath',
+              'documentSha256',
+              'status',
+              'guardianRequiredForMinor',
+              'effectiveAt',
+              'expiresAt',
+              'publishedAt',
+              'createdAt',
+              'updatedAt',
+              'createdBy'
+            ])
+            && request.resource.data.keys().hasOnly([
+              'type',
+              'title',
+              'description',
+              'version',
+              'fileName',
+              'storagePath',
+              'documentSha256',
+              'status',
+              'guardianRequiredForMinor',
+              'effectiveAt',
+              'expiresAt',
+              'publishedAt',
+              'createdAt',
+              'updatedAt',
+              'createdBy'
+            ])
+            && request.resource.data.type in [
+              'riskAcknowledgement',
+              'healthAndEmergency',
+              'imageAuthorization',
+              'minorResponsibility',
+              'codeOfConduct',
+              'privacyAndLgpd',
+              'enrollmentContract'
+            ]
+            && request.resource.data.title is string
+            && request.resource.data.title.size() > 0
+            && request.resource.data.title.size() <= 150
+            && request.resource.data.description is string
+            && request.resource.data.description.size() <= 1000
+            && request.resource.data.version is string
+            && request.resource.data.version.size() > 0
+            && request.resource.data.version.size() <= 30
+            && request.resource.data.fileName is string
+            && request.resource.data.fileName.size() > 0
+            && request.resource.data.fileName.size() <= 200
+            && request.resource.data.storagePath is string
+            && request.resource.data.storagePath.size() > 0
+            && request.resource.data.documentSha256 is string
+            && request.resource.data.documentSha256.matches(
+              '^[a-fA-F0-9]{64}$'
+            )
+            && request.resource.data.status in [
+              'draft',
+              'published',
+              'archived'
+            ]
+            && request.resource.data.guardianRequiredForMinor is bool
+            && (
+              request.resource.data.effectiveAt == null
+              || request.resource.data.effectiveAt is timestamp
+            )
+            && (
+              request.resource.data.expiresAt == null
+              || request.resource.data.expiresAt is timestamp
+            )
+            && (
+              request.resource.data.publishedAt == null
+              || request.resource.data.publishedAt is timestamp
+            )
+            && request.resource.data.createdAt is timestamp
+            && request.resource.data.updatedAt is timestamp
+            && request.resource.data.createdBy is string;
+        }
+
+        allow get, list:
+          if isAdmin(academyId)
+            || isPartner(academyId)
+            || (
+              isAcademyMember(academyId)
+              && resource.data.status == 'published'
+            );
+
+        allow create:
+          if isAdmin(academyId)
+            && hasValidDocumentData()
+            && request.resource.data.status == 'draft'
+            && request.resource.data.publishedAt == null
+            && request.resource.data.createdBy == request.auth.uid;
+
+        allow update:
+          if isAdmin(academyId)
+            && hasValidDocumentData()
+            && request.resource.data.createdBy
+              == resource.data.createdBy
+            && request.resource.data.createdAt
+              == resource.data.createdAt
+            && (
+              (
+                resource.data.status == 'draft'
+                && request.resource.data.status in [
+                  'draft',
+                  'published'
+                ]
+              )
+              ||
+              (
+                resource.data.status == 'published'
+                && request.resource.data.status == 'archived'
+              )
+            );
+
+        allow delete:
+          if false;
+      }
+
+      match /documentAssignments/{assignmentId} {
+        function canReadAssignment() {
+          return isAdmin(academyId)
+            || isPartner(academyId)
+            || (
+              isAcademyMember(academyId)
+              && resource.data.assignedSignerUserId
+                == request.auth.uid
+            )
+            || ownsStudent(
+              academyId,
+              resource.data.studentId
+            )
+            || guardsStudent(
+              academyId,
+              resource.data.studentId
+            );
+        }
+
+        allow get, list:
+          if canReadAssignment();
+
+        allow create:
+          if isAdmin(academyId)
+            && request.resource.data.keys().hasAll([
+              'documentId',
+              'documentVersion',
+              'studentId',
+              'studentName',
+              'requiredSignerRole',
+              'assignedSignerUserId',
+              'status',
+              'assignedAt',
+              'signedAt',
+              'expiresAt',
+              'assignedBy'
+            ])
+            && request.resource.data.keys().hasOnly([
+              'documentId',
+              'documentVersion',
+              'studentId',
+              'studentName',
+              'requiredSignerRole',
+              'assignedSignerUserId',
+              'status',
+              'assignedAt',
+              'signedAt',
+              'expiresAt',
+              'assignedBy'
+            ])
+            && request.resource.data.documentId is string
+            && request.resource.data.documentVersion is string
+            && request.resource.data.studentId is string
+            && request.resource.data.studentName is string
+            && request.resource.data.requiredSignerRole in [
+              'student',
+              'guardian'
+            ]
+            && request.resource.data.assignedSignerUserId is string
+            && request.resource.data.assignedSignerUserId.size() > 0
+            && request.resource.data.status == 'pending'
+            && request.resource.data.assignedAt is timestamp
+            && request.resource.data.signedAt == null
+            && (
+              request.resource.data.expiresAt == null
+              || request.resource.data.expiresAt is timestamp
+            )
+            && request.resource.data.assignedBy
+              == request.auth.uid
+            && exists(
+              studentPath(
+                academyId,
+                request.resource.data.studentId
+              )
+            )
+            && exists(
+              /databases/$(database)/documents/academies/$(academyId)/legalDocuments/$(request.resource.data.documentId)
+            )
+            && get(
+              /databases/$(database)/documents/academies/$(academyId)/legalDocuments/$(request.resource.data.documentId)
+            ).data.status == 'published';
+
+        allow update, delete:
+          if false;
+      }
+
+      match /documentSignatures/{signatureId} {
+        allow get, list:
+          if isAdmin(academyId)
+            || isPartner(academyId)
+            || (
+              isAcademyMember(academyId)
+              && resource.data.signerUserId
+                == request.auth.uid
+            )
+            || ownsStudent(
+              academyId,
+              resource.data.studentId
+            )
+            || guardsStudent(
+              academyId,
+              resource.data.studentId
+            );
+
+        // Assinaturas serão criadas exclusivamente por Cloud Function.
+        allow create, update, delete:
+          if false;
+      }
       match /{document=**} {
         allow read, write: if false;
       }

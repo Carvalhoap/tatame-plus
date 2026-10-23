@@ -83,6 +83,37 @@ service firebase.storage {
         if false;
     }
 
+    match /academies/{academyId}/legalDocuments/{documentId}/versions/{version}/{fileName} {
+      allow read:
+        if activeMemberExists(academyId);
+
+      allow create:
+        if isAdminOrPartner(academyId)
+        && request.resource.size > 0
+        && request.resource.size <= 10 * 1024 * 1024
+        && request.resource.contentType == 'application/pdf';
+
+      allow update, delete:
+        if false;
+    }
+
+    match /academies/{academyId}/documentSignatures/{studentId}/{assignmentId}/{fileName} {
+      allow read:
+        if canAccessStudent(academyId, studentId);
+
+      // Somente a Cloud Function poderá gravar a assinatura definitiva.
+      allow create, update, delete:
+        if false;
+    }
+
+    match /academies/{academyId}/signedDocuments/{studentId}/{assignmentId}/{fileName} {
+      allow read:
+        if canAccessStudent(academyId, studentId);
+
+      // Somente a Cloud Function poderá gerar o PDF assinado.
+      allow create, update, delete:
+        if false;
+    }
     match /{allPaths=**} {
       allow read, write: if false;
     }

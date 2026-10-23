@@ -43,6 +43,8 @@ import '../features/training_type/repository/training_type_repository.dart';
 import '../features/class_occurrence/data/firebase/firestore_class_occurrence_repository.dart';
 import '../features/class_occurrence/repository/class_occurrence_repository.dart';
 
+import '../features/agreement/data/firebase/firestore_document_repository.dart';
+import '../features/agreement/repository/document_repository.dart';
 import '../features/finance/data/firebase/firestore_finance_repository.dart';
 import '../features/finance/repository/finance_repository.dart';
 
@@ -101,6 +103,9 @@ class TatamePlusApp extends StatelessWidget {
           create: (_) => FirestoreAttendanceRepository(),
         ),
 
+        Provider<DocumentRepository>(
+          create: (_) => FirestoreDocumentRepository(),
+        ),
         Provider<FinanceRepository>(
           create: (_) => FirestoreFinanceRepository(),
         ),
