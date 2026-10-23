@@ -8,6 +8,8 @@ import '../models/legal_document.dart';
 import '../repository/document_repository.dart';
 import 'document_form_screen.dart';
 
+import 'document_assignments_screen.dart';
+
 class DocumentsManagementScreen extends StatefulWidget {
   const DocumentsManagementScreen({super.key});
 
@@ -191,6 +193,18 @@ class _DocumentsManagementScreenState extends State<DocumentsManagementScreen> {
         foregroundColor: AppColors.brandPrimary,
         elevation: 0,
         actions: [
+          IconButton(
+            tooltip: 'Atribuir documentos',
+            onPressed: () {
+              Navigator.push<void>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const DocumentAssignmentsScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.assignment_add),
+          ),
           IconButton(
             onPressed: loadDocuments,
             tooltip: 'Atualizar',
