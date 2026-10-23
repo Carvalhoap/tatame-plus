@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_drawer.dart';
+import '../../agreement/screens/documents_management_screen.dart';
 import '../../attendance/screens/attendance_reports_screen.dart';
 import '../../auth/services/session_service.dart';
 import '../../class_occurrence/screens/class_occurrences_screen.dart';
@@ -153,6 +154,19 @@ class AdminHomeScreen extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (_) => const GraduationProgramsScreen(),
+                      ),
+                    );
+                  },
+                ),
+                _AdminCard(
+                  title: 'Documentos',
+                  subtitle: 'Termos, contratos e assinaturas',
+                  icon: Icons.draw_outlined,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const DocumentsManagementScreen(),
                       ),
                     );
                   },
