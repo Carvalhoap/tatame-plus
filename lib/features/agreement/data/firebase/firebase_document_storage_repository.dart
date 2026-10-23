@@ -61,6 +61,37 @@ class FirebaseDocumentStorageRepository implements DocumentStorageRepository {
     );
   }
 
+  @override
+  Future<Uint8List> downloadOriginalPdf({
+    required String storagePath,
+    required String expectedSha256,
+  }) async {
+    final normalizedPath = storagePath.trim();
+
+    if (normalizedPath.isEmpty) {
+      throw const FormatException('O caminho do documento não é válido.');
+    }
+
+    final bytes = await storage
+        .ref()
+        .child(normalizedPath)
+        .getData(10 * 1024 * 1024);
+
+    if (bytes == null || bytes.isEmpty) {
+      throw StateError('O arquivo do documento não foi encontrado.');
+    }
+
+    validator.validate(bytes);
+
+    final actualSha256 = validator.calculateSha256(bytes);
+
+    if (actualSha256.toLowerCase() != expectedSha256.trim().toLowerCase()) {
+      throw StateError('A integridade do documento não pôde ser confirmada.');
+    }
+
+    return bytes;
+  }
+
   String _normalizeSegment(String value) {
     final normalized = value
         .trim()

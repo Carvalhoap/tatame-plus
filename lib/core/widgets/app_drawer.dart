@@ -8,6 +8,8 @@ import '../../features/auth/repository/auth_repository.dart';
 import '../../features/auth/screens/change_password_screen.dart';
 import 'nex_tatame_wordmark.dart';
 
+import '../../features/agreement/screens/signer_documents_screen.dart';
+
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
 
@@ -139,6 +141,24 @@ class AppDrawer extends StatelessWidget {
                   ),
 
                   const Divider(height: 32),
+                  if (activeRole == UserRole.student ||
+                      activeRole == UserRole.guardian)
+                    ListTile(
+                      leading: const Icon(
+                        Icons.description_outlined,
+                        color: AppColors.grey,
+                      ),
+                      title: const Text('Documentos para assinar'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push<void>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const SignerDocumentsScreen(),
+                          ),
+                        );
+                      },
+                    ),
 
                   ListTile(
                     leading: const Icon(

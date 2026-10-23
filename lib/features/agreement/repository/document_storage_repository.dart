@@ -11,4 +11,9 @@ abstract class DocumentStorageRepository {
     required String uploadedBy,
     required Uint8List bytes,
   });
+
+  Future<Uint8List> downloadOriginalPdf({
+    required String storagePath,
+    required String expectedSha256,
+  });
 }
