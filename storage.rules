@@ -85,35 +85,61 @@ service firebase.storage {
 
     match /academies/{academyId}/legalDocuments/{documentId}/versions/{version}/{fileName} {
       allow read:
-        if activeMemberExists(academyId);
+        if activeMemberExists(academyId)
+          && (
+            isAdminOrPartner(academyId)
+            || (
+              firestore.exists(
+                /databases/(default)/documents/academies/$(academyId)/legalDocuments/$(documentId)
+              )
+              && firestore.get(
+                /databases/(default)/documents/academies/$(academyId)/legalDocuments/$(documentId)
+              ).data.status == 'published'
+            )
+          );
 
       allow create:
-        if isAdminOrPartner(academyId)
-        && request.resource.size > 0
-        && request.resource.size <= 10 * 1024 * 1024
-        && request.resource.contentType == 'application/pdf';
+        if activeMemberExists(academyId)
+          && firestore.get(
+            /databases/(default)/documents/academies/$(academyId)/members/$(request.auth.uid)
+          ).data.roles.admin == true
+          && request.resource.size > 0
+          && request.resource.size <= 10 * 1024 * 1024
+          && request.resource.contentType == 'application/pdf';
 
-      allow update, delete:
-        if false;
-    }
-
-    match /academies/{academyId}/documentSignatures/{studentId}/{assignmentId}/{fileName} {
-      allow read:
-        if canAccessStudent(academyId, studentId);
-
-      // Somente a Cloud Function poderá gravar a assinatura definitiva.
-      allow create, update, delete:
-        if false;
+      allow update, delete: if false;
     }
 
     match /academies/{academyId}/signedDocuments/{studentId}/{assignmentId}/{fileName} {
-      allow read:
-        if canAccessStudent(academyId, studentId);
+      function canReadSignedPdf() {
+        let signature = firestore.get(
+          /databases/(default)/documents/academies/$(academyId)/documentSignatures/$(assignmentId)
+        ).data;
 
-      // Somente a Cloud Function poderá gerar o PDF assinado.
-      allow create, update, delete:
-        if false;
+        let member = firestore.get(
+          /databases/(default)/documents/academies/$(academyId)/members/$(request.auth.uid)
+        ).data;
+
+        return signature.studentId == studentId
+          && signature.assignmentId == assignmentId
+          && signature.signedPdfStoragePath ==
+            'academies/' + academyId +
+            '/signedDocuments/' + studentId +
+            '/' + assignmentId + '/' + fileName
+          && (
+            signature.signerUserId == request.auth.uid
+            || member.roles.get('admin', false) == true
+            || member.roles.get('partner', false) == true
+          );
+      }
+
+      allow read:
+        if activeMemberExists(academyId)
+          && canReadSignedPdf();
+
+      allow create, update, delete: if false;
     }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

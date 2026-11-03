@@ -1,3 +1,5 @@
+import 'document_signing_screen.dart';
+
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -37,21 +39,29 @@ class _SignerDocumentsScreenState extends State<SignerDocumentsScreen> {
 
     final repository = context.read<DocumentRepository>();
 
-    final results = await Future.wait<Object>([
-      repository.getAssignmentsForSigner(
-        academyId: currentUser.academyId,
-        signerUserId: currentUser.id,
-      ),
-      repository.getDocuments(academyId: currentUser.academyId),
-    ]);
+    late final List<DocumentAssignment> assignments;
+    late final List<LegalDocument> documents;
 
-    final assignments = List<DocumentAssignment>.from(
-      results[0] as List<DocumentAssignment>,
-    );
+    try {
+      assignments = List<DocumentAssignment>.from(
+        await repository.getAssignmentsForSigner(
+          academyId: currentUser.academyId,
+          signerUserId: currentUser.id,
+        ),
+      );
+    } catch (error) {
+      throw StateError('Falha ao consultar atribuições do assinante: $error');
+    }
 
-    final documents = List<LegalDocument>.from(
-      results[1] as List<LegalDocument>,
-    );
+    try {
+      documents = List<LegalDocument>.from(
+        await repository.getPublishedDocuments(
+          academyId: currentUser.academyId,
+        ),
+      );
+    } catch (error) {
+      throw StateError('Falha ao consultar documentos publicados: $error');
+    }
 
     final documentsById = {
       for (final document in documents) document.id: document,
@@ -75,7 +85,8 @@ class _SignerDocumentsScreenState extends State<SignerDocumentsScreen> {
   }
 
   static int _statusPriority(DocumentAssignment assignment) {
-    if (assignment.isExpiredAt(DateTime.now())) {
+    if (assignment.status != DocumentAssignmentStatus.signed &&
+        assignment.isExpiredAt(DateTime.now())) {
       return 2;
     }
 
@@ -97,10 +108,37 @@ class _SignerDocumentsScreenState extends State<SignerDocumentsScreen> {
     });
   }
 
-  Future<void> _openDocument(LegalDocument document) {
-    return Navigator.push<void>(
+  Future<void> _openDocument(
+    LegalDocument document,
+    DocumentAssignment assignment,
+  ) async {
+    final canSign =
+        assignment.status == DocumentAssignmentStatus.pending &&
+        !assignment.isExpiredAt(DateTime.now()) &&
+        document.isEffectiveAt(DateTime.now()) &&
+        assignment.documentVersion == document.version;
+
+    if (canSign) {
+      final signed = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              DocumentSigningScreen(document: document, assignment: assignment),
+        ),
+      );
+
+      if (mounted && signed == true) {
+        _reload();
+      }
+      return;
+    }
+
+    await Navigator.push<void>(
       context,
-      MaterialPageRoute(builder: (_) => DocumentPdfScreen(document: document)),
+      MaterialPageRoute(
+        builder: (_) =>
+            DocumentPdfScreen(document: document, assignment: assignment),
+      ),
     );
   }
 
@@ -174,7 +212,7 @@ class _SignerDocumentsScreenState extends State<SignerDocumentsScreen> {
                       document: document,
                       onOpen: document == null
                           ? null
-                          : () => _openDocument(document),
+                          : () => _openDocument(document, assignment),
                     ),
                   );
                 }),
@@ -190,7 +228,9 @@ class _SignerDocumentsScreenState extends State<SignerDocumentsScreen> {
 class DocumentPdfScreen extends StatefulWidget {
   final LegalDocument document;
 
-  const DocumentPdfScreen({super.key, required this.document});
+  final DocumentAssignment? assignment;
+
+  const DocumentPdfScreen({super.key, required this.document, this.assignment});
 
   @override
   State<DocumentPdfScreen> createState() => _DocumentPdfScreenState();
@@ -203,7 +243,47 @@ class _DocumentPdfScreenState extends State<DocumentPdfScreen> {
   void initState() {
     super.initState();
 
-    pdfFuture = context.read<DocumentStorageRepository>().downloadOriginalPdf(
+    pdfFuture = _loadPdf();
+  }
+
+  Future<Uint8List> _loadPdf() async {
+    final storage = context.read<DocumentStorageRepository>();
+    final repository = context.read<DocumentRepository>();
+    final assignment = widget.assignment;
+
+    if (assignment?.status == DocumentAssignmentStatus.signed) {
+      final signedAssignment = assignment!;
+      final signature = await repository.getSignatureByAssignment(
+        academyId: signedAssignment.academyId,
+        assignmentId: signedAssignment.id,
+      );
+
+      if (signature == null) {
+        throw StateError('O registro da assinatura não foi encontrado.');
+      }
+
+      final expectedPrefix =
+          'academies/${signedAssignment.academyId}/signedDocuments/'
+          '${signedAssignment.studentId}/${signedAssignment.id}/';
+
+      if (signature.assignmentId != signedAssignment.id ||
+          signature.documentId != signedAssignment.documentId ||
+          signature.documentVersion != signedAssignment.documentVersion ||
+          signature.studentId != signedAssignment.studentId ||
+          signature.signerUserId != signedAssignment.assignedSignerUserId ||
+          !signature.signedPdfStoragePath.startsWith(expectedPrefix)) {
+        throw StateError(
+          'Os dados do PDF assinado não correspondem à atribuição.',
+        );
+      }
+
+      return storage.downloadOriginalPdf(
+        storagePath: signature.signedPdfStoragePath,
+        expectedSha256: signature.signedPdfSha256,
+      );
+    }
+
+    return storage.downloadOriginalPdf(
       storagePath: widget.document.storagePath,
       expectedSha256: widget.document.documentSha256,
     );
@@ -211,10 +291,7 @@ class _DocumentPdfScreenState extends State<DocumentPdfScreen> {
 
   void _reload() {
     setState(() {
-      pdfFuture = context.read<DocumentStorageRepository>().downloadOriginalPdf(
-        storagePath: widget.document.storagePath,
-        expectedSha256: widget.document.documentSha256,
-      );
+      pdfFuture = _loadPdf();
     });
   }
 
@@ -432,7 +509,8 @@ class _AssignmentCard extends StatelessWidget {
   }
 
   _DocumentStatusPresentation _displayStatus() {
-    if (assignment.isExpiredAt(DateTime.now())) {
+    if (assignment.status != DocumentAssignmentStatus.signed &&
+        assignment.isExpiredAt(DateTime.now())) {
       return _DocumentStatusPresentation(
         label: 'Vencido',
         color: Colors.red.shade700,

@@ -31,3 +31,6 @@ export {
 export {
   deletePaymentProofFile,
 } from "./delete_payment_proof_file";
+export {
+  signLegalDocument,
+} from "./sign_legal_document";

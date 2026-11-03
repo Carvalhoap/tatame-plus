@@ -196,18 +196,13 @@ class FirestoreDocumentRepository implements DocumentRepository {
     required String academyId,
     required String assignmentId,
   }) async {
-    final snapshot = await _signatures(
-      academyId,
-    ).where('assignmentId', isEqualTo: assignmentId).limit(1).get();
+    final snapshot = await _signatures(academyId).doc(assignmentId).get();
 
-    if (snapshot.docs.isEmpty) {
+    if (!snapshot.exists) {
       return null;
     }
 
-    return _signatureFromSnapshot(
-      academyId: academyId,
-      snapshot: snapshot.docs.first,
-    );
+    return _signatureFromSnapshot(academyId: academyId, snapshot: snapshot);
   }
 
   LegalDocument _documentFromSnapshot({
@@ -279,9 +274,12 @@ class FirestoreDocumentRepository implements DocumentRepository {
 
   DocumentSignature _signatureFromSnapshot({
     required String academyId,
-    required QueryDocumentSnapshot<Map<String, dynamic>> snapshot,
+    required DocumentSnapshot<Map<String, dynamic>> snapshot,
   }) {
     final data = snapshot.data();
+    if (data == null) {
+      throw StateError('O registro da assinatura não foi encontrado.');
+    }
 
     return DocumentSignature(
       id: snapshot.id,
