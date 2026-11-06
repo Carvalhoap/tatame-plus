@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
 
+import 'health_emergency_form_screen.dart';
+
 import '../models/document_assignment.dart';
 import '../models/document_enums.dart';
 import '../models/legal_document.dart';
@@ -35,6 +37,74 @@ class _DocumentSigningScreenState extends State<DocumentSigningScreen> {
   bool? institutionalImage;
   bool? paidAdvertisingImage;
   bool submitting = false;
+  Map<String, dynamic>? healthData;
+
+  bool get isHealthDocument =>
+      widget.document.type == LegalDocumentType.healthAndEmergency;
+
+  Future<void> _continueToSigning() async {
+    if (isHealthDocument) {
+      final result = await Navigator.push<Map<String, dynamic>>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => HealthEmergencyFormScreen(
+            assignment: widget.assignment,
+            initialData: healthData,
+          ),
+        ),
+      );
+      if (!mounted || result == null) {
+        return;
+      }
+      setState(() {
+        healthData = result;
+        accepted = false;
+        strokes.clear();
+        signingStep = true;
+      });
+      return;
+    }
+    setState(() => signingStep = true);
+  }
+
+  Widget _healthSummary() {
+    final data = healthData;
+    if (data == null) {
+      return const Text('Preencha o formulário de saúde para continuar.');
+    }
+    String status(String key) => switch (data[key]) {
+      'noneKnown' => 'Nenhuma conhecida',
+      'hasDetails' => 'Informações registradas',
+      _ => 'Não sei informar',
+    };
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Confira os dados que serão assinados',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        Text('Nascimento: ${data['birthDate']}'),
+        Text('Telefone do aluno: ${data['phone']}'),
+        Text('E-mail do aluno: ${data['email']}'),
+        Text('Contato de emergência: ${data['emergencyName']}'),
+        Text('Telefone: ${data['emergencyPhone']}'),
+        Text('Vínculo: ${data['emergencyRelationship']}'),
+        Text('Alergias: ${status('allergiesStatus')}'),
+        if (data['allergiesStatus'] == 'hasDetails')
+          Text(data['allergiesDetails'] as String),
+        Text('Restrições: ${status('restrictionsStatus')}'),
+        if (data['restrictionsStatus'] == 'hasDetails')
+          Text(data['restrictionsDetails'] as String),
+        Text('Observações: ${data['notes']}'),
+        const Text('Consentimento específico: concedido no formulário.'),
+        TextButton(
+          onPressed: submitting ? null : _continueToSigning,
+          child: const Text('Conferir ou corrigir formulário'),
+        ),
+      ],
+    );
+  }
 
   static const baseAcceptanceText =
       'Declaro que li integralmente o documento, compreendi seu '
@@ -170,7 +240,11 @@ class _DocumentSigningScreenState extends State<DocumentSigningScreen> {
   }
 
   Future<void> _submit() async {
-    if (submitting || !accepted || !hasSignature || !imageChoicesComplete) {
+    if (submitting ||
+        !accepted ||
+        !hasSignature ||
+        !imageChoicesComplete ||
+        (isHealthDocument && healthData == null)) {
       return;
     }
 
@@ -221,6 +295,7 @@ class _DocumentSigningScreenState extends State<DocumentSigningScreen> {
         'assignmentId': widget.assignment.id,
         'accepted': true,
         'signaturePngBase64': base64Encode(png),
+        if (isHealthDocument) 'healthData': healthData!,
         if (isImageAuthorization)
           'imageChoices': {
             'institutional': institutionalImage!,
@@ -349,6 +424,7 @@ class _DocumentSigningScreenState extends State<DocumentSigningScreen> {
                   ),
                   const SizedBox(height: 12),
                   if (isImageAuthorization) _imageChoices(),
+                  if (isHealthDocument) _healthSummary(),
                   CheckboxListTile(
                     contentPadding: EdgeInsets.zero,
                     value: accepted,
@@ -377,7 +453,8 @@ class _DocumentSigningScreenState extends State<DocumentSigningScreen> {
                         accepted &&
                             hasSignature &&
                             !submitting &&
-                            imageChoicesComplete
+                            imageChoicesComplete &&
+                            (!isHealthDocument || healthData != null)
                         ? _submit
                         : null,
                     icon: submitting
@@ -450,9 +527,7 @@ class _DocumentSigningScreenState extends State<DocumentSigningScreen> {
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: FilledButton(
-                            onPressed: () {
-                              setState(() => signingStep = true);
-                            },
+                            onPressed: _continueToSigning,
                             child: const Text(
                               'Li o documento e quero continuar',
                             ),

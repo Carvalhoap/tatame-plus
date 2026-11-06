@@ -23,6 +23,7 @@ interface SignLegalDocumentData {
   accepted?: unknown;
   signaturePngBase64?: unknown;
   imageChoices?: unknown;
+  healthData?: unknown;
 }
 
 interface ImageChoices {
@@ -33,6 +34,7 @@ interface ImageChoices {
 interface SigningContext {
   documentType: string;
   imageChoices: ImageChoices | null;
+  healthData: Record<string, string | boolean> | null;
   documentId: string;
   documentVersion: string;
   documentTitle: string;
@@ -75,6 +77,122 @@ const maxDocumentBytes = 10 * 1024 * 1024;
 const imageAcceptanceText =
   "Declaro que li o documento e confirmo as escolhas de autorização " +
   "e recusa registradas abaixo por meio desta assinatura eletrônica.";
+
+const healthConsentText =
+  "Consinto expressamente com o tratamento das informações de saúde " +
+  "fornecidas para adaptação segura das atividades e apoio em emergências. " +
+  "O acesso será limitado às pessoas que necessitem dessas informações " +
+  "para essas finalidades e, quando necessário ao atendimento, aos " +
+  "profissionais responsáveis pela emergência.";
+
+function parseHealthData(
+  documentType: string,
+  value: unknown,
+  student: Record<string, unknown>,
+): Record<string, string | boolean> | null {
+  if (documentType !== "healthAndEmergency") {
+    if (value !== undefined && value !== null) {
+      throw new HttpsError(
+        "invalid-argument", "Este documento não recebe dados de saúde.",
+      );
+    }
+    return null;
+  }
+
+  const data = recordValue(value);
+  const allowed = [
+    "birthDate", "phone", "email", "emergencyName", "emergencyPhone",
+    "emergencyRelationship", "allergiesStatus", "allergiesDetails",
+    "restrictionsStatus", "restrictionsDetails", "notes", "consent",
+    "confirmed",
+  ];
+  if (Object.keys(data).some((key) => !allowed.includes(key)) ||
+      data.consent !== true || data.confirmed !== true) {
+    throw new HttpsError(
+      "invalid-argument", "Confira o formulário e o consentimento de saúde.",
+    );
+  }
+
+  const text = (key: string, max: number, required = false): string => {
+    const raw = data[key];
+    if (typeof raw !== "string" || raw.length > max ||
+        Array.from(raw).some((char) => {
+          const code = char.charCodeAt(0);
+          return code < 32 && code !== 9 && code !== 10 && code !== 13 ||
+            code === 127;
+        }) ||
+        (required && raw.trim().length === 0)) {
+      throw new HttpsError(
+        "invalid-argument", `Confira o campo ${key} do formulário.`,
+      );
+    }
+    return raw.trim();
+  };
+
+  const birthDate = text("birthDate", 10, true);
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(birthDate);
+  if (match === null) {
+    throw new HttpsError("invalid-argument", "Nascimento inválido.");
+  }
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (year < 1900 || date.getUTCFullYear() !== year ||
+      date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day ||
+      date.getTime() > Date.now()) {
+    throw new HttpsError("invalid-argument", "Nascimento inválido.");
+  }
+
+  const phone = text("phone", 30);
+  const emergencyPhone = text("emergencyPhone", 30, true);
+  if ((phone !== "" && !/^\d{8,15}$/.test(phone.replace(/\D/g, ""))) ||
+      !/^\d{8,15}$/.test(emergencyPhone.replace(/\D/g, ""))) {
+    throw new HttpsError("invalid-argument", "Confira os telefones com DDD.");
+  }
+  const email = text("email", 254);
+  if (email !== "" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new HttpsError("invalid-argument", "Confira o e-mail do aluno.");
+  }
+  const status = (key: string): string => {
+    const result = text(key, 20, true);
+    if (!["noneKnown", "hasDetails", "unknown"].includes(result)) {
+      throw new HttpsError("invalid-argument", "Escolha uma resposta válida.");
+    }
+    return result;
+  };
+  const allergiesStatus = status("allergiesStatus");
+  const restrictionsStatus = status("restrictionsStatus");
+  const allergiesDetails = text(
+    "allergiesDetails", 1000, allergiesStatus === "hasDetails",
+  );
+  const restrictionsDetails = text(
+    "restrictionsDetails", 1000, restrictionsStatus === "hasDetails",
+  );
+  if ((allergiesStatus !== "hasDetails" && allergiesDetails !== "") ||
+      (restrictionsStatus !== "hasDetails" && restrictionsDetails !== "")) {
+    throw new HttpsError("invalid-argument", "Respostas de saúde divergentes.");
+  }
+
+  return {
+    studentFullName: requiredString(
+      student, "fullName", "O nome do aluno não foi encontrado.",
+    ),
+    birthDate,
+    phone,
+    email,
+    emergencyName: text("emergencyName", 150, true),
+    emergencyPhone,
+    emergencyRelationship: text("emergencyRelationship", 80, true),
+    allergiesStatus,
+    allergiesDetails,
+    restrictionsStatus,
+    restrictionsDetails,
+    notes: text("notes", 1000),
+    consent: true,
+    confirmed: true,
+  };
+}
 
 function parseImageChoices(
   documentType: string,
@@ -456,6 +574,7 @@ function validatePendingDocument(
       "O tipo do documento é inválido.",
     ),
     imageChoices: null,
+    healthData: null,
     documentTitle: requiredString(
       document,
       "title",
@@ -866,6 +985,67 @@ async function createSignedPdf(
     }
   }
 
+  if (context.healthData !== null) {
+    const data = context.healthData;
+    let healthPage = pdfDocument.addPage([595.28, 841.89]);
+    let healthY = 785;
+    const writeLine = (line: string): void => {
+      if (healthY < 65) {
+        healthPage = pdfDocument.addPage([595.28, 841.89]);
+        healthY = 785;
+      }
+      healthPage.drawText(line, {
+        x: 48, y: healthY, size: 10, font,
+        color: rgb(0.1, 0.1, 0.1),
+      });
+      healthY -= 16;
+    };
+    const write = (value: string): void => {
+      const paragraphs = value.replace(/\r/g, "").split("\n");
+      for (const paragraph of paragraphs) {
+        let line = "";
+        for (const char of asciiText(paragraph)) {
+          if (font.widthOfTextAtSize(line + char, 10) > 490) {
+            writeLine(line);
+            line = "";
+          }
+          line += char;
+        }
+        writeLine(line);
+      }
+      healthY -= 6;
+    };
+    const status = (key: string): string => data[key] === "hasDetails" ?
+      "Informacoes registradas" : data[key] === "noneKnown" ?
+        "Nenhuma conhecida" : "Nao sei informar";
+    write("DECLARACAO DE SAUDE E EMERGENCIA - DADOS CONFIRMADOS");
+    write(`Documento: ${context.documentTitle}`);
+    write(`Versao: ${context.documentVersion}`);
+    write(`Atribuicao: ${assignmentId}`);
+    write(`Aluno: ${data.studentFullName}`);
+    write(`Assinante: ${context.signerName}`);
+    write(`Data e hora: ${signedDate}`);
+    write(`Nascimento: ${data.birthDate}`);
+    write(`Telefone do aluno: ${data.phone || "Nao informado"}`);
+    write(`E-mail do aluno: ${data.email || "Nao informado"}`);
+    write(`Contato de emergencia: ${data.emergencyName}`);
+    write(`Telefone de emergencia: ${data.emergencyPhone}`);
+    write(`Vinculo: ${data.emergencyRelationship}`);
+    write(`Alergias: ${status("allergiesStatus")}`);
+    if (data.allergiesStatus === "hasDetails") {
+      write(String(data.allergiesDetails));
+    }
+    write(`Restricoes: ${status("restrictionsStatus")}`);
+    if (data.restrictionsStatus === "hasDetails") {
+      write(String(data.restrictionsDetails));
+    }
+    write(`Observacoes: ${data.notes || "Nenhuma informada"}`);
+    write("CONSENTIMENTO ESPECIFICO: CONCEDIDO PELO ASSINANTE");
+    write(healthConsentText);
+    write("O assinante confirmou os dados antes de assinar. " +
+      "Este registro integra o PDF e nao altera o cadastro do aluno.");
+  }
+
   pdfDocument.setCreator("NexTatame");
   pdfDocument.setProducer("NexTatame");
   pdfDocument.setModificationDate(signedAt.toDate());
@@ -1061,6 +1241,11 @@ export const signLegalDocument = onCall(
             alreadySigned: false,
             context: {
               ...context,
+              healthData: parseHealthData(
+                context.documentType,
+                data.healthData,
+                access.student,
+              ),
               imageChoices: parseImageChoices(
                 context.documentType,
                 data.imageChoices,
@@ -1350,6 +1535,11 @@ export const signLegalDocument = onCall(
               ...(context.imageChoices === null ? {} : {
                 imageChoices: context.imageChoices,
                 imageChoicesVersion: 1,
+              }),
+              ...(context.healthData === null ? {} : {
+                healthData: context.healthData,
+                healthDataVersion: 1,
+                healthConsentText,
               }),
               accepted: true,
               signatureStoragePath,
