@@ -8,6 +8,7 @@ import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
 
 import '../models/document_assignment.dart';
+import '../models/document_enums.dart';
 import '../models/legal_document.dart';
 import '../repository/document_storage_repository.dart';
 
@@ -31,9 +32,11 @@ class _DocumentSigningScreenState extends State<DocumentSigningScreen> {
   final List<List<Offset>> strokes = [];
   bool signingStep = false;
   bool accepted = false;
+  bool? institutionalImage;
+  bool? paidAdvertisingImage;
   bool submitting = false;
 
-  static const acceptanceText =
+  static const baseAcceptanceText =
       'Declaro que li integralmente o documento, compreendi seu '
       'conteúdo e manifesto livremente minha concordância por meio '
       'desta assinatura eletrônica.';
@@ -42,6 +45,80 @@ class _DocumentSigningScreenState extends State<DocumentSigningScreen> {
   void initState() {
     super.initState();
     pdfFuture = _loadPdf();
+  }
+
+  bool get isImageAuthorization =>
+      widget.document.type == LegalDocumentType.imageAuthorization;
+
+  bool get imageChoicesComplete =>
+      !isImageAuthorization ||
+      (institutionalImage != null && paidAdvertisingImage != null);
+
+  String get acceptanceText => isImageAuthorization
+      ? 'Declaro que li o documento e confirmo as escolhas de autorização '
+            'e recusa registradas abaixo por meio desta assinatura eletrônica.'
+      : baseAcceptanceText;
+
+  Widget _imageChoice({
+    required String title,
+    required bool? value,
+    required ValueChanged<bool?> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+          DropdownButton<bool>(
+            isExpanded: true,
+            value: value,
+            hint: const Text('Selecione uma resposta'),
+            items: const [
+              DropdownMenuItem(value: true, child: Text('Autorizo')),
+              DropdownMenuItem(value: false, child: Text('Não autorizo')),
+            ],
+            onChanged: submitting ? null : onChanged,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _imageChoices() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Escolhas sobre imagem e voz',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Responda às duas perguntas. Você pode recusar qualquer uso '
+          'e concluir o registro. A recusa não impede a matrícula '
+          'nem a participação nas aulas.',
+        ),
+        const SizedBox(height: 16),
+        _imageChoice(
+          title:
+              'Publicações institucionais no Instagram e WhatsApp da academia',
+          value: institutionalImage,
+          onChanged: (value) => setState(() {
+            institutionalImage = value;
+            accepted = false;
+          }),
+        ),
+        _imageChoice(
+          title: 'Anúncios pagos da academia no Instagram e WhatsApp',
+          value: paidAdvertisingImage,
+          onChanged: (value) => setState(() {
+            paidAdvertisingImage = value;
+            accepted = false;
+          }),
+        ),
+      ],
+    );
   }
 
   Future<Uint8List> _loadPdf() {
@@ -93,7 +170,9 @@ class _DocumentSigningScreenState extends State<DocumentSigningScreen> {
   }
 
   Future<void> _submit() async {
-    if (submitting || !accepted || !hasSignature) return;
+    if (submitting || !accepted || !hasSignature || !imageChoicesComplete) {
+      return;
+    }
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -103,6 +182,7 @@ class _DocumentSigningScreenState extends State<DocumentSigningScreen> {
           'Você assinará "${widget.document.title}", '
           'versão ${widget.assignment.documentVersion}, '
           'referente a ${widget.assignment.studentName}. '
+          '${isImageAuthorization ? '\n\nPublicações institucionais: ${institutionalImage == true ? "AUTORIZO" : "NÃO AUTORIZO"}.\nAnúncios pagos: ${paidAdvertisingImage == true ? "AUTORIZO" : "NÃO AUTORIZO"}.\n\n' : ''}'
           'Deseja confirmar?',
         ),
         actions: [
@@ -141,6 +221,11 @@ class _DocumentSigningScreenState extends State<DocumentSigningScreen> {
         'assignmentId': widget.assignment.id,
         'accepted': true,
         'signaturePngBase64': base64Encode(png),
+        if (isImageAuthorization)
+          'imageChoices': {
+            'institutional': institutionalImage!,
+            'paidAdvertising': paidAdvertisingImage!,
+          },
       });
 
       if (result.data['success'] != true) {
@@ -263,6 +348,7 @@ class _DocumentSigningScreenState extends State<DocumentSigningScreen> {
                     label: const Text('Reler documento'),
                   ),
                   const SizedBox(height: 12),
+                  if (isImageAuthorization) _imageChoices(),
                   CheckboxListTile(
                     contentPadding: EdgeInsets.zero,
                     value: accepted,
@@ -271,7 +357,7 @@ class _DocumentSigningScreenState extends State<DocumentSigningScreen> {
                         : (value) {
                             setState(() => accepted = value == true);
                           },
-                    title: const Text(acceptanceText),
+                    title: Text(acceptanceText),
                     controlAffinity: ListTileControlAffinity.leading,
                   ),
                   const SizedBox(height: 16),
@@ -287,7 +373,11 @@ class _DocumentSigningScreenState extends State<DocumentSigningScreen> {
                   ),
                   const SizedBox(height: 16),
                   FilledButton.icon(
-                    onPressed: accepted && hasSignature && !submitting
+                    onPressed:
+                        accepted &&
+                            hasSignature &&
+                            !submitting &&
+                            imageChoicesComplete
                         ? _submit
                         : null,
                     icon: submitting

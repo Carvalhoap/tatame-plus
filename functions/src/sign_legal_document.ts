@@ -22,9 +22,17 @@ interface SignLegalDocumentData {
   assignmentId?: unknown;
   accepted?: unknown;
   signaturePngBase64?: unknown;
+  imageChoices?: unknown;
+}
+
+interface ImageChoices {
+  institutional: boolean;
+  paidAdvertising: boolean;
 }
 
 interface SigningContext {
+  documentType: string;
+  imageChoices: ImageChoices | null;
   documentId: string;
   documentVersion: string;
   documentTitle: string;
@@ -63,6 +71,45 @@ const sha256Pattern = /^[a-f0-9]{64}$/i;
 
 const maxSignatureBytes = 1024 * 1024;
 const maxDocumentBytes = 10 * 1024 * 1024;
+
+const imageAcceptanceText =
+  "Declaro que li o documento e confirmo as escolhas de autorização " +
+  "e recusa registradas abaixo por meio desta assinatura eletrônica.";
+
+function parseImageChoices(
+  documentType: string,
+  value: unknown,
+): ImageChoices | null {
+  if (documentType !== "imageAuthorization") {
+    if (value !== undefined && value !== null) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Este documento não recebe escolhas de imagem.",
+      );
+    }
+    return null;
+  }
+
+  const choices = recordValue(value);
+
+  if (
+    typeof choices.institutional !== "boolean" ||
+    typeof choices.paidAdvertising !== "boolean" ||
+    Object.keys(choices).some(
+      (key) => key !== "institutional" && key !== "paidAdvertising",
+    )
+  ) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Informe separadamente as duas escolhas de uso de imagem.",
+    );
+  }
+
+  return {
+    institutional: choices.institutional,
+    paidAdvertising: choices.paidAdvertising,
+  };
+}
 
 function parseId(
   value: unknown,
@@ -403,6 +450,12 @@ function validatePendingDocument(
   return {
     documentId,
     documentVersion,
+    documentType: requiredString(
+      document,
+      "type",
+      "O tipo do documento é inválido.",
+    ),
+    imageChoices: null,
     documentTitle: requiredString(
       document,
       "title",
@@ -637,8 +690,10 @@ async function createSignedPdf(
   });
 
   page.drawText(
-    "Declaro que li integralmente o documento, compreendi " +
-      "seu conteudo e manifesto",
+    context.imageChoices === null ?
+      "Declaro que li integralmente o documento, compreendi " +
+        "seu conteudo e manifesto" :
+      "Declaro que li o documento e confirmo as escolhas de autorizacao",
     {
       x: 48,
       y: 500,
@@ -649,8 +704,10 @@ async function createSignedPdf(
   );
 
   page.drawText(
-    "livremente minha concordancia por meio desta " +
-      "assinatura eletronica.",
+    context.imageChoices === null ?
+      "livremente minha concordancia por meio desta " +
+        "assinatura eletronica." :
+      "e recusa registradas abaixo por meio desta assinatura eletronica.",
     {
       x: 48,
       y: 484,
@@ -769,6 +826,45 @@ async function createSignedPdf(
   pdfDocument.setSubject(
     "Documento assinado eletronicamente no NexTatame",
   );
+
+  if (context.imageChoices !== null) {
+    const choicesPage = pdfDocument.addPage([595.28, 841.89]);
+    const choices = context.imageChoices;
+
+    const lines = [
+      "REGISTRO DAS ESCOLHAS DE IMAGEM E VOZ",
+      "",
+      `Documento: ${limitedText(context.documentTitle, 78)}`,
+      `Versao: ${limitedText(context.documentVersion, 65)}`,
+      `Aluno: ${limitedText(context.studentName, 78)}`,
+      `Assinante: ${limitedText(context.signerName, 74)}`,
+      `Atribuicao: ${assignmentId}`,
+      "",
+      "Publicacoes institucionais no Instagram e WhatsApp da academia:",
+      choices.institutional ? "AUTORIZO" : "NAO AUTORIZO",
+      "",
+      "Anuncios pagos da academia no Instagram e WhatsApp:",
+      choices.paidAdvertising ? "AUTORIZO" : "NAO AUTORIZO",
+      "",
+      "As escolhas foram informadas separadamente pelo assinante.",
+      "A recusa nao impede a matricula nem a participacao nas aulas.",
+      "Estas escolhas integram o documento e seu comprovante de assinatura.",
+      "",
+      `Data e hora: ${limitedText(signedDate, 88)}`,
+    ];
+
+    let choicesY = 785;
+    for (const line of lines) {
+      choicesPage.drawText(asciiText(line), {
+        x: 48,
+        y: choicesY,
+        size: line === lines[0] ? 12 : 10,
+        font: line === lines[0] ? boldFont : font,
+        color: rgb(0.1, 0.1, 0.1),
+      });
+      choicesY -= 27;
+    }
+  }
 
   pdfDocument.setCreator("NexTatame");
   pdfDocument.setProducer("NexTatame");
@@ -965,6 +1061,10 @@ export const signLegalDocument = onCall(
             alreadySigned: false,
             context: {
               ...context,
+              imageChoices: parseImageChoices(
+                context.documentType,
+                data.imageChoices,
+              ),
               signerName,
             },
           };
@@ -1199,6 +1299,7 @@ export const signLegalDocument = onCall(
             "documentId",
             "documentVersion",
             "documentTitle",
+            "documentType",
             "documentStoragePath",
             "documentSha256",
             "studentId",
@@ -1244,7 +1345,12 @@ export const signLegalDocument = onCall(
               signerName: context.signerName,
               signerEmail,
               signerRole: context.signerRole,
-              acceptanceText,
+              acceptanceText: context.imageChoices === null ?
+                acceptanceText : imageAcceptanceText,
+              ...(context.imageChoices === null ? {} : {
+                imageChoices: context.imageChoices,
+                imageChoicesVersion: 1,
+              }),
               accepted: true,
               signatureStoragePath,
               signatureSha256,
